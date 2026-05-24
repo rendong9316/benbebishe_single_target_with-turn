@@ -1,0 +1,274 @@
+% =========================================================================
+% plot_turn_fusion_compare.m
+% 融合对比: 基础UKF融合(虚线) vs 机动自适应UKF融合(实线)
+% 含放大的拐弯区域子图 + RMSE柱状图对比，复选框图层控制
+% =========================================================================
+
+function plot_turn_fusion_compare(true_track, ...
+        fused_base, fuse_methods, best_m_base, ...
+        fused_ad, fuse_methods_ad, best_m_ad, ...
+        trackR1_base, trackR2_base, trackR1_ad, trackR2_ad, ...
+        fusion_eval_base, fusion_eval_ad, params, out_dir)
+
+    % 提取融合航迹
+    [lat_fb, lon_fb] = extract_fused_ll(fused_base{best_m_base});
+    [lat_fa, lon_fa] = extract_fused_ll(fused_ad{best_m_ad});
+
+    % 单站航迹 (用于地图叠加)
+    [lat_r1b, lon_r1b] = extract_track_ll(trackR1_base);
+    [lat_r1a, lon_r1a] = extract_track_ll(trackR1_ad);
+    [lat_r2b, lon_r2b] = extract_track_ll(trackR2_base);
+    [lat_r2a, lon_r2a] = extract_track_ll(trackR2_ad);
+
+    mid = round(size(true_track,1)/2);
+    turn_lon = 128.5; turn_lat = 33.5;
+    min_dist = inf; turn_frame = mid;
+    for kk = 1:size(true_track,1)
+        d = sphere_utils_haversine_distance(true_track(kk,1), true_track(kk,2), turn_lon, turn_lat);
+        if d < min_dist, min_dist = d; turn_frame = kk; end
+    end
+    zoom_range = max(1,turn_frame-20):min(size(true_track,1),turn_frame+20);
+
+    fig = figure('Position', [50, 50, 1400, 750]);
+    tlo = tiledlayout(2, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+
+    % =====================================================================
+    % 左上: 融合全图 (带复选框)
+    % =====================================================================
+    nexttile(tlo, 1);
+    try
+        gx1 = geoaxes;
+        gx1.Basemap = 'darkwater';
+    catch
+        gx1 = geoaxes;
+    end
+    hold(gx1, 'on');
+    title(gx1, sprintf('融合全图: 基础%s(虚线) vs 自适应%s(实线)', ...
+        fuse_methods{best_m_base}, fuse_methods_ad{best_m_ad}), 'FontSize', 10);
+
+    geoplot(gx1, true_track(:,2), true_track(:,1), 'y--', 'LineWidth', 1.8, 'DisplayName', '真值');
+    h_fb = geoplot(gx1, lat_fb, lon_fb, '--', 'Color', [0.0 0.7 0.7], 'LineWidth', 2, ...
+        'DisplayName', sprintf('基础%s融合', fuse_methods{best_m_base}));
+    h_fa = geoplot(gx1, lat_fa, lon_fa, '-', 'Color', [0.0 0.4 0.1], 'LineWidth', 2.8, ...
+        'DisplayName', sprintf('自适应%s融合', fuse_methods_ad{best_m_ad}));
+
+    % 标记站点
+    geoplot(gx1, params.radar1_lat, params.radar1_lon, 'bs', 'MarkerSize', 8, 'MarkerFaceColor', 'b');
+    geoplot(gx1, params.radar2_lat, params.radar2_lon, 'rs', 'MarkerSize', 8, 'MarkerFaceColor', 'r');
+
+    legend(gx1, 'Location', 'northeast', 'FontSize', 7);
+
+    % 拐弯区域框
+    rx = [min(true_track(zoom_range,1)), max(true_track(zoom_range,1))];
+    ry = [min(true_track(zoom_range,2)), max(true_track(zoom_range,2))];
+    geoplot(gx1, [ry(1) ry(1) ry(2) ry(2) ry(1)], ...
+                 [rx(1) rx(2) rx(2) rx(1) rx(1)], 'w-', 'LineWidth', 1.2);
+
+    % =====================================================================
+    % 中上: 拐弯区域放大
+    % =====================================================================
+    nexttile(tlo, 2);
+    try
+        gx2 = geoaxes;
+        gx2.Basemap = 'darkwater';
+    catch
+        gx2 = geoaxes;
+    end
+    hold(gx2, 'on');
+    title(gx2, '拐弯区域放大', 'FontSize', 10);
+
+    geoplot(gx2, true_track(zoom_range,2), true_track(zoom_range,1), 'y--', 'LineWidth', 2.5);
+
+    % 基础融合
+    if ~isempty(lat_fb)
+        iz = get_zoom_idx(lat_fb, zoom_range);
+        geoplot(gx2, lat_fb(iz), lon_fb(iz), '--', 'Color', [0.0 0.7 0.7], 'LineWidth', 2.5);
+    end
+    % 自适应融合
+    if ~isempty(lat_fa)
+        iz = get_zoom_idx(lat_fa, zoom_range);
+        geoplot(gx2, lat_fa(iz), lon_fa(iz), '-', 'Color', [0.0 0.4 0.1], 'LineWidth', 3);
+    end
+
+    % 单站航迹 (半透明)
+    if ~isempty(lat_r1b)
+        iz = get_zoom_idx(lat_r1b, zoom_range);
+        geoplot(gx2, lat_r1b(iz), lon_r1b(iz), ':', 'Color', [0.4 0.6 1.0 0.5], 'LineWidth', 1);
+    end
+    if ~isempty(lat_r2b)
+        iz = get_zoom_idx(lat_r2b, zoom_range);
+        geoplot(gx2, lat_r2b(iz), lon_r2b(iz), ':', 'Color', [1.0 0.5 0.5 0.5], 'LineWidth', 1);
+    end
+
+    legend(gx2, {'真值', '基础融合', '自适应融合', 'R1单站', 'R2单站'}, ...
+        'Location', 'best', 'FontSize', 6);
+
+    % =====================================================================
+    % 右上: RMSE柱状图 (基础 vs 自适应, 各方法)
+    % =====================================================================
+    ax3 = nexttile(tlo, 3);
+    methods_all = [fuse_methods, {'R1_only', 'R2_only'}];
+    n_m = length(methods_all);
+    rmse_base = zeros(1, n_m);
+    rmse_ad   = zeros(1, n_m);
+    for m = 1:n_m
+        rmse_base(m) = fusion_eval_base.overall(m).s.rms;
+        rmse_ad(m)   = fusion_eval_ad.overall(m).s.rms;
+    end
+
+    hold(ax3, 'on');
+    x_pos = 1:n_m;
+    w = 0.35;
+    b1 = bar(ax3, x_pos - w/2, rmse_base, w, 'FaceColor', [0.6 0.6 0.6]);
+    b2 = bar(ax3, x_pos + w/2, rmse_ad, w, 'FaceColor', [0.0 0.5 0.0]);
+    set(ax3, 'XTick', x_pos, 'XTickLabel', methods_all, 'FontSize', 7);
+    xtickangle(ax3, 30);
+    ylabel(ax3, 'RMSE (km)');
+    title(ax3, '融合RMSE对比: 基础(灰) vs 自适应(绿)', 'FontSize', 10);
+    legend(ax3, [b1, b2], {'基础UKF融合', '自适应UKF融合'}, 'Location', 'best', 'FontSize', 7);
+    grid(ax3, 'on');
+
+    % 标注改善百分比
+    for m = 1:n_m
+        if rmse_base(m) > 0
+            imp = (1 - rmse_ad(m)/rmse_base(m))*100;
+            y_pos = max(rmse_base(m), rmse_ad(m)) + 0.5;
+            text(ax3, x_pos(m), y_pos, sprintf('%+.0f%%', imp), ...
+                'FontSize', 8, 'FontWeight', 'bold', 'Color', [0.8 0 0], ...
+                'HorizontalAlignment', 'center');
+        end
+    end
+
+    % =====================================================================
+    % 左下: 融合误差时间线
+    % =====================================================================
+    ax4 = nexttile(tlo, 4);
+    n_frames = length(fused_base{best_m_base});
+    t = (0:n_frames-1) * params.dt_sec;
+
+    err_fb = nan(1, n_frames);
+    err_fa = nan(1, n_frames);
+    for k = 1:min(n_frames, size(true_track,1))
+        err_fb(k) = fused_err_at_frame(fused_base{best_m_base}{k}, true_track(k,1), true_track(k,2));
+        err_fa(k) = fused_err_at_frame(fused_ad{best_m_ad}{k}, true_track(k,1), true_track(k,2));
+    end
+
+    hold(ax4, 'on');
+    plot(ax4, t, err_fb, '--', 'Color', [0.0 0.7 0.7], 'LineWidth', 1.5);
+    plot(ax4, t, err_fa, '-', 'Color', [0.0 0.4 0.1], 'LineWidth', 2);
+    xline(ax4, t(turn_frame), 'k--', 'LineWidth', 0.8);
+    xlabel(ax4, '时间 (s)'); ylabel(ax4, '位置误差 (km)');
+    title(ax4, sprintf('融合误差: 基础RMSE=%.1f  自适应RMSE=%.1f', ...
+        rms_val(err_fb), rms_val(err_fa)), 'FontSize', 10);
+    legend(ax4, {sprintf('基础%s融合', fuse_methods{best_m_base}), ...
+        sprintf('自适应%s融合', fuse_methods_ad{best_m_ad})}, 'Location', 'best', 'FontSize', 8);
+    grid(ax4, 'on');
+
+    % =====================================================================
+    % 中下: 单站 vs 融合误差对比
+    % =====================================================================
+    ax5 = nexttile(tlo, 5);
+    hold(ax5, 'on');
+
+    r1b_rmse = fusion_eval_base.overall(end-1).s.rms;
+    r1a_rmse = fusion_eval_ad.overall(end-1).s.rms;
+    r2b_rmse = fusion_eval_base.overall(end).s.rms;
+    r2a_rmse = fusion_eval_ad.overall(end).s.rms;
+    fb_rmse  = fusion_eval_base.overall(best_m_base).s.rms;
+    fa_rmse  = fusion_eval_ad.overall(best_m_ad).s.rms;
+
+    methods_short = {'R1单站', 'R2单站', '融合'};
+    base_vals = [r1b_rmse, r2b_rmse, fb_rmse];
+    ad_vals   = [r1a_rmse, r2a_rmse, fa_rmse];
+
+    xp = 1:3;
+    bar(ax5, xp-0.2, base_vals, 0.35, 'FaceColor', [0.6 0.6 0.6], 'DisplayName', '基础UKF');
+    bar(ax5, xp+0.2, ad_vals, 0.35, 'FaceColor', [0.0 0.5 0.0], 'DisplayName', '自适应UKF');
+    set(ax5, 'XTick', xp, 'XTickLabel', methods_short);
+    ylabel(ax5, 'RMSE (km)');
+    title(ax5, '单站→融合 精度提升链', 'FontSize', 10);
+    legend(ax5, 'Location', 'best', 'FontSize', 8);
+    grid(ax5, 'on');
+
+    for i = 1:3
+        imp = (1 - ad_vals(i)/base_vals(i))*100;
+        text(ax5, xp(i), max(base_vals(i), ad_vals(i))+0.3, sprintf('%+.0f%%', imp), ...
+            'FontSize', 9, 'FontWeight', 'bold', 'HorizontalAlignment', 'center');
+    end
+
+    % =====================================================================
+    % 右下: 数值表
+    % =====================================================================
+    ax6 = nexttile(tlo, 6);
+    ax6.Visible = 'off';
+    text(0.05, 0.9, sprintf('=== 拐弯目标融合结果 ==='), ...
+        'Units', 'normalized', 'FontSize', 11, 'FontWeight', 'bold');
+    text(0.05, 0.80, sprintf('基础UKF最优融合: %s  RMSE=%.1f km', ...
+        fuse_methods{best_m_base}, fb_rmse), 'Units', 'normalized', 'FontSize', 9);
+    text(0.05, 0.72, sprintf('自适应UKF最优融合: %s  RMSE=%.1f km', ...
+        fuse_methods_ad{best_m_ad}, fa_rmse), 'Units', 'normalized', 'FontSize', 9);
+    text(0.05, 0.64, sprintf('融合改善: %+.1f%%', (1-fa_rmse/fb_rmse)*100), ...
+        'Units', 'normalized', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.8 0 0]);
+    text(0.05, 0.52, sprintf('R1单站: %.1f -> %.1f km (%+.1f%%)', ...
+        r1b_rmse, r1a_rmse, (1-r1a_rmse/r1b_rmse)*100), 'Units', 'normalized', 'FontSize', 9);
+    text(0.05, 0.44, sprintf('R2单站: %.1f -> %.1f km (%+.1f%%)', ...
+        r2b_rmse, r2a_rmse, (1-r2a_rmse/r2b_rmse)*100), 'Units', 'normalized', 'FontSize', 9);
+    text(0.05, 0.32, sprintf('Pd=%.0f%%  Pfa=%.3f', ...
+        params.detection_probability*100, params.false_alarm_rate), ...
+        'Units', 'normalized', 'FontSize', 9);
+    text(0.05, 0.24, sprintf('拐角: ~113°  帧数: %d', n_frames), ...
+        'Units', 'normalized', 'FontSize', 9);
+
+    sgtitle(sprintf('拐弯目标融合对比: 基础UKF(灰色/虚线) vs 机动自适应UKF(绿色/实线)'));
+
+    drawnow;
+    try
+        exportgraphics(fig, fullfile(out_dir, 'fig3_fusion_compare.png'), 'Resolution', 200);
+    catch
+        saveas(fig, fullfile(out_dir, 'fig3_fusion_compare.png'));
+    end
+    fprintf('  融合对比图已保存: fig3_fusion_compare.png\n');
+end
+
+% =========================================================================
+function [lats, lons] = extract_fused_ll(snapshots)
+    lats = []; lons = [];
+    for k = 1:length(snapshots)
+        snap = snapshots{k};
+        if isempty(snap.trackList), continue; end
+        trk = snap.trackList{1};
+        if ~isfield(trk, 'lat') || isnan(trk.lat), continue; end
+        lats(end+1) = trk.lat;
+        lons(end+1) = trk.lon;
+    end
+end
+
+function [lats, lons] = extract_track_ll(snapshots)
+    lats = []; lons = [];
+    for k = 1:length(snapshots)
+        snap = snapshots{k};
+        if isempty(snap.trackList), continue; end
+        trk = snap.trackList{1};
+        if trk.type == 7 || ~isfield(trk, 'lat') || isnan(trk.lat), continue; end
+        lats(end+1) = trk.lat;
+        lons(end+1) = trk.lon;
+    end
+end
+
+function d = fused_err_at_frame(snap, t_lon, t_lat)
+    d = NaN;
+    if isempty(snap.trackList), return; end
+    trk = snap.trackList{1};
+    if ~isfield(trk, 'lon') || isnan(trk.lon), return; end
+    d = sphere_utils_haversine_distance(trk.lon, trk.lat, t_lon, t_lat) / 1000;
+end
+
+function iz = get_zoom_idx(arr, zoom_range)
+    iz = zoom_range(zoom_range <= length(arr));
+end
+
+function v = rms_val(x)
+    x_valid = x(~isnan(x));
+    if isempty(x_valid), v = NaN; return; end
+    v = sqrt(mean(x_valid.^2));
+end

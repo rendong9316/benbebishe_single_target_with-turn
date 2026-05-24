@@ -1,0 +1,21 @@
+# MATLAB binary results
+results/*.mat
+results/*.png
+results/*.fig
+
+# Temporary evaluation script
+eval_metrics.m
+
+# MATLAB temporary files
+*.asv
+*.m~
+*.mat
+*.csv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
