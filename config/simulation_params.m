@@ -1,95 +1,220 @@
 % =========================================================================
-% simulation_params.m
-% Bistatic OTH-SWR single-target simulation - parameter config
+% simulation_params.m — 双基地OTH-SWR单目标跟踪仿真参数配置
+% =========================================================================
+%
+% 【功能概述】
+%   定义双基地高频天波超视距雷达（OTH-SWR）单目标跟踪仿真的全部参数。
+%   参数涵盖时间设定、站点几何、威力覆盖、目标轨迹、量测噪声（异质）、
+%   系统偏差、UKF滤波器参数、航迹管理、检测/虚警模型、PDA权重和模糊
+%   自适应Q等多个模块。
+%
+% 【数学原理】
+%   本文件是纯参数配置，不涉及数学计算。参数设计基于以下工程考量：
+%   - 双基地几何：每个雷达有独立的发射站(Tx)和接收站(Rx)位置
+%   - 异质噪声：R1为精度站（低噪声），R2为标准站（约2倍噪声），模拟
+%     不同性能级别的传感器网络
+%   - 系统偏差（bias）：模拟雷达标定误差，R1和R2偏差符号相反以体现
+%     互补校正的可能性
+%
+% 【输出】
+%   params - 结构体，包含所有仿真参数，各字段含义见各模块注释
+%
+% 【调用关系】
+%   被仿真主程序 run_simulation.m 调用，是仿真的唯一配置入口。
+%   参数被传递至: radar_tracker, time_align_tracks, run_track_fusion,
+%                stitch_tracks, radar_coverage_check 等所有子模块
 % =========================================================================
 
 function params = simulation_params()
-    % ==================== 1. Time ====================
+    % =================================================================
+    % 模块1: 时间设定
+    % =================================================================
+    % 采样周期 (秒): 雷达逐帧扫描的时间间隔
     params.dt_sec = 30.0;
+
+    % 仿真总时长 (秒): 3600秒 = 1小时
     params.duration_sec = 3600.0;
+
+    % 仿真参考起始时刻 (UTC时间)
     params.ref_start_time = datetime(2026, 4, 27, 9, 30, 0);
+
+    % 雷达1 采样起始偏移 (秒): 0 表示 R1 从 0 秒开始采样
+    % R1 采样时刻: 0s, 30s, 60s, ...
     params.time_offset_radar1_sec = 0.0;
+
+    % 雷达2 采样起始偏移 (秒): 13 表示 R2 从 13 秒开始采样
+    % R2 采样时刻: 13s, 43s, 73s, ...
+    % R2 始终比 R1 晚 13 秒，需在融合前做时间对齐
     params.time_offset_radar2_sec = 13.0;
 
-    % ==================== 2. Site geometry ====================
+    % =================================================================
+    % 模块2: 站点几何位置 (经纬度，单位: 度)
+    % =================================================================
+    % 雷达1 接收站: 经度 113.0°E, 纬度 33.5°N
     params.radar1_lon = 113.0;   params.radar1_lat = 33.5;
+    % 雷达2 接收站: 经度 115.0°E, 纬度 33.0°N
     params.radar2_lon = 115.0;   params.radar2_lat = 33.0;
+
+    % 雷达1 发射站: 经度 109.0°E, 纬度 33.5°N (R1 Tx 在 Rx 西侧)
     params.radar1_tx_lon = 109.0;  params.radar1_tx_lat = 33.5;
+    % 雷达2 发射站: 经度 111.0°E, 纬度 33.0°N (R2 Tx 在 Rx 西侧)
     params.radar2_tx_lon = 111.0;  params.radar2_tx_lat = 33.0;
 
-    % ==================== 3. Coverage ====================
-    params.radar1_beam_center_deg = 92.0;
-    params.radar2_beam_center_deg = 91.0;
+    % =================================================================
+    % 模块3: 雷达威力覆盖参数
+    % =================================================================
+    % 波束中心方位角 (度，0=正北，顺时针)
+    params.radar1_beam_center_deg = 92.0;   % R1 波束指向东偏南
+    params.radar2_beam_center_deg = 91.0;   % R2 波束指向东偏南
+
+    % 波束宽度 (度，半功率宽度，双边)
     params.beam_width_deg = 15.0;
+
+    % 探测距离范围 (km 和 m)
+    % 最小探测距离 1000km: OTH-SWR 受地波/近区杂波限制有最小距离
+    % 最大探测距离 2000km: 受电离层单跳最大传播距离限制
     params.range_min_km = 1000.0;
     params.range_max_km = 2000.0;
-    params.range_min_m = params.range_min_km * 1000;
-    params.range_max_m = params.range_max_km * 1000;
+    params.range_min_m = params.range_min_km * 1000;   % 1,000,000 m
+    params.range_max_m = params.range_max_km * 1000;   % 2,000,000 m
 
-    % ==================== 4. Target trajectory ====================
+    % =================================================================
+    % 模块4: 目标航迹参数
+    % =================================================================
+    % 飞行器航路点: [经度, 纬度, 高度(未使用)]
+    % 两个航路点定义匀速直线飞行路径
     params.aircraft_waypoints = [127.5, 31.0, 0.0; 130.5, 33.0, 0.0];
+
+    % 飞行器巡航速度 (m/s): 230 m/s ≈ 828 km/h (典型民航巡航速度)
     params.aircraft_speed_ms = 230.0;
+
+    % 航迹模式: "straight" 表示两点间匀速直线运动
     params.trajectory_mode = "straight";
 
-    % ==================== 5. Measurement noise (heterogeneous) ====================
-    % R1: precision station, lower noise on both range and azimuth
+    % =================================================================
+    % 模块5: 量测噪声参数（异质传感器）
+    % =================================================================
+    % 雷达1 (精度站): 距离噪声标准差 7km，方位噪声标准差 0.35°
+    % 雷达2 (标准站): 距离噪声标准差 14km (~2x)，方位噪声标准差 0.6°(~2x)
+    % 异质噪声设计用于验证融合算法对不同精度传感器的处理能力
     params.radar1_range_noise_std_m = 7000.0;
     params.radar1_azimuth_noise_std_deg = 0.35;
-    % R2: standard station, ~2x noise, independent measurements for fusion
     params.radar2_range_noise_std_m = 14000.0;
     params.radar2_azimuth_noise_std_deg = 0.6;
-    % Radial velocity noise (shared)
+
+    % 径向速度量测噪声 (m/s): 两雷达共用，多普勒测量精度相近
     params.radial_vel_noise_std_ms = 0.5;
 
-    % ==================== 6. System biases ====================
+    % =================================================================
+    % 模块6: 系统偏差参数 (模拟雷达标定误差)
+    % =================================================================
+    % R1: 距离正偏 +20km，方位负偏 -3.0° (偏差方向向东偏离)
+    % R2: 距离负偏 -15km，方位正偏 +3.5° (偏差方向与 R1 相反)
+    % 两雷达偏差符号相反，有利于在融合层面互相校正
     params.radar1_range_bias_m = 20000.0;
     params.radar1_azimuth_bias_deg = -3.0;
     params.radar2_range_bias_m = -15000.0;
     params.radar2_azimuth_bias_deg = 3.5;
 
-    % UKF measurement noise (default, overridden per radar in run_simulation)
+    % UKF 使用的量测噪声参数（默认用 R1 的值，在 run_simulation 中可按雷达覆盖）
     params.ukf_range_std_m = params.radar1_range_noise_std_m;
     params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
     params.ukf_rv_std_ms = params.radial_vel_noise_std_ms;
 
-    % ==================== 7. UKF filter parameters ====================
+    % =================================================================
+    % 模块7: UKF (无迹卡尔曼滤波) 滤波器参数
+    % =================================================================
+    % UT (Unscented Transform) 参数:
+    %   alpha = 1e-3  — 散布度参数，小值使 sigma 点靠近均值
+    %   beta = 2.0    — 最优先验 (对高斯分布)
+    %   kappa = 0.0   — 次级尺度参数
     params.ukf_alpha = 1e-3;
     params.ukf_beta = 2.0;
     params.ukf_kappa = 0.0;
+
+    % 过程噪声协方差缩放因子: Q = Q_scale * diag([0, Qv, 0, Qv])
+    % 实际 Q 矩阵通过 process_noise_cv() 函数生成
     params.ukf_Q_scale = 2e4;
+
+    % 初始协方差参数 (地理位置坐标下的初始不确定度)
+    % 位置标准差: 0.2° (~22km)，速度标准差: 0.003°/s
     params.ukf_P_pos_std = 0.2;
     params.ukf_P_vel_std = 0.003;
+
+    % UKF 工作模式: "standard" 标准 UKF
     params.ukf_mode = "standard";
 
-    % ==================== 8. Track management ====================
+    % =================================================================
+    % 模块8: 航迹管理参数 (M/N 起始 + K_loss 终止逻辑)
+    % =================================================================
+    % M/N 航迹起始: M=4, N=8 表示最近 8 次扫描中需至少 4 次检测到
+    % 才确认起始一条新航迹
     params.tracker_M = 4;
     params.tracker_N = 8;
+
+    % 航迹终止: 连续 K_loss=15 次扫描未检测到则终止航迹
+    % 15帧 * 30秒/帧 = 450秒 = 7.5分钟
     params.tracker_K_loss = 15;
+
+    % 关联门限 sigma 数: 量测关联的门控距离 = gate_sigma * sqrt(S_ii)
     params.gate_sigma = 2.0;
 
-    % ==================== 9. Detection & false alarm ====================
+    % =================================================================
+    % 模块9: 检测概率与虚警参数
+    % =================================================================
+    % 单帧检测概率: P_d = 0.6 (OTH-SWR 典型值)
     params.detection_probability = 0.6;
+
+    % 虚警率 P_fa = 0.001 (每距离-方位分辨单元)
     params.false_alarm_rate = 0.001;
+
+    % 距离分辨率 (km): 取决于发射信号带宽
     params.range_resolution_km = 10.0;
+
+    % 方位分辨率 (度): 取决于天线孔径和波束形成
     params.azimuth_resolution_deg = 1.0;
+
+    % 总分辨单元数: (距离跨度/距离分辨率) * (波束宽度/方位分辨率)
+    % 用于计算每帧期望虚警数
     params.n_resolution_cells = ...
         ((params.range_max_km - params.range_min_km) / params.range_resolution_km) * ...
         (params.beam_width_deg / params.azimuth_resolution_deg);
 
-    % ==================== 10. PDA grid weighting ====================
+    % =================================================================
+    % 模块10: PDA (概率数据关联) 网格加权参数
+    % =================================================================
+    % 是否启用基于 PDA 的网格加权
     params.use_pda_weighting = true;
+
+    % 门内检测概率 P_G = 0.8647 (约 1.5-sigma 门限)
     params.pda_pd_gate = 0.8647;
+
+    % 杂波空间密度: 1.5个虚警 / (2,000,000m * 15°波束面积)
+    % 单位面积虚警点期望数
     params.pda_clutter_intensity = 1.5 / (2000e3 * 15);
 
-    % ==================== 11. Fuzzy adaptive Q ====================
+    % =================================================================
+    % 模块11: 模糊自适应过程噪声 Q
+    % =================================================================
+    % 是否启用模糊逻辑自适应调整 UKF 的过程噪声
     params.use_fuzzy_adaptive = true;
+
+    % 模糊逻辑滑动窗口大小 (帧): 用最近 8 帧的新息序列进行机动检测
     params.fuzzy_window_size = 8;
+
+    % Q 调整因子范围: 最小 0.6 倍 (平稳时收缩)，最大 1.5 倍 (机动时放大)
     params.fuzzy_Q_min_factor = 0.6;
     params.fuzzy_Q_max_factor = 1.5;
 
-    % ADS-B calibration data
+    % =================================================================
+    % ADS-B 标定数据路径 (用于事后性能评估和误差分析)
+    % =================================================================
+    % ADS-B CSV 文件包含目标真实轨迹的经纬度和时间戳
+    % 用于计算融合结果相对于真值的误差统计
     params.adsb_csv_path = '2026-04-27 09-30-00.csv';
 
-    % ==================== 12. Random seed ====================
+    % =================================================================
+    % 模块12: 随机种子 (保证仿真可重复性)
+    % =================================================================
     params.random_seed = 42;
 end
