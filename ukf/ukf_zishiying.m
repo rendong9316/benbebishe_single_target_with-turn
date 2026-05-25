@@ -34,7 +34,6 @@ end
 % =========================================================================
 % apply_maneuver_adapt_post — 机动自适应后处理
 % 综合: 机动预检测(suspect_counter/渐进波门) + 机动自适应 Q 更新
-% 原函数：ukf_maneuver_adapt + single_track_runner_adaptive 机动检测逻辑
 % =========================================================================
 function ukf = apply_maneuver_adapt_post(ukf, params)
     % 航迹未成熟（前12帧为 UKF 收敛期）→ 不处理

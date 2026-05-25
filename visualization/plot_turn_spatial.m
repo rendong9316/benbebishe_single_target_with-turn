@@ -421,15 +421,15 @@ function plot_turn_comprehensive(true_track, ...
     if ~isempty(r1b_la)
         h = geoplot(ax, r1b_la, r1b_lo, '--', ...
             'Color', [0.2 0.4 0.9], 'LineWidth', 1.8, ...
-            'DisplayName', 'R1 基础UKF(模糊Q)');
-        h_all{end+1} = h; layer_names{end+1} = 'R1 基础UKF(模糊Q)';
+            'DisplayName', 'R1 基础UKF');
+        h_all{end+1} = h; layer_names{end+1} = 'R1 基础UKF';
     end
 
     if ~isempty(r2b_la)
         h = geoplot(ax, r2b_la, r2b_lo, '--', ...
             'Color', [0.9 0.3 0.3], 'LineWidth', 1.8, ...
-            'DisplayName', 'R2 基础UKF(模糊Q)');
-        h_all{end+1} = h; layer_names{end+1} = 'R2 基础UKF(模糊Q)';
+            'DisplayName', 'R2 基础UKF');
+        h_all{end+1} = h; layer_names{end+1} = 'R2 基础UKF';
     end
 
     if ~isempty(r1a_la)

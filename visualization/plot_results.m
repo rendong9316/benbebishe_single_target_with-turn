@@ -1242,7 +1242,7 @@ function plot_error_timeline_turn(true_track, ...
     legend(ax2, 'Location', 'best');
     grid(ax2, 'on');
 
-    sgtitle('拐弯目标: 基础UKF (模糊Q) vs 机动自适应UKF (机动检测+Q提升)');
+    sgtitle('拐弯目标: 基础UKF vs 机动自适应UKF (机动检测+Q提升)');
 
     drawnow;
     try

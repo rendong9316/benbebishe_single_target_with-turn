@@ -73,7 +73,6 @@
 %   P_reg   — 正则化后的协方差矩阵（n×n），保证对称正定
 %
 % 调用位置：
-%   - ukf_filter_update.m   : 每帧滤波更新后正则化 P
 %   - scc_fusion.m           : 融合前正则化两个输入的 P
 %   - bsc_fusion.m           : 融合前正则化
 %   - ci_fusion.m            : 融合前正则化

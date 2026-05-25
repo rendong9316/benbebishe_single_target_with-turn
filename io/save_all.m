@@ -75,7 +75,6 @@
 %
 % 【调用关系】
 %   本函数调用：extract_measurement_field（提取量测字段）
-%              sphere_utils_get_earth_radius（获取地球半径）
 %              sphere_utils_seconds_to_datetime_str（秒数转时间字符串）
 %   本函数被调用：main.m 或仿真主控脚本（最后一步）
 %

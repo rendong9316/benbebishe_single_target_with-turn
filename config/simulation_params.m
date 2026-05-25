@@ -301,11 +301,6 @@ function params = simulation_params()
     params.ukf_P_pos_std = 0.2;     % 初始位置标准差（°）
     params.ukf_P_vel_std = 0.003;   % 初始速度标准差（°/s）
 
-    % UKF 工作模式
-    % "standard": 标准 UKF，使用对称 Sigma 点集（2n+1 个点）
-    % 备选模式（扩展用）: "square_root" 平方根 UKF、"spherical" 球面 UKF
-    params.ukf_mode = "standard";
-
     % =====================================================================
     % 模块8: 航迹管理参数（M/N 起始逻辑 + K_loss 终止逻辑）
     % =====================================================================
@@ -418,11 +413,6 @@ function params = simulation_params()
     %           N(ν_i; 0, S) * P_d / (λ * (1-P_d*P_G))
     %     其中 λ 为杂波空间密度，P_G 为门内概率。
 
-    % 是否启用 PDA 网格加权
-    % true: 使用 PDA 处理多量测→单航迹的关联
-    % false: 使用最近邻（NN）硬关联（波门内取马氏距离最小的量测）
-    params.use_pda_weighting = true;
-
     % 门内检测概率 P_G（Gate Probability）
     % 真实量测落在 gate_sigma=2 的椭球波门内的概率 ≈ 0.8647（2D 卡方）
     params.pda_pd_gate = 0.8647;
@@ -465,16 +455,6 @@ function params = simulation_params()
     % 用最近 8 帧的新息进行统计，8 帧对应 240 秒（4 分钟）。窗口太小则
     % 统计不稳定（方差大），窗口太大则对机动检测的响应延迟长。
     params.fuzzy_window_size = 8;
-
-    % Q 调整因子范围
-    % Q_min_factor = 0.6: 平稳（非机动）时 Q 最多可缩小到名义值的 60%，
-    %   使滤波器更信任运动模型，获得更平滑的航迹
-    % Q_max_factor = 1.5: 机动时 Q 最多可放大到名义值的 150%，使滤波器
-    %   更信任新量测，快速跟上目标的运动变化
-    % 范围 [0.6, 1.5] 较为保守（仅 ±50% 的调整范围），避免 Q 过度变化
-    % 导致滤波发散
-    params.fuzzy_Q_min_factor = 0.6;
-    params.fuzzy_Q_max_factor = 1.5;
 
     % =====================================================================
     % 模块12: ADS-B 标定数据路径

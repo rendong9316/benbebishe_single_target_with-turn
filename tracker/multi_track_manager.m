@@ -13,7 +13,7 @@
 %           ukf_jichu('prepare',...), nn_associate, pda_weight,
 %           ukf_jichu('update',...),
 %           track_management('quality',...), cleanup_stale
-%   NOTE: track_starter_mofn.m has been removed. Multi-target M/N track
+%   NOTE: Multi-target M/N track
 %         initiation is not supported in this single-target project.
 % =========================================================================
 
@@ -53,12 +53,8 @@ function [trackList, tempPool, trackSnapshot] = multi_track_manager(...
     % ---- Step 1: 分离活跃航迹 ----
     active_idx = find_active(trackList);
 
-    % ---- Step 2: 无活跃航迹 → 尝试M/N起始 ----
-    % NOTE: track_starter_mofn removed; addpath initiation/ and use
-    %       track_initiation('process', ...) per unused detection if needed.
+    % ---- Step 2: 无活跃航迹 → 无处理 ----
     if isempty(active_idx)
-        % [trackList, tempPool] = track_starter_mofn(trackList, tempPool, ...
-        %     detList, ukf_tpl, params, frame_id);
         trackSnapshot.trackList = trackList;
         return;
     end
@@ -149,12 +145,9 @@ function [trackList, tempPool, trackSnapshot] = multi_track_manager(...
     % ---- Step 7: 航迹质量状态机 ----
     trackList = track_management('quality', trackList, active_idx, params, frame_id);
 
-    % ---- Step 8: 从未关联点迹起始新航迹（M/N逻辑） ----
-    % NOTE: track_starter_mofn removed. Use track_initiation('process', ...) if needed.
+    % ---- Step 8: 从未关联点迹起始新航迹 ----
     unused_dets = detList(~point_used);
     if ~isempty(unused_dets)
-        % [trackList, tempPool] = track_starter_mofn(trackList, tempPool, ...
-        %     unused_dets, ukf_tpl, params, frame_id);
         tempPool = cleanup_stale(tempPool, frame_id, params.tracker_N);
     else
         tempPool = cleanup_stale(tempPool, frame_id, params.tracker_N);

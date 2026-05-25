@@ -69,7 +69,7 @@ function plot_turn_comparison(true_track, ...
         h = geoplot(ax, lat1, lon1, '-', 'Color', [0.3 0.5 1.0], ...
             'LineWidth', 1.8, 'DisplayName', 'R1 基础UKF');
         h_all(end+1) = h;
-        layer_names{end+1} = 'R1 基础UKF(模糊Q)';
+        layer_names{end+1} = 'R1 基础UKF';
     end
 
     [lat2, lon2] = extract_track_ll_tcomp(trackR2_base);
@@ -77,7 +77,7 @@ function plot_turn_comparison(true_track, ...
         h = geoplot(ax, lat2, lon2, '-', 'Color', [1.0 0.4 0.4], ...
             'LineWidth', 1.8, 'DisplayName', 'R2 基础UKF');
         h_all(end+1) = h;
-        layer_names{end+1} = 'R2 基础UKF(模糊Q)';
+        layer_names{end+1} = 'R2 基础UKF';
     end
 
     [lat1a, lon1a] = extract_track_ll_tcomp(trackR1_ad);

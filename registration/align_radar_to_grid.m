@@ -35,7 +35,7 @@
 %                    lon:      目标经度（度）
 %                  漏检帧（无目标检测）则为空数组 []，将被自动跳过
 %   unified_time - 统一时间网格数组，类型为 double 行向量
-%                  包含一系列等间隔的时间点（秒），由 create_unified_grid.m 生成
+%                  包含一系列等间隔的时间点（秒），由统一时间网格生成
 %                  例如：[0, 1, 2, 3, ..., 99]（步长1秒，共100个点）
 %   ref_time     - （可选）参考起始时间，类型为 datetime
 %                  用于生成可读的时间字符串 time_str
@@ -53,7 +53,7 @@
 %                  若该网格时间点超出雷达航迹的有效时间范围，则填入空数组 []
 %
 % 【调用关系】
-%   本函数调用：spherical_interpolate_（球面大圆插值子函数）
+%   本函数调用：球面大圆插值子函数（本文件内部子函数）
 %   本函数被调用：main.m 或空间配准流程脚本，作为时间对齐步骤
 %   通常用法：
 %     aligned_r1 = align_radar_to_grid(r1_corrected, unified_grid, ref_time);
@@ -127,7 +127,7 @@ function aligned = align_radar_to_grid(meas_list, unified_time, ref_time)
             aligned{k} = [];                    % 不进行外推，返回空数组
         else                                    % T 在有效航迹范围内
             % 调用球面大圆插值子函数，在 T 时刻进行插值
-            % spherical_interpolate_ 会在 t_valid 中找到 T 前后的最近两点，
+            % 球面大圆插值子函数会在 t_valid 中找到 T 前后的最近两点，
             % 然后沿大圆按时间比例插值出 T 时刻的经纬度
             result = spherical_interpolate_(T, t_valid, valid, ref_time);
             aligned{k} = result;                % 存放插值结果 struct
@@ -138,7 +138,7 @@ end  % 函数 align_radar_to_grid 结束
 
 
 % ============================================================================
-% spherical_interpolate_.m
+% 球面大圆插值（本文件内部子函数）
 % 球面大圆插值函数（带下划线后缀以避免命名冲突）
 % ============================================================================
 %
@@ -226,4 +226,4 @@ function result = spherical_interpolate_(T, t_valid, valid_meas, ref_time)
     result = struct('time_sec', T, 'time_str', time_str, ...
                     'lat', lat, 'lon', lon, 'aligned', true);
 
-end  % 函数 spherical_interpolate_ 结束
+end  % 球面大圆插值子函数

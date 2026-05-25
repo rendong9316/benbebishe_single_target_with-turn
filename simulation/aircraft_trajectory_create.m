@@ -49,7 +49,7 @@
 %  │         ↓                                               │
 %  │  [2] aircraft_trajectory_create  创建航迹结构 ★本文件★   │
 %  │         ↓                                               │
-%  │  [3] aircraft_trajectory_generate 生成完整轨迹采样        │
+%  │  [3] aircraft_trajectory_interpolate('generate', ...) 生成完整轨迹采样        │
 %  │         ↓                                               │
 %  │  [4] measurement_simulator_create 创建量测仿真器          │
 %  │         ↓                                               │
