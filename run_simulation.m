@@ -225,7 +225,7 @@ params.ukf_Q_scale = 5e4;
 params.ukf_P_pos_std = 0.2;
 params.ukf_P_vel_std = 0.004;
 params.gate_sigma = 2.0;
-ukf1_tpl = ukf_filter(params, params.radar1_lon, params.radar1_lat, ...
+ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
 % R2 params (standard station, ~2x noise of R1)
@@ -240,7 +240,7 @@ params_r2.tracker_M = 4;
 params_r2.tracker_N = 8;
 params_r2.tracker_K_loss = 12;
 
-ukf2_tpl = ukf_filter(params_r2, params.radar2_lon, params.radar2_lat, ...
+ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
 trackList_R1 = {};  trackList_R2 = {};
@@ -385,7 +385,7 @@ matcher_simple.r2_pos = r2_pos;
 
 % 融合误差评估 (用evaluate_fusion, 传入单目标真值)
 truthTrajs = {truthTraj};
-fusion_eval = evaluate_all.evaluate_fusion(all_fused_snapshots, method_names, ...
+fusion_eval = evaluate_all('fusion', all_fused_snapshots, method_names, ...
     matched_pair, trackSnapshots_R1, trackSnapshots_R2, ...
     truthTrajs, n_frames, params.dt_sec, matcher_simple);
 
@@ -409,9 +409,9 @@ fprintf('融合 vs R2(普通站): %+.1f%% 改善\n', (1 - best_fusion_rmse/r2_rm
 
 % 单站跟踪误差 (时间对齐后评估)
 aligned_R2_eval = time_align_tracks(trackSnapshots_R2, params);
-errorStats_R1 = evaluate_all.compute_tracking_errors(trackSnapshots_R1, detList_R1, ...
+errorStats_R1 = evaluate_all('tracking_errors', trackSnapshots_R1, detList_R1, ...
     truthTrajs, n_frames, params.dt_sec, 'R1');
-errorStats_R2 = evaluate_all.compute_tracking_errors(aligned_R2_eval, detList_R2, ...
+errorStats_R2 = evaluate_all('tracking_errors', aligned_R2_eval, detList_R2, ...
     truthTrajs, n_frames, params.dt_sec, 'R2');
 
 for es = {errorStats_R1, errorStats_R2}

@@ -237,7 +237,7 @@ params.ukf_P_vel_std = 0.004;
 params.gate_sigma = 2.5;
 params.tracker_K_loss = 20;
 
-ukf1_tpl = ukf_filter(params, params.radar1_lon, params.radar1_lat, ...
+ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
 % ---- R2 params (普通站) ----
@@ -252,7 +252,7 @@ params_r2.tracker_M = 4;
 params_r2.tracker_N = 8;
 params_r2.tracker_K_loss = 12;
 
-ukf2_tpl = ukf_filter(params_r2, params.radar2_lon, params.radar2_lat, ...
+ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
 % ---- 第5.1节: 基础UKF跟踪 ----
@@ -271,9 +271,9 @@ fprintf('\n--- 5.2 机动自适应UKF (新息序列机动检测+Q提升) ---\n')
 % 复位随机种子到相同状态, 确保点迹一致
 rng(params.random_seed);
 % 重建UKF模板 (避免参数污染)
-ukf1_tpl_ad = ukf_filter(params, params.radar1_lon, params.radar1_lat, ...
+ukf1_tpl_ad = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-ukf2_tpl_ad = ukf_filter(params_r2, params.radar2_lon, params.radar2_lat, ...
+ukf2_tpl_ad = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
 [trackSnapshots_R1_ad, finalTrk1_ad] = single_track_runner_adaptive(detList_R1, ukf1_tpl_ad, params, n_frames);
@@ -375,7 +375,7 @@ r1_pos = build_pos_history(trackSnapshots_R1, 1, n_frames);
 r2_pos = build_pos_history(aligned_R2, 1, n_frames);
 matcher_base = make_matcher(r1_pos, r2_pos, aligned_R2);
 
-fusion_eval_base = evaluate_all.evaluate_fusion(all_fused_snapshots, method_names, ...
+fusion_eval_base = evaluate_all('fusion', all_fused_snapshots, method_names, ...
     matched_pair, trackSnapshots_R1, trackSnapshots_R2, ...
     truthTrajs, n_frames, params.dt_sec, matcher_base);
 
@@ -384,7 +384,7 @@ r1_pos_ad = build_pos_history(trackSnapshots_R1_ad, 1, n_frames);
 r2_pos_ad = build_pos_history(aligned_R2_ad, 1, n_frames);
 matcher_ad = make_matcher(r1_pos_ad, r2_pos_ad, aligned_R2_ad);
 
-fusion_eval_ad = evaluate_all.evaluate_fusion(all_fused_snapshots_ad, method_names, ...
+fusion_eval_ad = evaluate_all('fusion', all_fused_snapshots_ad, method_names, ...
     matched_pair, trackSnapshots_R1_ad, trackSnapshots_R2_ad, ...
     truthTrajs, n_frames, params.dt_sec, matcher_ad);
 
@@ -419,10 +419,10 @@ fprintf('\n--- 单站UKF误差对比 ---\n');
 aligned_R2_eval = time_align_tracks(trackSnapshots_R2, params);
 aligned_R2_ad_eval = time_align_tracks(trackSnapshots_R2_ad, params);
 
-errorStats_R1 = evaluate_all.compute_tracking_errors(trackSnapshots_R1, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1');
-errorStats_R2 = evaluate_all.compute_tracking_errors(aligned_R2_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2');
-errorStats_R1_ad = evaluate_all.compute_tracking_errors(trackSnapshots_R1_ad, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1-ad');
-errorStats_R2_ad = evaluate_all.compute_tracking_errors(aligned_R2_ad_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2-ad');
+errorStats_R1 = evaluate_all('tracking_errors', trackSnapshots_R1, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1');
+errorStats_R2 = evaluate_all('tracking_errors', aligned_R2_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2');
+errorStats_R1_ad = evaluate_all('tracking_errors', trackSnapshots_R1_ad, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1-ad');
+errorStats_R2_ad = evaluate_all('tracking_errors', aligned_R2_ad_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2-ad');
 
 for pair = {errorStats_R1, errorStats_R1_ad; errorStats_R2, errorStats_R2_ad}
     e_base = pair{1}; e_ad = pair{2};
