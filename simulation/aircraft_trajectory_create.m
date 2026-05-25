@@ -101,10 +101,31 @@
 %   - 航段起点/终点的经纬度直接来自航路点，不进行额外变换
 % ========================================================================
 
-function traj = aircraft_trajectory_create(waypoints_lla, speed_ms, dt_sec)
+function varargout = aircraft_trajectory_create(varargin)
     % ----------------------------------------------------------------
     % aircraft_trajectory_create - 从航路点创建飞机航迹结构体
     % ----------------------------------------------------------------
+    % 支持两种调用方式：
+    %   1. traj = aircraft_trajectory_create(waypoints_lla, speed_ms, dt_sec)
+    %      从航路点创建直线航迹结构体
+    %   2. [traj, waypoints] = aircraft_trajectory_create('turn', params)
+    %      创建带拐弯的3航路点航迹结构体
+
+    % ---- 字符串分发 ----
+    if nargin >= 1 && ischar(varargin{1})
+        switch varargin{1}
+            case 'turn'
+                [varargout{1}, varargout{2}] = create_turn_trajectory(varargin{2});
+            otherwise
+                error('aircraft_trajectory_create: unknown action "%s"', varargin{1});
+        end
+        return;
+    end
+
+    % ---- 原始调用路径 ----
+    waypoints_lla = varargin{1};
+    speed_ms = varargin{2};
+    dt_sec = varargin{3};
     % 本函数的核心任务是将离散的航路点序列转换为一个结构化的
     % 航迹对象。每个相邻航路点之间定义为一个"航段"，在航段内
     % 飞机以恒定速率匀速飞行。
@@ -246,6 +267,26 @@ function traj = aircraft_trajectory_create(waypoints_lla, speed_ms, dt_sec)
     % length(traj.time_array)：时间数组中元素的个数
     % 即最终输出的轨迹将包含 n_steps 个采样点
     traj.n_steps = length(traj.time_array);
+    varargout{1} = traj;
+end
+
+% =========================================================================
+% create_turn_trajectory - 拐弯航迹生成器（内部子函数）
+% =========================================================================
+% 通过3个航路点定义拐弯航迹，中间点形成约120°拐角。
+% 航路点经覆盖校验确保全部位于双雷达威力范围内。
+% =========================================================================
+function [traj, waypoints] = create_turn_trajectory(params)
+    % 拐弯航路点: 中间点形成约120°拐角
+    % 全部位于双雷达威力范围内 (1000-2000km, 15°波束)
+    waypoints = [126.0, 32.5, 0;   % 起点 (西南)
+                 128.5, 33.5, 0;   % 拐点 (东北) — 入向~62°, 出向~182°
+                 128.6, 31.7, 0];  % 终点 (南偏东) — 拐角约120°
+
+    % 拐弯场景降低航速以保持帧数
+    speed_ms = 140.0;
+
+    traj = aircraft_trajectory_create(waypoints, speed_ms, params.dt_sec);
 end
 % ========================================================================
 % 文件结束

@@ -20,11 +20,14 @@ function ecef = coord_systems_lla_to_ecef(lat_deg, lon_deg, alt_m)
     sin_lat = sin(lat);
     cos_lat = cos(lat);
     % 计算卯酉曲率半径 N
-    N = coord_systems_get_A() / sqrt(1.0 - coord_systems_get_E2() * sin_lat^2);
+    % A = 6378137.0 (WGS84 长半轴), E2 = 2*f - f^2 where f = 1/298.257223563
+    f = 1.0 / 298.257223563;
+    E2 = 2.0 * f - f^2;
+    N = 6378137.0 / sqrt(1.0 - E2 * sin_lat^2);
     % 计算 ECEF 坐标分量
     x = (N + alt_m) * cos_lat * cos(lon);
     y = (N + alt_m) * cos_lat * sin(lon);
-    z = (N * (1.0 - coord_systems_get_E2()) + alt_m) * sin_lat;
+    z = (N * (1.0 - E2) + alt_m) * sin_lat;
     % 输出列向量形式
     ecef = [x; y; z];
 end

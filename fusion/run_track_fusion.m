@@ -9,7 +9,7 @@
 %
 % 【数学原理】
 %   本函数是融合框架的主调度器，自身不执行融合数学运算，而是按帧、
-%   按时序调用各具体融合函数（scc_fuse, bc_fuse, ci_fuse, fci_fuse）。
+%   按时序调用各具体融合算法（通过 track_fusion_algorithms 调度）。
 %
 %   BC 方法的特殊性：需要在时间递推中维护互协方差矩阵 P12，包括：
 %     1. 预测步：用 CV 模型对 P12 进行时间传播（计入 1/2 Q）
@@ -42,7 +42,7 @@
 %
 % 【调用关系】
 %   被仿真主程序调用（通常在 run_simulation.m 或等效的顶层脚本中）
-%   内部调用: scc_fuse / ci_fuse / fci_fuse / bc_fuse
+%   内部调用: track_fusion_algorithms（调度 fuse_scc / fuse_ci / fuse_fci / fuse_bc）
 %   内部调用: find_track() 辅助函数在航迹列表中按 ID 查找
 %   内部调用: regularize_cov() 对协方差进行正则化
 % =========================================================================
@@ -146,17 +146,17 @@ function fused_snapshots = run_track_fusion(matched_pairs, trackSnapshots_R1, ..
                 switch upper(method)
                     case 'SCC'
                         % 简单凸组合：假设独立，直接信息融合
-                        [x_f, P_f] = scc_fuse(x1, P1, x2, P2);
+                        [x_f, P_f] = track_fusion_algorithms('SCC', x1, P1, x2, P2);
                         fused_trk.w = 0.5;  % SCC 等效 w=0.5 等权
 
                     case 'CI'
                         % 协方差交叉：优化 w 最小化 det(P_fused)
-                        [x_f, P_f, w_opt] = ci_fuse(x1, P1, x2, P2);
+                        [x_f, P_f, w_opt] = track_fusion_algorithms('CI', x1, P1, x2, P2);
                         fused_trk.w = w_opt;
 
                     case 'FCI'
                         % 快速协方差交叉：用迹估计权重
-                        [x_f, P_f, w_fci] = fci_fuse(x1, P1, x2, P2);
+                        [x_f, P_f, w_fci] = track_fusion_algorithms('FCI', x1, P1, x2, P2);
                         fused_trk.w = w_fci;
 
                     case 'BC'
@@ -216,7 +216,7 @@ function fused_snapshots = run_track_fusion(matched_pairs, trackSnapshots_R1, ..
                         end
 
                         % 调用 BC 融合
-                        [x_f, P_f] = bc_fuse(x1, P1, x2, P2, P12_new);
+                        [x_f, P_f] = track_fusion_algorithms('BC', x1, P1, x2, P2, P12_new);
 
                         % 保存互协方差供下一帧使用
                         P12_cell{p} = P12_new;

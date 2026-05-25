@@ -96,7 +96,7 @@ function dist = sphere_utils_haversine_distance(lon1, lat1, lon2, lat2)
     % 第5步：将球心角乘以地球半径，得到实际物理距离
     % -----------------------------------------------------------------
     % 弧长公式：距离 = 半径 × 球心角(弧度)
-    % sphere_utils_get_earth_radius() 返回 6371000.0 米
+    % 注释：地球半径 6371000.0 米
     % -----------------------------------------------------------------
-    dist = sphere_utils_get_earth_radius() * c;
+    dist = 6371000.0 * c;
 end

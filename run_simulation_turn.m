@@ -24,8 +24,8 @@ params = simulation_params();
 rng(params.random_seed);
 
 % 拐弯航迹生成
-[traj, turn_waypoints] = aircraft_trajectory_create_turn(params);
-true_track = aircraft_trajectory_generate(traj);
+[traj, turn_waypoints] = aircraft_trajectory_create('turn', params);
+true_track = aircraft_trajectory_interpolate('generate', traj);
 fprintf('真实航迹 (拐弯): %d 点, 总时长 %.0f s, 速度 %.0f m/s\n', ...
     size(true_track,1), traj.duration_sec, traj.speed);
 fprintf('  航路点 (%d个):\n', size(turn_waypoints,1));
@@ -375,7 +375,7 @@ r1_pos = build_pos_history(trackSnapshots_R1, 1, n_frames);
 r2_pos = build_pos_history(aligned_R2, 1, n_frames);
 matcher_base = make_matcher(r1_pos, r2_pos, aligned_R2);
 
-fusion_eval_base = evaluate_fusion(all_fused_snapshots, method_names, ...
+fusion_eval_base = evaluate_all.evaluate_fusion(all_fused_snapshots, method_names, ...
     matched_pair, trackSnapshots_R1, trackSnapshots_R2, ...
     truthTrajs, n_frames, params.dt_sec, matcher_base);
 
@@ -384,7 +384,7 @@ r1_pos_ad = build_pos_history(trackSnapshots_R1_ad, 1, n_frames);
 r2_pos_ad = build_pos_history(aligned_R2_ad, 1, n_frames);
 matcher_ad = make_matcher(r1_pos_ad, r2_pos_ad, aligned_R2_ad);
 
-fusion_eval_ad = evaluate_fusion(all_fused_snapshots_ad, method_names, ...
+fusion_eval_ad = evaluate_all.evaluate_fusion(all_fused_snapshots_ad, method_names, ...
     matched_pair, trackSnapshots_R1_ad, trackSnapshots_R2_ad, ...
     truthTrajs, n_frames, params.dt_sec, matcher_ad);
 
@@ -419,10 +419,10 @@ fprintf('\n--- 单站UKF误差对比 ---\n');
 aligned_R2_eval = time_align_tracks(trackSnapshots_R2, params);
 aligned_R2_ad_eval = time_align_tracks(trackSnapshots_R2_ad, params);
 
-errorStats_R1 = compute_tracking_errors(trackSnapshots_R1, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1');
-errorStats_R2 = compute_tracking_errors(aligned_R2_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2');
-errorStats_R1_ad = compute_tracking_errors(trackSnapshots_R1_ad, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1-ad');
-errorStats_R2_ad = compute_tracking_errors(aligned_R2_ad_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2-ad');
+errorStats_R1 = evaluate_all.compute_tracking_errors(trackSnapshots_R1, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1');
+errorStats_R2 = evaluate_all.compute_tracking_errors(aligned_R2_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2');
+errorStats_R1_ad = evaluate_all.compute_tracking_errors(trackSnapshots_R1_ad, detList_R1, truthTrajs, n_frames, params.dt_sec, 'R1-ad');
+errorStats_R2_ad = evaluate_all.compute_tracking_errors(aligned_R2_ad_eval, detList_R2, truthTrajs, n_frames, params.dt_sec, 'R2-ad');
 
 for pair = {errorStats_R1, errorStats_R1_ad; errorStats_R2, errorStats_R2_ad}
     e_base = pair{1}; e_ad = pair{2};
@@ -447,29 +447,29 @@ warn_state = warning('off', 'all');
 plot_scene_overview(true_track, params, 'results');
 
 % 图2: 点云 + 基础UKF(虚线) + 自适应UKF(实线) 并排 (R1左 R2右)
-plot_turn_point_clouds(true_track, detList_R1, detList_R2, ...
+plot_turn_spatial('point_clouds', true_track, detList_R1, detList_R2, ...
     trackSnapshots_R1, trackSnapshots_R2, ...
     trackSnapshots_R1_ad, trackSnapshots_R2_ad, params, 'results');
 
 % 图3: R1 单站对比 (地图+拐弯放大+误差时间线+RMSE柱状图)
-plot_turn_radar_compare(true_track, trackSnapshots_R1, trackSnapshots_R1_ad, ...
+plot_turn_spatial('radar_compare', true_track, trackSnapshots_R1, trackSnapshots_R1_ad, ...
     'R1', params.radar1_lat, params.radar1_lon, params, 'results', 3);
 
 % 图4: R2 单站对比 (地图+拐弯放大+误差时间线+RMSE柱状图)
-plot_turn_radar_compare(true_track, trackSnapshots_R2, trackSnapshots_R2_ad, ...
+plot_turn_spatial('radar_compare', true_track, trackSnapshots_R2, trackSnapshots_R2_ad, ...
     'R2', params.radar2_lat, params.radar2_lon, params, 'results', 4);
 
 % 图5: 融合地图对比 (基础融合虚线 + 自适应融合实线 + 拐弯放大 + 信息面板)
-plot_turn_fusion_map(true_track, ...
+plot_turn_spatial('fusion_map', true_track, ...
     all_fused_snapshots, method_names, best_m_base, ...
     all_fused_snapshots_ad, method_names, best_m_ad, params, 'results');
 
 % 图6: RMSE柱状图总览 (全部方法 基础灰 vs 自适应绿 + 数值汇总)
-plot_turn_rmse_bars(fusion_eval_base, fusion_eval_ad, ...
+plot_turn_stats('rmse_bars', fusion_eval_base, fusion_eval_ad, ...
     method_names, best_m_base, best_m_ad, params, 'results');
 
 % 图7: 全图层综合对比 (地图 + 按钮控制显隐)
-plot_turn_comprehensive(true_track, detList_R1, detList_R2, ...
+plot_turn_spatial('comprehensive', true_track, detList_R1, detList_R2, ...
     trackSnapshots_R1, trackSnapshots_R2, ...
     trackSnapshots_R1_ad, trackSnapshots_R2_ad, ...
     all_fused_snapshots{1}, all_fused_snapshots_ad{1}, params, 'results');

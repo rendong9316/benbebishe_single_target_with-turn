@@ -26,7 +26,7 @@ rng(params.random_seed);
 % 单机航迹生成
 traj = aircraft_trajectory_create(params.aircraft_waypoints, ...
     params.aircraft_speed_ms, params.dt_sec);
-true_track = aircraft_trajectory_generate(traj);
+true_track = aircraft_trajectory_interpolate('generate', traj);
 fprintf('真实航迹: %d 点, 总时长 %.0f s, 速度 %.0f m/s\n', ...
     size(true_track,1), traj.duration_sec, params.aircraft_speed_ms);
 
@@ -385,7 +385,7 @@ matcher_simple.r2_pos = r2_pos;
 
 % 融合误差评估 (用evaluate_fusion, 传入单目标真值)
 truthTrajs = {truthTraj};
-fusion_eval = evaluate_fusion(all_fused_snapshots, method_names, ...
+fusion_eval = evaluate_all.evaluate_fusion(all_fused_snapshots, method_names, ...
     matched_pair, trackSnapshots_R1, trackSnapshots_R2, ...
     truthTrajs, n_frames, params.dt_sec, matcher_simple);
 
@@ -409,9 +409,9 @@ fprintf('融合 vs R2(普通站): %+.1f%% 改善\n', (1 - best_fusion_rmse/r2_rm
 
 % 单站跟踪误差 (时间对齐后评估)
 aligned_R2_eval = time_align_tracks(trackSnapshots_R2, params);
-errorStats_R1 = compute_tracking_errors(trackSnapshots_R1, detList_R1, ...
+errorStats_R1 = evaluate_all.compute_tracking_errors(trackSnapshots_R1, detList_R1, ...
     truthTrajs, n_frames, params.dt_sec, 'R1');
-errorStats_R2 = compute_tracking_errors(aligned_R2_eval, detList_R2, ...
+errorStats_R2 = evaluate_all.compute_tracking_errors(aligned_R2_eval, detList_R2, ...
     truthTrajs, n_frames, params.dt_sec, 'R2');
 
 for es = {errorStats_R1, errorStats_R2}
@@ -437,11 +437,11 @@ plot_point_cloud_3d(detList_R1, 'R1', 'results/fig2a_R1_point_cloud.png');
 plot_point_cloud_3d(detList_R2, 'R2', 'results/fig2b_R2_point_cloud.png');
 
 % 单目标跟踪综合图
-plot_single_track_result(true_track, detList_R1, detList_R2, ...
+plot_results('single_track', true_track, detList_R1, detList_R2, ...
     trackSnapshots_R1, trackSnapshots_R2, params, 'results');
 
 % 融合可视化
-plot_single_fusion_result(true_track, trackSnapshots_R1, trackSnapshots_R2, ...
+plot_results('single_fusion', true_track, trackSnapshots_R1, trackSnapshots_R2, ...
     all_fused_snapshots, method_names, best_m, fusion_eval, truthTraj, params, 'results');
 
 warning(warn_state);  % 恢复警告状态

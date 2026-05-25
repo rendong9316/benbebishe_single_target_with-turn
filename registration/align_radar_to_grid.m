@@ -135,3 +135,95 @@ function aligned = align_radar_to_grid(meas_list, unified_time, ref_time)
     end
 
 end  % 函数 align_radar_to_grid 结束
+
+
+% ============================================================================
+% spherical_interpolate_.m
+% 球面大圆插值函数（带下划线后缀以避免命名冲突）
+% ============================================================================
+%
+% 【功能概述】
+%   本函数在给定目标时刻 T 处，利用雷达航迹中 T 前后最近的两个有效采样点，
+%   沿球面大圆按时间比例进行插值，推算出目标在该时刻的经纬度坐标。
+%   支持三种模式：内插（T 在两个有效点之间）、前向外推（T 在所有点之前）、
+%   后向外推（T 在所有点之后）。
+%
+% 【数学原理 —— 球面大圆插值 / SLERP】
+%   球面大圆插值（Spherical Linear Interpolation, SLERP）是在单位球面上
+%   两点之间按弧长比例求中间点的算法。设球面上两点对应的单位向量为
+%   u0 和 u1，插值比例 ratio ∈ [0, 1]，则中间点 u_T 为：
+%
+%     Omega = arccos(u0 . u1)                          ← 两点间的球面夹角
+%     u_T = [sin((1 - ratio) * Omega) / sin(Omega)] * u0
+%         + [sin(ratio * Omega) / sin(Omega)] * u1      ← SLERP 公式
+%
+%   然后从单位向量 u_T 反算出经纬度 (lon_T, lat_T)。
+%   当 ratio = 0 时，u_T = u0（回到起点）；
+%   当 ratio = 1 时，u_T = u1（到达终点）。
+%
+%   时间比例 ratio 的计算：
+%     ratio = (T - t0) / (t1 - t0)
+%   其中 t0 和 t1 分别是 T 前后两个航迹点的时间戳。
+%   这等价于假设目标在大圆上匀速运动。
+%
+% 【输入参数】
+%   T          - 目标插值时刻（秒），类型为 double 标量
+%   t_valid    - 有效航迹点的时间数组，类型为 double 行向量，升序
+%   valid_meas - 有效航迹点的量测数据，类型为 cell array of struct
+%   ref_time   - （可选）参考起始时间，类型为 datetime
+%
+% 【返回值】
+%   result     - 插值结果结构体 struct，包含字段：
+%                  time_sec: T（秒）
+%                  time_str: 格式化时间字符串
+%                  lat:      插值得到的纬度（度）
+%                  lon:      插值得到的经度（度）
+%                  aligned:  逻辑值 true
+% ============================================================================
+
+function result = spherical_interpolate_(T, t_valid, valid_meas, ref_time)
+    %% ---- 确定有效航迹点数量 ----
+    n_valid = length(t_valid);   % 有效采样点的总数
+
+    %% ---- 二分查找 T 在时间数组中的位置 ----
+    idx = 1;
+    while idx <= n_valid && t_valid(idx) < T
+        idx = idx + 1;
+    end
+
+    %% ---- 根据 idx 位置决定插值/外推策略 ----
+    if idx == 1
+        %% 情况1：T 在所有采样点之前，用第1和第2个点做前向外推
+        m0 = valid_meas{1};       m1 = valid_meas{2};
+        t0 = t_valid(1);          t1 = t_valid(2);
+        ratio = (T - t0) / (t1 - t0);
+
+    elseif idx > n_valid
+        %% 情况2：T 在所有采样点之后，用倒数第1和第2个点做后向外推
+        m0 = valid_meas{n_valid - 1}; m1 = valid_meas{n_valid};
+        t0 = t_valid(n_valid - 1);    t1 = t_valid(n_valid);
+        ratio = (T - t0) / (t1 - t0);
+
+    else
+        %% 情况3：T 在两个有效采样点之间，正常内插
+        m0 = valid_meas{idx - 1};   m1 = valid_meas{idx};
+        t0 = t_valid(idx - 1);      t1 = t_valid(idx);
+        ratio = (T - t0) / (t1 - t0);
+    end
+
+    %% ---- 球面大圆插值核心计算 ----
+    [lon, lat] = sphere_utils_interpolate_great_circle( ...
+        m0.lon, m0.lat, m1.lon, m1.lat, ratio);
+
+    %% ---- 生成可读的时间字符串 ----
+    if ~isempty(ref_time)
+        time_str = sphere_utils_seconds_to_datetime_str(T, ref_time);
+    else
+        time_str = sprintf('%.1fs', T);
+    end
+
+    %% ---- 打包返回结果 ----
+    result = struct('time_sec', T, 'time_str', time_str, ...
+                    'lat', lat, 'lon', lon, 'aligned', true);
+
+end  % 函数 spherical_interpolate_ 结束

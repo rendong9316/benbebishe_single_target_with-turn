@@ -140,13 +140,10 @@ Phase 9: 可视化 + 数据保存
 | 序号 | 文件 | 说明 |
 |------|------|------|
 | 38 | `fusion/time_align_tracks.m` | 航迹级时间对齐 |
-| 39 | `fusion/scc_fuse.m` | 简单凸组合融合 |
-| 40 | `fusion/bc_fuse.m` | Bar-Shalom-Campo融合 |
-| 41 | `fusion/ci_fuse.m` | 协方差交叉融合 |
-| 42 | `fusion/fci_fuse.m` | 快速协方差交叉融合 |
-| 43 | `fusion/run_track_fusion.m` | 融合主循环 |
-| 44 | `evaluation/compute_tracking_errors.m` | UKF跟踪误差计算 |
-| 45 | `evaluation/evaluate_fusion.m` | 融合误差评估 |
+| 39 | `fusion/track_fusion_algorithms.m` | 四种融合算法合集（SCC/BC/CI/FCI） |
+| 40 | `fusion/run_track_fusion.m` | 融合主循环 |
+| 41 | `evaluation/compute_tracking_errors.m` | UKF跟踪误差计算 |
+| 42 | `evaluation/evaluate_fusion.m` | 融合误差评估 |
 
 ### 第7层：可视化（图表生成）
 
@@ -227,10 +224,8 @@ Phase 9: 可视化 + 数据保存
     ┌──────────────────────────────────────────────────────────┐
     │              Phase 7: 航迹融合                             │
     │  run_track_fusion                                        │
-    │    ├─ scc_fuse   (简单凸组合)                             │
-    │    ├─ bc_fuse    (Bar-Shalom-Campo, 维护互协方差)         │
-    │    ├─ ci_fuse    (Covariance Intersection, 优化w)         │
-    │    └─ fci_fuse   (Fast CI, 闭式解w)                       │
+    │    └─ track_fusion_algorithms (调度 fuse_scc/fuse_bc/   │
+    │        fuse_ci/fuse_fci)                                 │
     │  └─ regularize_cov (融合前后协方差正则化)                  │
     └──────────────────────────────────────────────────────────┘
                                    │
@@ -314,13 +309,11 @@ track_starter_mofn.m
 run_track_fusion.m
   │
   ├──► time_align_tracks()         ──► 时间对齐（外部先调用）
-  ├──► scc_fuse()                   ──► 简单凸组合
-  │     └──► regularize_cov()
-  ├──► bc_fuse()                    ──► Bar-Shalom-Campo
-  │     └──► regularize_cov()
-  ├──► ci_fuse()                    ──► Covariance Intersection
-  │     └──► regularize_cov() + fminbnd优化w
-  └──► fci_fuse()                   ──► Fast CI（闭式解w）
+  └──► track_fusion_algorithms()   ──► 调度四种融合算法
+        ├──► fuse_scc()             ──► 简单凸组合
+        ├──► fuse_bc()              ──► Bar-Shalom-Campo
+        ├──► fuse_ci()              ──► Covariance Intersection
+        └──► fuse_fci()             ──► Fast CI（闭式解w）
         └──► regularize_cov()
 ```
 
@@ -518,26 +511,14 @@ run_track_fusion.m
 - **参数**：R2滞后R1 13秒
 - **调用者**：Phase 6（融合前必须先对齐）
 
-#### `scc_fuse.m` — 简单凸组合（Simple Convex Combination）
-- **功能**：假设两源误差独立，信息矩阵直接相加
-- **公式**：`P⁻¹ = P₁⁻¹+P₂⁻¹`, `x = P*(P₁⁻¹x₁+P₂⁻¹x₂)`
-- **等效权重**：w=0.5（隐式）
-- **调用者**：`run_track_fusion.m`
-
-#### `bc_fuse.m` — Bar-Shalom-Campo融合
-- **功能**：考虑互协方差P12的精确融合
-- **公式**：`S=P₁+P₂-P₁₂-P₁₂'`, `x=x₁+(P₁-P₁₂)S⁻¹(x₂-x₁)`
-- **互协方差维护**：P12预测（F·P12·F'+Q/2）+ P12更新（迹收缩比近似）
-- **调用者**：`run_track_fusion.m`
-
-#### `ci_fuse.m` — 协方差交叉（Covariance Intersection）
-- **功能**：无需互协方差，用fminbnd优化w最小化det(P_fused)
-- **公式**：`P⁻¹ = w*P₁⁻¹+(1-w)*P₂⁻¹`
-- **调用者**：`run_track_fusion.m`
-
-#### `fci_fuse.m` — 快速协方差交叉（Fast CI）
-- **功能**：无需迭代优化，用迹的倒数闭式解计算权重
-- **公式**：`w = tr(P₁)⁻¹/(tr(P₁)⁻¹+tr(P₂)⁻¹)`
+#### `track_fusion_algorithms.m` — 航迹融合算法合集
+- **功能**：集中实现四种双传感器单帧融合算法，通过调度函数统一调用
+- **包含算法**：
+  - `fuse_scc` — 简单凸组合（SCC）：假设两源误差独立，信息矩阵直接相加。公式：`P⁻¹=P₁⁻¹+P₂⁻¹`, `x=P*(P₁⁻¹x₁+P₂⁻¹x₂)`。等效权重 w=0.5
+  - `fuse_bc` — Bar-Shalom-Campo（BC）：考虑互协方差P12的精确融合。公式：`S=P₁+P₂-P₁₂-P₁₂'`, `x=x₁+(P₁-P₁₂)S⁻¹(x₂-x₁)`
+  - `fuse_ci` — 协方差交叉（CI）：用fminbnd优化w最小化det(P_fused)。公式：`P⁻¹=w*P₁⁻¹+(1-w)*P₂⁻¹`
+  - `fuse_fci` — 快速协方差交叉（FCI）：用迹的倒数闭式解计算权重。公式：`w=tr(P₁)⁻¹/(tr(P₁)⁻¹+tr(P₂)⁻¹)`
+  - `ci_cost` — CI代价函数（局部函数，由fuse_ci内部调用）
 - **调用者**：`run_track_fusion.m`
 
 #### `regularize_cov.m` — 协方差正则化

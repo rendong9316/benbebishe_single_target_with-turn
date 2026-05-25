@@ -89,7 +89,7 @@ function [trackList, tempPool, trackSnapshot] = multi_track_manager(...
         end
         % 运行质量状态机（纯预测也会影响质量）
         active_idx = find_active(trackList);
-        trackList = manage_track_quality(trackList, active_idx, params, frame_id);
+        trackList = track_management.manage_track_quality(trackList, active_idx, params, frame_id);
         trackSnapshot.trackList = trackList;
         return;
     end
@@ -156,8 +156,8 @@ function [trackList, tempPool, trackSnapshot] = multi_track_manager(...
     end
 
     % ---- Step 4: JNN全局点迹-航迹关联 ----
-    % 调用jnn_association计算全局最佳一对一配对
-    assoc_pairs = jnn_association(trackList, active_idx, detList, params);
+    % 调用track_management.jnn_association计算全局最佳一对一配对
+    assoc_pairs = track_management.jnn_association(trackList, active_idx, detList, params);
 
     % 标记点迹使用状态和航迹关联状态
     point_used = false(1, length(detList));
@@ -250,7 +250,7 @@ function [trackList, tempPool, trackSnapshot] = multi_track_manager(...
 
     % ---- Step 7: 航迹质量状态机 ----
     % 根据本帧关联结果更新各航迹的状态转移
-    trackList = manage_track_quality(trackList, active_idx, params, frame_id);
+    trackList = track_management.manage_track_quality(trackList, active_idx, params, frame_id);
 
     % ---- Step 8: 从未关联点迹起始新航迹（M/N逻辑） ----
     unused_dets = detList(~point_used);

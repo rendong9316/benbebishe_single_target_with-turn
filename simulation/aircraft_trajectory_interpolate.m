@@ -55,10 +55,34 @@
 %   - 经纬度变化率直接使用球面度/秒，未做 cos(lat) 修正
 % ========================================================================
 
-function [pos, vel_deg] = aircraft_trajectory_interpolate(traj, t)
+function varargout = aircraft_trajectory_interpolate(varargin)
     % ----------------------------------------------------------------
-    % aircraft_trajectory_interpolate - 在给定时刻对航迹进行线性插值
+    % aircraft_trajectory_interpolate - 航迹插值函数（支持三种调用方式）
     % ----------------------------------------------------------------
+    % 支持三种调用方式：
+    %   1. [pos, vel_deg] = aircraft_trajectory_interpolate(traj, t)
+    %      在给定时刻对航迹进行单点线性插值
+    %   2. out = aircraft_trajectory_interpolate('batch', traj, t_array)
+    %      批量航迹插值，返回 N×5 矩阵 [lon, lat, lon_rate, lat_rate, time]
+    %   3. out = aircraft_trajectory_interpolate('generate', traj)
+    %      生成完整轨迹采样数据，返回 N×5 矩阵
+
+    % ---- 字符串分发 ----
+    if nargin >= 1 && ischar(varargin{1})
+        switch varargin{1}
+            case 'batch'
+                varargout{1} = interpolate_batch_impl(varargin{2}, varargin{3});
+            case 'generate'
+                varargout{1} = generate_trajectory_impl(varargin{2});
+            otherwise
+                error('aircraft_trajectory_interpolate: unknown action "%s"', varargin{1});
+        end
+        return;
+    end
+
+    % ---- 原始调用路径：单点插值 ----
+    traj = varargin{1};
+    t = varargin{2};
     % 工作流程：
     %   1. 调用 aircraft_trajectory_locate 确定时间 t 所在的航段
     %   2. 取出该航段的结构体数据
@@ -106,6 +130,40 @@ function [pos, vel_deg] = aircraft_trajectory_interpolate(traj, t)
     % vel_deg: 1x2 行向量 [经度变化率, 纬度变化率]，单位为度/秒
     % 在航段内速度恒定，直接取 seg 中预计算的值即可
     vel_deg = [seg.lon_rate, seg.lat_rate];
+    varargout{1} = pos;
+    varargout{2} = vel_deg;
+end
+
+% =========================================================================
+% interpolate_batch_impl - 批量航迹插值（内部子函数）
+% =========================================================================
+% 对时间数组中的每个时间点调用单点插值，汇总为 N×5 矩阵。
+% 输入: traj (航迹结构体), t_array (1×N 时间数组)
+% 输出: out (N×5 矩阵: [lon, lat, lon_rate, lat_rate, time])
+% =========================================================================
+function out = interpolate_batch_impl(traj, t_array)
+    n = length(t_array);
+    out = zeros(n, 5);
+    for i = 1:n
+        t = t_array(i);
+        [pos, vel] = aircraft_trajectory_interpolate(traj, t);
+        out(i, 1) = pos(1);
+        out(i, 2) = pos(2);
+        out(i, 3) = vel(1);
+        out(i, 4) = vel(2);
+        out(i, 5) = t;
+    end
+end
+
+% =========================================================================
+% generate_trajectory_impl - 完整轨迹生成（内部子函数）
+% =========================================================================
+% 薄封装层，对航迹预定义的所有采样时间点进行批量插值。
+% 输入: traj (航迹结构体，需包含 .time_array 字段)
+% 输出: out (N×5 矩阵: [lon, lat, lon_rate, lat_rate, time])
+% =========================================================================
+function out = generate_trajectory_impl(traj)
+    out = interpolate_batch_impl(traj, traj.time_array);
 end
 % ========================================================================
 % 文件结束

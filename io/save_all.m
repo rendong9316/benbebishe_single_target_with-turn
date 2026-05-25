@@ -130,7 +130,7 @@ function save_all(true_track, r1_meas_list, r2_meas_list, params, out_dir)
     fprintf(fid, 'time_str,lon_deg,lat_deg,lon_rate_dps,lat_rate_dps,speed_ms\n');
 
     % 获取地球半径（米），用于速度转换
-    R = sphere_utils_get_earth_radius();
+    R = 6371000.0;
 
     % 逐行写入真实航迹数据
     for i = 1:n

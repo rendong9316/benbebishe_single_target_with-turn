@@ -61,7 +61,7 @@ function [lon, lat] = sphere_utils_destination_point(lon_start, lat_start, dista
     % arc_len = distance_m / R = 弧度表示的球心角
     % 例如：100 km 的距离，arc_len = 100000 / 6371000 ≈ 0.0157 弧度 ≈ 0.9°
     % -----------------------------------------------------------------
-    R = sphere_utils_get_earth_radius();  % 地球半径（米）
+    R = 6371000.0;
     arc_len = distance_m / R;              % 弧长 = 距离/半径（弧度）
 
     % -----------------------------------------------------------------
