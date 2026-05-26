@@ -36,8 +36,12 @@ end
 % 综合: 机动预检测(suspect_counter/渐进波门) + 机动自适应 Q 更新
 % =========================================================================
 function ukf = apply_maneuver_adapt_post(ukf, params)
-    % 航迹未成熟（前12帧为 UKF 收敛期）→ 不处理
-    if ~isfield(ukf, 'life_count') || ukf.life_count < 12
+    % 航迹未成熟 → 不处理
+    mature_frames = 12;
+    if isfield(params, 'maneuver_mature_frames')
+        mature_frames = params.maneuver_mature_frames;
+    end
+    if ~isfield(ukf, 'life_count') || ukf.life_count < mature_frames
         return;
     end
 
@@ -59,6 +63,18 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
         return;
     end
 
+    % ---- 读取机动检测阈值参数（从params读取，有默认值） ----
+    nis_ratio_thresh = 1.25;
+    nis_short_abs = 2.8;
+    nis_long_abs = 3.2;
+    recovery_frames = 4;
+    max_duration = 50;
+    if isfield(params, 'maneuver_nis_ratio'), nis_ratio_thresh = params.maneuver_nis_ratio; end
+    if isfield(params, 'maneuver_nis_short_thresh'), nis_short_abs = params.maneuver_nis_short_thresh; end
+    if isfield(params, 'maneuver_nis_long_thresh'), nis_long_abs = params.maneuver_nis_long_thresh; end
+    if isfield(params, 'maneuver_recovery_frames'), recovery_frames = params.maneuver_recovery_frames; end
+    if isfield(params, 'maneuver_max_duration'), max_duration = params.maneuver_max_duration; end
+
     % ---- 机动检测: 短时 vs 长时 NIS 趋势比较 ----
     nis_history = ukf.nis_history;
     win_short = min(3, length(nis_history));
@@ -66,7 +82,7 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
     nis_long  = mean(nis_history);
 
     maneuver_detected = false;
-    if (nis_short > nis_long * 1.25 && nis_short > 2.8) || nis_long > 3.2
+    if (nis_short > nis_long * nis_ratio_thresh && nis_short > nis_short_abs) || nis_long > nis_long_abs
         maneuver_detected = true;
     end
 
@@ -83,12 +99,12 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
         else
             ukf.maneuver_recovery = 0;
         end
-        if ukf.maneuver_recovery >= 4
+        if ukf.maneuver_recovery >= recovery_frames
             ukf.maneuver_active = false;
             ukf.maneuver_counter = 0;
             ukf.maneuver_recovery = 0;
         end
-        if ukf.maneuver_counter > 50
+        if ukf.maneuver_counter > max_duration
             ukf.maneuver_active = false;
             ukf.maneuver_counter = 0;
             ukf.maneuver_recovery = 0;
@@ -96,7 +112,11 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
     end
 
     % ---- 机动预检测：预扫描宽门限量测 (仅非机动状态) ----
-    % 需要外部提前设置 last_x_pred / last_z_pred / last_P_zz / last_det_list
+    wide_gate_mult = 1.8;
+    suspect_thresh = 2;
+    if isfield(params, 'maneuver_wide_gate_mult'), wide_gate_mult = params.maneuver_wide_gate_mult; end
+    if isfield(params, 'maneuver_suspect_thresh'), suspect_thresh = params.maneuver_suspect_thresh; end
+
     if ~ukf.maneuver_active && isfield(ukf, 'last_x_pred') && isfield(ukf, 'last_z_pred') ...
             && isfield(ukf, 'last_P_zz') && isfield(ukf, 'last_det_list')
         if ukf.suspect_counter < 0
@@ -107,7 +127,7 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
         P_zz = ukf.last_P_zz;
         dets = ukf.last_det_list;
 
-        wide_gate = (params.gate_sigma * 1.8)^2 * 2;
+        wide_gate = (params.gate_sigma * wide_gate_mult)^2 * 2;
         any_in_wide = false;
         for d = 1:length(dets)
             dp = dets(d);
@@ -129,7 +149,7 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
             ukf.suspect_counter = max(0, ukf.suspect_counter - 1);
         end
 
-        if ukf.suspect_counter >= 2
+        if ukf.suspect_counter >= suspect_thresh
             ukf.maneuver_active = true;
             ukf.maneuver_counter = 0;
             ukf.maneuver_recovery = 0;
@@ -169,14 +189,22 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
                        mu_VL * out_RapidIncrease) / total_mu;
     end
 
+    % ---- 读取机动 Q 提升参数 ----
+    q_boost_init = 1.5;
+    q_boost_mid = 2.3;
+    q_boost_max = 3.5;
+    if isfield(params, 'maneuver_q_boost_init'), q_boost_init = params.maneuver_q_boost_init; end
+    if isfield(params, 'maneuver_q_boost_mid'), q_boost_mid = params.maneuver_q_boost_mid; end
+    if isfield(params, 'maneuver_q_boost_max'), q_boost_max = params.maneuver_q_boost_max; end
+
     % ---- 机动 Q 提升因子 (渐进式, 避免突然跳变) ----
     if ukf.maneuver_active
         if ukf.maneuver_counter < 5
-            maneuver_target = 1.5 + ukf.maneuver_counter * 0.2;
+            maneuver_target = q_boost_init + ukf.maneuver_counter * 0.2;
         elseif ukf.maneuver_counter < 15
-            maneuver_target = 2.3 + (ukf.maneuver_counter - 5) * 0.08;
+            maneuver_target = q_boost_mid + (ukf.maneuver_counter - 5) * 0.08;
         else
-            maneuver_target = 3.5;
+            maneuver_target = q_boost_max;
         end
         factor_raw = max(factor_fuzzy, maneuver_target);
     else
@@ -185,9 +213,10 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
 
     factor_raw = max(0.5, min(4.0, factor_raw));
 
-    % ---- EMA 平滑 (eta=0.20) ----
-    eta = 0.20;
-    ukf.Q_ema = eta * factor_raw + (1 - eta) * ukf.Q_ema;
+    % ---- EMA 平滑 ----
+    ema_eta = 0.20;
+    if isfield(params, 'maneuver_ema_eta'), ema_eta = params.maneuver_ema_eta; end
+    ukf.Q_ema = ema_eta * factor_raw + (1 - ema_eta) * ukf.Q_ema;
 
     if abs(ukf.Q_ema - 1.0) < 0.05
         ukf.Q = ukf.Q_base;

@@ -631,14 +631,18 @@ fprintf('偏差校正完成: R1=%d帧, R2=%d帧\n', n_frames, n_frames);
 
 fprintf('\n========== Phase 5: 单目标航迹跟踪 ==========\n');
 
-% ---- R1 UKF 参数配置（精密站） ----
+% ---- R1 UKF 参数配置（精密站，V2调优后） ----
 % 将R1的量测噪声参数注入params，供ukf_jichu('create')构建R矩阵
 params.ukf_range_std_m = params.radar1_range_noise_std_m;      % 群距离噪声σ=7km
 params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg; % 方位角噪声σ=0.35°
-params.ukf_Q_scale = 5e4;         % Q过程噪声缩放因子（越小→越信任模型预测）
-params.ukf_P_pos_std = 0.2;       % 初始位置标准差0.2°（约22km），状态初始化置信度
-params.ukf_P_vel_std = 0.004;     % 初始速度标准差0.004°/s，状态初始化置信度
-params.gate_sigma = 2.0;          % 关联波门=2.0σ（包含约86.5%的高斯分布概率质量）
+params.ukf_Q_scale = 1e5;         % Q过程噪声缩放因子（V2调优）
+params.ukf_P_pos_std = 0.10;      % 初始位置标准差0.10°（V2调优）
+params.ukf_P_vel_std = 0.004;     % 初始速度标准差0.004°/s
+params.gate_sigma = 4.0;          % 关联波门=4.0σ（V2调优，直线场景用保守值）
+params.ukf_alpha = 1e-2;          % UT散布度参数（V2调优）
+params.fuzzy_window_size = 3;     % NIS滑动窗口（V2调优）
+params.fuzzy_ema_eta = 0.10;      % 模糊自适应EMA系数（V2调优）
+params.maneuver_ema_eta = 0.10;   % 机动自适应EMA系数（V2调优）
 % ukf_jichu('create'): 创建UKF模板结构体
 %   内部初始化：state_dim(4) + sigma_points + weights + 坐标转换初始化
 %   R矩阵 = diag([σ_range², σ_az²]) （量测噪声协方差）
@@ -646,15 +650,19 @@ params.gate_sigma = 2.0;          % 关联波门=2.0σ（包含约86.5%的高斯
 ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
-% ---- R2 UKF 参数配置（普通站，噪声约为R1的2倍） ----
+% ---- R2 UKF 参数配置（普通站，V2调优后） ----
 % 复制params为params_r2，然后覆写R2特有参数
 params_r2 = params;
 params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;    % σ=14km（R1的2倍）
 params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg; % σ=0.6°
-params_r2.gate_sigma = 2.5;         % 关联门放宽到2.5σ（因为噪声更大）
-params_r2.ukf_Q_scale = 1e5;        % Q缩放=1e5（R1的2倍，容纳更大的模型误差）
-params_r2.ukf_P_pos_std = 0.3;      % 初始位置不确定度更大
-params_r2.ukf_P_vel_std = 0.005;    % 初始速度不确定度更大
+params_r2.gate_sigma = 5.0;         % 关联门放宽（V2调优，R2噪声大需更宽）
+params_r2.ukf_Q_scale = 2e5;        % Q缩放=2e5（V2调优，R1的2倍）
+params_r2.ukf_P_pos_std = 0.10;     % 初始位置不确定度（V2调优）
+params_r2.ukf_P_vel_std = 0.005;    % 初始速度不确定度
+params_r2.ukf_alpha = 1e-2;         % UT散布度参数（V2调优）
+params_r2.fuzzy_window_size = 3;    % NIS滑动窗口（V2调优）
+params_r2.fuzzy_ema_eta = 0.10;     % 模糊自适应EMA系数（V2调优）
+params_r2.maneuver_ema_eta = 0.10;  % 机动自适应EMA系数（V2调优）
 params_r2.tracker_M = 4;            % M/N逻辑: 4/8=起始条件（与R1相同）
 params_r2.tracker_N = 8;            % M/N逻辑: 4/8
 params_r2.tracker_K_loss = 12;      % 丢失容忍12帧（6分钟），普通站更宽容

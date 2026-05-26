@@ -183,9 +183,10 @@ function ukf = apply_fuzzy_adapt(ukf, params)
 
     factor_raw = max(0.5, min(4.0, factor_fuzzy));
 
-    % EMA 平滑 (eta=0.20)
-    eta = 0.20;
-    ukf.Q_ema = eta * factor_raw + (1 - eta) * ukf.Q_ema;
+    % EMA 平滑
+    ema_eta = 0.20;
+    if isfield(params, 'fuzzy_ema_eta'), ema_eta = params.fuzzy_ema_eta; end
+    ukf.Q_ema = ema_eta * factor_raw + (1 - ema_eta) * ukf.Q_ema;
 
     if abs(ukf.Q_ema - 1.0) < 0.05
         ukf.Q = ukf.Q_base;
