@@ -16,18 +16,18 @@
 %      传播衰落导致的漏检）。检测到则计算含噪量测，未检测到则本帧无目标
 %      点迹输出。
 %
-%   2. 双基地量测模型（3 维极坐标）：
+%   2. 天波双基地量测模型（3 维极坐标）：
 %      ┌─────────────────────────────────────────────────────────┐
-%      │ 群距离 Rg  = r0 + r1                                    │
-%      │   r0 = Haversine(Tx → 目标)  发射站到目标的大圆距离     │
-%      │   r1 = Haversine(Rx → 目标)  接收站到目标的大圆距离     │
+%      │ 群距离 Rg  = r_tx + r_rx                                  │
+%      │   σ   = 地心角（Haversine公式）                           │
+%      │   D   = 2·R_e·sin(σ/2)      地表弦长（替代大圆弧长）     │
+%      │   r   = √(D² + (2H)²)        天波双跳斜距                │
+%      │   Rg  = r_tx + r_rx          双基地群距离                 │
 %      │                                                         │
-%      │ 方位角 az  = sphere_utils_azimuth(Rx, 目标)             │
-%      │   从接收站看目标的真北偏东角度（0°=北，顺时针）          │
+%      │ 方位角 az  = 球面方位角(Rx, 目标)                        │
 %      │                                                         │
-%      │ 径向速度 vd = v_Tx_proj + v_Rx_proj                     │
-%      │   目标速度分别在 Tx→目标 和 Rx→目标 方向上的投影之和     │
-%      │   = radial_vel(v, az_Tx) + radial_vel(v, az_Rx)         │
+%      │ 多普勒 vd = dRg/dt = dr_tx/dt + dr_rx/dt                │
+%      │   目标速度 ENU 分解 → 各段路径变化率 → 合成总多普勒       │
 %      └─────────────────────────────────────────────────────────┘
 %
 %   3. 量测误差模型：
@@ -90,9 +90,7 @@
 %   被 run_simulation.m Phase 2 逐帧循环调用，分别为 R1 和 R2 生成点迹。
 %   内部调用:
 %     radar_coverage_check()            — 威力覆盖判定
-%     sphere_utils_haversine_distance() — 球面大圆距离
-%     sphere_utils_azimuth()            — 球面方位角
-%     sphere_utils_radial_velocity()    — 径向速度投影
+%     skywave_geometry()                — 天波几何模型（群距离、多普勒、方位角）
 %     sphere_utils_destination_point()  — 球面正算（杂波定位用）
 % =========================================================================
 
@@ -126,20 +124,15 @@ function [detList, has_target_det] = generate_frame_detections(rx_lon, rx_lat, .
             has_target_det = true;
 
             % ---- 计算目标真实极坐标量测（无噪声、无偏差） ----
-            % 群距离 = Tx→目标 + Rx→目标（双基地总路径长度）
-            r0 = sphere_utils_haversine_distance(tx_lon, tx_lat, tgt_lon, tgt_lat);
-            r1_dist = sphere_utils_haversine_distance(rx_lon, rx_lat, tgt_lon, tgt_lat);
-            Rg_true = r0 + r1_dist;
+            % 天波模型：地心角→弦长→双跳斜距→群距离
+            Rg_true = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat);
 
-            % 方位角：仅与接收站有关（与单基地雷达相同）
-            az_true = sphere_utils_azimuth(rx_lon, rx_lat, tgt_lon, tgt_lat);
+            % 方位角：接收站→目标的球面方位角
+            az_true = skywave_geometry('azimuth', rx_lon, rx_lat, tgt_lon, tgt_lat);
 
-            % 双基地径向速度：Tx 方向投影 + Rx 方向投影
-            % 这是目标真实速度在双基地几何下的多普勒分量
-            az_tx = sphere_utils_azimuth(tx_lon, tx_lat, tgt_lon, tgt_lat);
-            rv_tx = sphere_utils_radial_velocity(tgt_lon_rate, tgt_lat_rate, tgt_lat, az_tx);
-            rv_rx = sphere_utils_radial_velocity(tgt_lon_rate, tgt_lat_rate, tgt_lat, az_true);
-            vd_true = rv_tx + rv_rx;
+            % 天波多普勒：总传播路径对时间的导数 dRg/dt = dr_tx/dt + dr_rx/dt
+            vd_true = skywave_geometry('doppler', tx_lon, tx_lat, rx_lon, rx_lat, ...
+                tgt_lon, tgt_lat, tgt_lon_rate, tgt_lat_rate);
 
             % ---- 施加系统偏差和随机噪声 ----
             % 量测 = 真值 + 固定偏差 + 高斯随机噪声
@@ -197,10 +190,9 @@ function [detList, has_target_det] = generate_frame_detections(rx_lon, rx_lat, .
         % 利用大圆目的地点公式，从接收站出发沿方位角 az 走距离 r1
         [clut_lon, clut_lat] = sphere_utils_destination_point(rx_lon, rx_lat, fake_r1, fake_az);
 
-        % ---- 计算杂波点的双基地群距离 ----
-        % 杂波点也需要双基地群距离 Rg = r0 + r1，用于后续偏差校正的一致性
-        r0 = sphere_utils_haversine_distance(tx_lon, tx_lat, clut_lon, clut_lat);
-        fake_Rg = r0 + fake_r1;
+        % ---- 计算杂波点的天波双基地群距离 ----
+        % 杂波点复用与目标完全一致的天波模型（地心角→弦长→2H斜距→群距离）
+        fake_Rg = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, clut_lon, clut_lat);
 
         % ---- 杂波多普勒：在 [-200, +200] m/s 内均匀随机 ----
         % OTH-SWR 中电离层杂波的多普勒谱通常展宽在 ±200 m/s 范围内，

@@ -233,47 +233,34 @@ end
 
 
 % =========================================================================
-% measurement_ukf — 双基地量测模型 h(x)
+% measurement_ukf — 天波双基地量测模型 h(x)
+%
+% 量测向量 z = [Rg; az; vd]（群距离、方位角、多普勒速度）
+%
+% 天波传播模型（与仿真端 generate_frame_detections 严格一致）：
+%   1. 地心角 σ = Haversine(站点, 目标)
+%   2. 地表弦长 D = 2·R_e·sin(σ/2)          ← 替代大圆弧长
+%   3. 天波斜距 r = √(D² + (2H)²)            ← 电离层双跳
+%   4. 群距离 Rg = r_tx + r_rx
+%   5. 多普勒 vd = dRg/dt = dr_tx/dt + dr_rx/dt
 % =========================================================================
 function z = measurement_ukf(ukf, x)
-    % 步骤1：提取状态分量并转换为弧度制
+    % 步骤1：提取状态分量
     lon = x(1);
     lon_rate = x(2);
     lat = x(3);
     lat_rate = x(4);
-    lat_rad = deg2rad(lat);
 
-    % 步骤2：双基地群距离 Rg = r0 + r1
-    r0 = haversine_ukf(ukf.tx_lon, ukf.tx_lat, lon, lat, ukf.R_EARTH);
-    r1 = haversine_ukf(ukf.radar_lon, ukf.radar_lat, lon, lat, ukf.R_EARTH);
-    rng = r0 + r1;
+    % 步骤2：天波群距离 Rg = r_tx + r_rx（弦长+电离层虚高模型）
+    rng = skywave_geometry('group_range', ukf.tx_lon, ukf.tx_lat, ...
+        ukf.radar_lon, ukf.radar_lat, lon, lat);
 
-    % 步骤3：方位角（接收站→目标）
-    dlon = deg2rad(lon - ukf.radar_lon);
-    dlat = deg2rad(lat - ukf.radar_lat);
-    radar_lat_rad = deg2rad(ukf.radar_lat);
-    y = sin(dlon) * cos(lat_rad);
-    xval = cos(radar_lat_rad) * sin(lat_rad) ...
-         - sin(radar_lat_rad) * cos(lat_rad) * cos(dlon);
-    az = mod(rad2deg(atan2(y, xval)), 360.0);
+    % 步骤3：方位角（接收站→目标，球面方位角，与仿真端共用）
+    az = skywave_geometry('azimuth', ukf.radar_lon, ukf.radar_lat, lon, lat);
 
-    % 步骤4：双基地径向速度
-    dlon_tx = deg2rad(lon - ukf.tx_lon);
-    dlat_tx = deg2rad(lat - ukf.tx_lat);
-    tx_lat_rad = deg2rad(ukf.tx_lat);
-    y_tx = sin(dlon_tx) * cos(lat_rad);
-    xval_tx = cos(tx_lat_rad) * sin(lat_rad) ...
-            - sin(tx_lat_rad) * cos(lat_rad) * cos(dlon_tx);
-    az_tx = mod(rad2deg(atan2(y_tx, xval_tx)), 360.0);
-
-    % 目标地表速度分量
-    v_east = lon_rate * pi / 180.0 * ukf.R_EARTH * cos(lat_rad);
-    v_north = lat_rate * pi / 180.0 * ukf.R_EARTH;
-
-    % 双基地径向速度 = Tx方向投影 + Rx方向投影
-    rv_tx = v_east * sin(deg2rad(az_tx)) + v_north * cos(deg2rad(az_tx));
-    rv_rx = v_east * sin(deg2rad(az)) + v_north * cos(deg2rad(az));
-    radial_vel = rv_tx + rv_rx;
+    % 步骤4：天波多普勒 vd = dRg/dt = dr_tx/dt + dr_rx/dt
+    radial_vel = skywave_geometry('doppler', ukf.tx_lon, ukf.tx_lat, ...
+        ukf.radar_lon, ukf.radar_lat, lon, lat, lon_rate, lat_rate);
 
     % 步骤5：组装预测量测向量
     z = [rng; az; radial_vel];
@@ -318,10 +305,11 @@ end
 
 
 % =========================================================================
-% meas_to_latlon_ukf — 极坐标量测→经纬度 球面反算
+% meas_to_latlon_ukf — 天波双基地极坐标→经纬度反解
+% 使用迭代法：先用经典双基地反解得初值，再用天波模型精化
 % =========================================================================
 function [lon, lat] = meas_to_latlon_ukf(ukf, rng, az)
-    % 步骤1：双基地反解——求目标到接收站距离 r1
+    % 第1步：经典双基地反解初值
     dlon_b = deg2rad(ukf.tx_lon - ukf.radar_lon);
     dlat_b = deg2rad(ukf.tx_lat - ukf.radar_lat);
     a_b = sin(dlat_b/2)^2 ...
@@ -337,7 +325,23 @@ function [lon, lat] = meas_to_latlon_ukf(ukf, rng, az)
     phi = az - tx_az;
     r1 = 0.5 * (rng^2 - baseline^2) / (rng - baseline * cosd(phi));
 
-    % 步骤2：球面正算
+    % 钳位到合理范围
+    r1 = max(1e3, min(r1, 5e6));
+
+    % 第2步：迭代精化——用天波模型修正初值
+    for iter = 1:30
+        [tgt_lon, tgt_lat] = sphere_utils_destination_point(ukf.radar_lon, ukf.radar_lat, r1, az);
+        Rg_pred = skywave_geometry('group_range', ukf.tx_lon, ukf.tx_lat, ...
+            ukf.radar_lon, ukf.radar_lat, tgt_lon, tgt_lat);
+        err = rng - Rg_pred;
+        if abs(err) < 1.0
+            break;
+        end
+        r1 = r1 * rng / Rg_pred;
+        r1 = max(1e3, min(r1, 5e6));
+    end
+
+    % 第3步：球面正算得到最终经纬度
     arc_len = r1 / ukf.R_EARTH;
     az_rad = deg2rad(az);
     lat1 = deg2rad(ukf.radar_lat);

@@ -208,10 +208,9 @@ for idx = 1:cal_step:height(T_adsb)
     [in1, ~, ~] = radar_coverage_check(params.radar1_lon, params.radar1_lat, ...
         t_lon, t_lat, params.radar1_beam_center_deg, params);
     if in1
-        % 双基地距离真值 = 发射站→目标 + 目标→接收站
-        r0 = sphere_utils_haversine_distance(params.radar1_tx_lon, params.radar1_tx_lat, t_lon, t_lat);
-        r1 = sphere_utils_haversine_distance(params.radar1_lon, params.radar1_lat, t_lon, t_lat);
-        Rg_true = r0 + r1;
+        % 天波双基地群距离真值：弦长+电离层虚高模型（与量测生成一致）
+        Rg_true = skywave_geometry('group_range', params.radar1_tx_lon, params.radar1_tx_lat, ...
+            params.radar1_lon, params.radar1_lat, t_lon, t_lat);
         % 方位角真值：接收站→目标
         az_true = sphere_utils_azimuth(params.radar1_lon, params.radar1_lat, t_lon, t_lat);
         % 模拟量测 = 真值 + 系统偏差 + 随机噪声
@@ -229,9 +228,8 @@ for idx = 1:cal_step:height(T_adsb)
     [in2, ~, ~] = radar_coverage_check(params.radar2_lon, params.radar2_lat, ...
         t_lon, t_lat, params.radar2_beam_center_deg, params);
     if in2
-        r0 = sphere_utils_haversine_distance(params.radar2_tx_lon, params.radar2_tx_lat, t_lon, t_lat);
-        r1 = sphere_utils_haversine_distance(params.radar2_lon, params.radar2_lat, t_lon, t_lat);
-        Rg_true = r0 + r1;
+        Rg_true = skywave_geometry('group_range', params.radar2_tx_lon, params.radar2_tx_lat, ...
+            params.radar2_lon, params.radar2_lat, t_lon, t_lat);
         az_true = sphere_utils_azimuth(params.radar2_lon, params.radar2_lat, t_lon, t_lat);
         Rg_meas = Rg_true + params.radar2_range_bias_m + randn() * params.radar2_range_noise_std_m;
         az_meas = az_true + params.radar2_azimuth_bias_deg + randn() * params.radar2_azimuth_noise_std_deg;

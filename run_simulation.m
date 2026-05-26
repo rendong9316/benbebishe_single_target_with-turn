@@ -292,13 +292,10 @@ for idx = 1:cal_step:height(T_adsb)
     [in1, ~, ~] = radar_coverage_check(params.radar1_lon, params.radar1_lat, ...
         t_lon, t_lat, params.radar1_beam_center_deg, params);
     if in1
-        % 从ADS-B真实位置反算"真值极坐标"
-        % r0: Tx到目标的Haversine大圆距离（米）
-        % r1: Rx到目标的Haversine大圆距离（米）
-        % Rg_true = r0 + r1: 双基地群距离（米），Tx→目标+目标→Rx的总路径长度
-        r0 = sphere_utils_haversine_distance(params.radar1_tx_lon, params.radar1_tx_lat, t_lon, t_lat);
-        r1 = sphere_utils_haversine_distance(params.radar1_lon, params.radar1_lat, t_lon, t_lat);
-        Rg_true = r0 + r1;
+        % 从ADS-B真实位置反算"真值极坐标"（天波模型，与量测生成一致）
+        % Rg_true: 天波双基地群距离 = r_tx + r_rx（弦长+电离层虚高模型）
+        Rg_true = skywave_geometry('group_range', params.radar1_tx_lon, params.radar1_tx_lat, ...
+            params.radar1_lon, params.radar1_lat, t_lon, t_lat);
         % az_true: Rx到目标的真北方位角（度，0°=正北，顺时针增加）
         az_true = sphere_utils_azimuth(params.radar1_lon, params.radar1_lat, t_lon, t_lat);
         % 模拟"雷达测量值"=真值+系统偏差+随机噪声
@@ -319,9 +316,8 @@ for idx = 1:cal_step:height(T_adsb)
     [in2, ~, ~] = radar_coverage_check(params.radar2_lon, params.radar2_lat, ...
         t_lon, t_lat, params.radar2_beam_center_deg, params);
     if in2
-        r0 = sphere_utils_haversine_distance(params.radar2_tx_lon, params.radar2_tx_lat, t_lon, t_lat);
-        r1 = sphere_utils_haversine_distance(params.radar2_lon, params.radar2_lat, t_lon, t_lat);
-        Rg_true = r0 + r1;
+        Rg_true = skywave_geometry('group_range', params.radar2_tx_lon, params.radar2_tx_lat, ...
+            params.radar2_lon, params.radar2_lat, t_lon, t_lat);
         az_true = sphere_utils_azimuth(params.radar2_lon, params.radar2_lat, t_lon, t_lat);
         Rg_meas = Rg_true + params.radar2_range_bias_m + randn() * params.radar2_range_noise_std_m;
         az_meas = az_true + params.radar2_azimuth_bias_deg + randn() * params.radar2_azimuth_noise_std_deg;
