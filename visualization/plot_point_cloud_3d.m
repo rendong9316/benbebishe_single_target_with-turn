@@ -95,11 +95,5 @@ function plot_point_cloud_3d(detList, title_str, out_path)
     rotate3d on;
     drawnow;
 
-    % 导出图片
-    try
-        exportgraphics(fig, out_path, 'Resolution', 200);
-    catch
-        saveas(fig, out_path);
-    end
-    fprintf('  点迹图已保存: %s\n', out_path);
+    % 图窗已弹出，不再保存为PNG文件
 end

@@ -391,6 +391,65 @@ end
 
 fprintf('偏差校正完成: R1=%d帧, R2=%d帧\n', n_frames, n_frames);
 
+%% ---- 点迹定位RMSE统计 ----
+fprintf('\n--- 点迹定位RMSE ---\n');
+
+% R1 原始点迹（含偏差）
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R1{k})
+        dp = detList_R1{k}(d);
+        if ~dp.is_clutter && isfield(dp,'raw_lat') && ~isnan(dp.raw_lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.raw_lon, dp.raw_lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 原始点迹(含偏差)    RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 原始点迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R2{k})
+        dp = detList_R2{k}(d);
+        if ~dp.is_clutter && isfield(dp,'raw_lat') && ~isnan(dp.raw_lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.raw_lon, dp.raw_lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 原始点迹(含偏差)    RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R1 校准后点迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R1{k})
+        dp = detList_R1{k}(d);
+        if ~dp.is_clutter && isfield(dp,'lat') && ~isnan(dp.lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 校准后点迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R2{k})
+        dp = detList_R2{k}(d);
+        if ~dp.is_clutter && isfield(dp,'lat') && ~isnan(dp.lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
 %% ==================== Phase 5: 航迹跟踪（基础UKF + 机动自适应UKF） ====================
 % 【目的】这是本程序的核心对比实验：两种UKF策略在相同点迹输入下的表现
 %
@@ -534,6 +593,39 @@ fprintf('R1基础UKF: type=%s quality=%d life=%d\n', ...
 fprintf('R2基础UKF: type=%s quality=%d life=%d\n', ...
     get_type_str(finalTrk2.type), finalTrk2.quality, finalTrk2.life);
 
+%% ---- 基础UKF滤波RMSE统计 ----
+fprintf('\n--- 基础UKF滤波RMSE ---\n');
+
+% R1 基础UKF航迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R1{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 基础UKF滤波         RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 基础UKF航迹（R2时间网格）
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R2{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 基础UKF滤波         RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
 % ======================================================================
 % 第5.2节：机动自适应UKF跟踪（新息序列机动检测 + Q离散提升）
 % ======================================================================
@@ -638,6 +730,39 @@ for radar_label = {'R1', 'R2'}
     end
 end
 
+%% ---- 机动自适应UKF滤波RMSE统计 ----
+fprintf('\n--- 机动自适应UKF滤波RMSE ---\n');
+
+% R1 自适应UKF航迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R1_ad{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 自适应UKF滤波       RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 自适应UKF航迹（R2时间网格）
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R2_ad{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 自适应UKF滤波       RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
 %% ==================== Phase 6: 航迹级时间对齐（两组R2→R1） ====================
 % 【注意】此处有两组R2航迹需要对齐：基础版 + 自适应版
 %   aligned_R2    — 基础UKF的R2航迹对齐到R1时间网格
@@ -718,6 +843,99 @@ for m = 1:length(method_names)
 end
 
 fprintf('融合完成: 基础UKF 4种 + 自适应UKF 4种\n');
+
+%% ---- 融合RMSE统计 ----
+fprintf('\n--- 基础UKF融合RMSE ---\n');
+for m = 1:length(method_names)
+    errs = [];
+    snaps = all_fused_snapshots{m};
+    for k = 1:n_frames
+        tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+        tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+        if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
+            trk = snaps{k}.trackList{1};
+            if ~isnan(trk.lat)
+                errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+            end
+        end
+    end
+    fprintf('基础 %s 融合           RMSE: %6.1f km (n=%d)\n', method_names{m}, rms_km(errs), length(errs));
+end
+
+fprintf('\n--- 自适应UKF融合RMSE ---\n');
+for m = 1:length(method_names)
+    errs = [];
+    snaps = all_fused_snapshots_ad{m};
+    for k = 1:n_frames
+        tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+        tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+        if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
+            trk = snaps{k}.trackList{1};
+            if ~isnan(trk.lat)
+                errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+            end
+        end
+    end
+    fprintf('自适应 %s 融合         RMSE: %6.1f km (n=%d)\n', method_names{m}, rms_km(errs), length(errs));
+end
+
+% R1/R2 单站（对齐后，用于对比融合增益）
+fprintf('\n--- 单站RMSE（对齐后） ---\n');
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R1{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 基础UKF单站        RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R1_ad{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 自适应UKF单站      RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = aligned_R2{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 基础UKF单站        RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = aligned_R2_ad{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 自适应UKF单站      RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
 
 %% ==================== Phase 8: 定量误差评估（基础 vs 自适应 对比） ====================
 % 【评估流程】
@@ -1075,4 +1293,11 @@ function m = make_matcher(r1_pos, r2_pos, aligned_r2)
     % 单目标场景下只有一个航迹ID
     m.r1_ids = 1;
     m.r2_ids = 1;
+end
+
+% rms_km — 计算误差向量的RMSE（km）
+%   输入: e — 误差值向量（km），可为空
+%   输出: v — RMSE值（km），空向量返回NaN
+function v = rms_km(e)
+    if isempty(e), v = NaN; else, v = sqrt(mean(e.^2)); end
 end

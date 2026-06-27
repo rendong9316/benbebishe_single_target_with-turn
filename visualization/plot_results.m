@@ -178,12 +178,6 @@ function plot_single_track_result(true_track, detList_R1, detList_R2, ...
         'FontSize', 8, 'BackgroundColor', [1 1 1]);
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig4_single_track_result.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig4_single_track_result.png'));
-    end
-    fprintf('  单目标跟踪综合图已保存: fig4_single_track_result.png\n');
 end
 
 function [lats, lons] = extract_dets_str(detList, mode)
@@ -364,13 +358,6 @@ function plot_single_fusion_result(true_track, trackSnapshots_R1, trackSnapshots
         'FontSize', 9, 'BackgroundColor', [1 1 1], 'FontWeight', 'bold');
 
     drawnow;
-    try
-        exportgraphics(fig1, fullfile(out_dir, 'fig6_single_fusion_map.png'), 'Resolution', 200);
-    catch
-        saveas(fig1, fullfile(out_dir, 'fig6_single_fusion_map.png'));
-    end
-    fprintf('  融合地图已保存: fig6_single_fusion_map.png\n');
-
     %% Figure 2: 误差收敛曲线 + CDF
     fig2 = figure('Position', [50, 50, 1400, 750]);
     win = 10;
@@ -448,12 +435,6 @@ function plot_single_fusion_result(true_track, trackSnapshots_R1, trackSnapshots
     end
 
     drawnow;
-    try
-        exportgraphics(fig2, fullfile(out_dir, 'fig7_single_fusion_error.png'), 'Resolution', 200);
-    catch
-        saveas(fig2, fullfile(out_dir, 'fig7_single_fusion_error.png'));
-    end
-    fprintf('  误差收敛曲线已保存: fig7_single_fusion_error.png\n');
 end
 
 function tracks = collect_positions_sfr(snapshots)
@@ -663,12 +644,6 @@ function plot_combined_tracks(true_track, detList_R1, detList_R2, ...
         'FontSize', 8, 'BackgroundColor', [1 1 1]);
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig3_combined_tracks.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig3_combined_tracks.png'));
-    end
-    fprintf('  综合航迹图已保存: fig3_combined_tracks.png\n');
 end
 
 function try_set_visible_ct(h, val)
@@ -757,12 +732,6 @@ function plot_tracks_vs_truth(trackState_R1, trackState_R2, true_track, params, 
 
     sgtitle('UKF滤波航迹 vs 真实航迹');
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig3_tracks_vs_truth.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig3_tracks_vs_truth.png'));
-    end
-    fprintf('  图3 已保存: fig3_tracks_vs_truth.png\n');
 end
 
 function plot_track_on_map_tvt(ax, stateList, true_track, rx_lat, rx_lon)
@@ -901,13 +870,6 @@ function fig = plot_tracker_result(true_track, ...
         'Callback', @(~,~) show_only_tr(L, all_buttons, [7, 8, 9]));
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'tracker_fragments_and_stitching.png'), ...
-                       'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'tracker_fragments_and_stitching.png'));
-    end
-    fprintf('  可视化已保存到 %s\n', fullfile(out_dir, 'tracker_fragments_and_stitching.png'));
 end
 
 function handles = draw_struct_array_segments_tr(ax, segments, color, lw, ms, style)
@@ -1142,12 +1104,6 @@ function plot_error_timeline(trackState_R1, trackState_R2, detList_R1, detList_R
 
     sgtitle(sprintf('误差与事件时间线 (nFrames=%d)', n_frames));
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig4_error_timeline.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig4_error_timeline.png'));
-    end
-    fprintf('  图4 已保存: fig4_error_timeline.png\n');
 end
 
 % =========================================================================
@@ -1245,10 +1201,4 @@ function plot_error_timeline_turn(true_track, ...
     sgtitle('拐弯目标: 基础UKF vs 机动自适应UKF (机动检测+Q提升)');
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig_turn_error_timeline.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig_turn_error_timeline.png'));
-    end
-    fprintf('  误差时间线对比图已保存: fig_turn_error_timeline.png\n');
 end

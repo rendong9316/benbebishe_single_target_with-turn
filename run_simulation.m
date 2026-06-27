@@ -576,6 +576,65 @@ end
 
 fprintf('偏差校正完成: R1=%d帧, R2=%d帧\n', n_frames, n_frames);
 
+%% ---- 点迹定位RMSE统计 ----
+fprintf('\n--- 点迹定位RMSE ---\n');
+
+% R1 原始点迹（含偏差，raw_lat/raw_lon 来自未校正量测的反解）
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R1{k})
+        dp = detList_R1{k}(d);
+        if ~dp.is_clutter && isfield(dp,'raw_lat') && ~isnan(dp.raw_lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.raw_lon, dp.raw_lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 原始点迹(含偏差)    RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 原始点迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R2{k})
+        dp = detList_R2{k}(d);
+        if ~dp.is_clutter && isfield(dp,'raw_lat') && ~isnan(dp.raw_lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.raw_lon, dp.raw_lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 原始点迹(含偏差)    RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R1 校准后点迹（偏差校正后反解）
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R1{k})
+        dp = detList_R1{k}(d);
+        if ~dp.is_clutter && isfield(dp,'lat') && ~isnan(dp.lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 校准后点迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    for d = 1:length(detList_R2{k})
+        dp = detList_R2{k}(d);
+        if ~dp.is_clutter && isfield(dp,'lat') && ~isnan(dp.lat)
+            errs(end+1) = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
 %% ==================== Phase 5: 单目标航迹跟踪 ====================
 % 【目的】对两部雷达的校正后点迹分别执行 UKF + PDA 单目标跟踪
 % 【跟踪器架构（single_track_runner 内部流水线，逐帧处理）】
@@ -759,6 +818,39 @@ for radar_label = {'R1', 'R2'}
 end
 fprintf('\n');
 
+%% ---- 基础UKF滤波RMSE统计 ----
+fprintf('\n--- 基础UKF滤波RMSE ---\n');
+
+% R1 UKF航迹
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R1{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 基础UKF滤波         RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
+% R2 UKF航迹（R2时间网格）
+errs = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R2{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 基础UKF滤波         RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
+
 %% ==================== Phase 6: 航迹级时间对齐 ====================
 % 【目的】将R2航迹从 t2_grid 外推到 t1_grid，实现两部雷达航迹的时间同步
 % 【方法】CV（匀速）模型全状态外推
@@ -874,6 +966,52 @@ for m = 1:length(method_names)
         trackSnapshots_R1, aligned_R2, params, method);
 end
 fprintf('融合完成: %d 种算法\n', length(method_names));
+
+%% ---- 融合RMSE统计 ----
+fprintf('\n--- 融合RMSE ---\n');
+for m = 1:length(method_names)
+    errs = [];
+    snaps = all_fused_snapshots{m};
+    for k = 1:n_frames
+        tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+        tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+        if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
+            trk = snaps{k}.trackList{1};
+            if ~isnan(trk.lat)
+                errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+            end
+        end
+    end
+    fprintf('%s 融合                 RMSE: %6.1f km (n=%d)\n', method_names{m}, rms_km(errs), length(errs));
+end
+% R1/R2单站（对齐后，用于对比）
+errs_r1 = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = trackSnapshots_R1{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs_r1(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R1 单站(对齐后)        RMSE: %6.1f km (n=%d)\n', rms_km(errs_r1), length(errs_r1));
+
+errs_r2 = [];
+for k = 1:n_frames
+    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+    snap = aligned_R2{k};
+    if ~isempty(snap.trackList)
+        trk = snap.trackList{1};
+        if trk.type ~= 7 && ~isnan(trk.lat)
+            errs_r2(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+        end
+    end
+end
+fprintf('R2 单站(对齐后)        RMSE: %6.1f km (n=%d)\n', rms_km(errs_r2), length(errs_r2));
 
 %% ==================== Phase 8: 定量误差评估 ====================
 % 【目的】计算并对比融合航迹与单站航迹的位置误差，量化融合增益
@@ -1230,4 +1368,11 @@ function idx = find_reliable(trackList)
             idx(end+1) = t;
         end
     end
+end
+
+% rms_km — 计算误差向量的RMSE（km）
+%   输入: e — 误差值向量（km），可为空
+%   输出: v — RMSE值（km），空向量返回NaN
+function v = rms_km(e)
+    if isempty(e), v = NaN; else, v = sqrt(mean(e.^2)); end
 end

@@ -96,12 +96,6 @@ function plot_turn_point_clouds(true_track, detList_R1, detList_R2, ...
         params.detection_probability*100, params.false_alarm_rate));
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig2_point_clouds.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig2_point_clouds.png'));
-    end
-    fprintf('  图2 已保存: fig2_point_clouds.png\n');
 end
 
 function [lats, lons] = extract_det_ll_tpc(detList)
@@ -220,12 +214,6 @@ function plot_turn_radar_compare(true_track, track_base, track_ad, ...
 
     fname = sprintf('fig%d_%s_compare.png', fig_num, radar_label);
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, fname), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, fname));
-    end
-    fprintf('  图%d 已保存: %s\n', fig_num, fname);
 end
 
 function [lats, lons] = extract_ll_trc(snaps)
@@ -334,12 +322,6 @@ function plot_turn_fusion_map(true_track, ...
     text(0.10, y, '实线 = 自适应UKF融合', 'Units', 'normalized', 'FontSize', 9, 'Color', [0 0.3 0.1]);
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig5_fusion_map.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig5_fusion_map.png'));
-    end
-    fprintf('  图5 已保存: fig5_fusion_map.png\n');
 end
 
 function [lats, lons] = extract_fused_tfm(snaps)
@@ -514,12 +496,6 @@ function plot_turn_comprehensive(true_track, ...
         'FontSize', 7, 'BackgroundColor', [1 1 1]);
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig7_comprehensive.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig7_comprehensive.png'));
-    end
-    fprintf('  图7 已保存: fig7_comprehensive.png\n');
 end
 
 function [lats, lons] = extract_det_ll_tc(detList, mode)

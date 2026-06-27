@@ -168,12 +168,6 @@ function plot_turn_comparison(true_track, ...
         'FontSize', 8, 'BackgroundColor', [1 1 1]);
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig_turn_comparison.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig_turn_comparison.png'));
-    end
-    fprintf('  拐弯航迹对比图已保存: fig_turn_comparison.png\n');
 end
 
 function [lats, lons] = extract_track_ll_tcomp(snapshots)
@@ -429,12 +423,6 @@ function plot_turn_fusion_compare(true_track, ...
     sgtitle(sprintf('拐弯目标融合对比: 基础UKF(灰色/虚线) vs 机动自适应UKF(绿色/实线)'));
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig3_fusion_compare.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig3_fusion_compare.png'));
-    end
-    fprintf('  融合对比图已保存: fig3_fusion_compare.png\n');
 end
 
 function [lats, lons] = extract_fused_ll_tfc(snapshots)
@@ -573,12 +561,6 @@ function plot_turn_rmse_bars(fusion_eval_base, fusion_eval_ad, ...
     text(0.08, y, '绿色柱 = 机动自适应UKF', 'Units', 'normalized', 'FontSize', 9, 'Color', [0 0.3 0]);
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig6_rmse_bars.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig6_rmse_bars.png'));
-    end
-    fprintf('  图6 已保存: fig6_rmse_bars.png\n');
 end
 
 % =========================================================================
@@ -753,12 +735,6 @@ function plot_turn_single_compare(true_track, detList_R1, detList_R2, ...
         params.detection_probability*100));
 
     drawnow;
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig2_single_compare.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig2_single_compare.png'));
-    end
-    fprintf('  单站对比图已保存: fig2_single_compare.png\n');
 end
 
 function [lats, lons] = extract_valid_ll_tsc(snapshots)

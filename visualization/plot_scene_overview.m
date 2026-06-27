@@ -104,13 +104,7 @@ function plot_scene_overview(true_track, params, out_dir)
     % 强制刷新图形显示
     drawnow;
 
-    % 导出图片：优先使用 exportgraphics (R2020a+)，回退到 saveas
-    try
-        exportgraphics(fig, fullfile(out_dir, 'fig1_scene_overview.png'), 'Resolution', 200);
-    catch
-        saveas(fig, fullfile(out_dir, 'fig1_scene_overview.png'));
-    end
-    fprintf('  图1 已保存: fig1_scene_overview.png\n');
+    % 图窗已弹出，不再保存为PNG文件
 end
 
 % =========================================================================
