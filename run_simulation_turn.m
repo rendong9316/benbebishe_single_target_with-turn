@@ -477,17 +477,13 @@ fprintf('\n========== Phase 5: 航迹跟踪（基础UKF + 机动自适应UKF） 
 % R1 UKF模板配置（精密站，V2调优后）
 % ======================================================================
 % 将R1的噪声参数赋给params的UKF字段
-params.ukf_range_std_m = params.radar1_range_noise_std_m;
+params.ukf_range_std_m    = params.radar1_range_noise_std_m;
 params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
-params.ukf_Q_scale = 1e5;         % 过程噪声缩放因子（V2全局最优）
-params.ukf_P_pos_std = 0.10;      % 初始位置标准差0.10°（V2调优）
-params.ukf_P_vel_std = 0.004;     % 初始速度标准差0.004°/s
-params.gate_sigma = 7.0;          % 关联门限因子（V2全局最优）
-params.ukf_alpha = 1e-1;          % UT散布度参数（V2全局最优）
-params.fuzzy_window_size = 3;     % NIS滑动窗口（V2调优）
-params.fuzzy_ema_eta = 0.10;      % 模糊自适应EMA系数（V2调优）
-params.maneuver_ema_eta = 0.10;   % 机动自适应EMA系数（V2调优）
-params.tracker_K_loss = 20;       % 连续丢点容忍
+params.ukf_Q_scale     = params.radar1_ukf_Q_scale;
+params.ukf_P_pos_std   = params.radar1_ukf_P_pos_std;
+params.ukf_P_vel_std   = params.radar1_ukf_P_vel_std;
+params.gate_sigma      = params.radar1_gate_sigma;
+params.tracker_K_loss  = params.radar1_tracker_K_loss;
 
 % 创建R1 UKF模板（含状态维度、Sigma点权重、量测函数句柄等）
 % ukf_jichu('create') 返回的模板包含：状态转移矩阵F、过程噪声Q结构、
@@ -500,19 +496,15 @@ ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
 % ======================================================================
 % 使用params_r2作为R2的独立参数副本（避免与R1参数混淆）
 params_r2 = params;
-params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;
+params_r2.ukf_range_std_m    = params.radar2_range_noise_std_m;
 params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
-params_r2.gate_sigma = 7.0;          % 同R1（V2全局最优）
-params_r2.ukf_Q_scale = 2e5;         % R1的2倍（V2全局最优）
-params_r2.ukf_P_pos_std = 0.10;      % 初始位置不确定度（V2调优）
-params_r2.ukf_P_vel_std = 0.005;     % 初始速度不确定度
-params_r2.ukf_alpha = 1e-1;          % UT散布度参数（V2全局最优）
-params_r2.fuzzy_window_size = 3;     % NIS滑动窗口（V2调优）
-params_r2.fuzzy_ema_eta = 0.10;      % 模糊自适应EMA系数（V2调优）
-params_r2.maneuver_ema_eta = 0.10;   % 机动自适应EMA系数（V2调优）
-params_r2.tracker_M = 4;             % 航迹起始M/N逻辑
-params_r2.tracker_N = 8;
-params_r2.tracker_K_loss = 12;       % R2丢点容忍
+params_r2.gate_sigma      = params.radar2_gate_sigma;
+params_r2.ukf_Q_scale     = params.radar2_ukf_Q_scale;
+params_r2.ukf_P_pos_std   = params.radar2_ukf_P_pos_std;
+params_r2.ukf_P_vel_std   = params.radar2_ukf_P_vel_std;
+params_r2.tracker_M       = 4;
+params_r2.tracker_N       = 8;
+params_r2.tracker_K_loss  = params.radar2_tracker_K_loss;
 
 % 创建R2 UKF模板
 ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
@@ -918,41 +910,41 @@ if ~exist('results', 'dir'), mkdir('results'); end
 
 % 临时关闭所有警告（图表生成过程中可能产生非关键的MATLAB警告）
 warn_state = warning('off', 'all');
-
-% ---- 图1: 场景总览（拐弯航迹 + 双雷达覆盖扇区） ----
-% 使用plot_scene_overview（通用函数，与直线场景相同）
-% 展示拐弯航迹在双雷达覆盖扇区中的位置关系
-plot_scene_overview(true_track, params, 'results');
-
-% ---- 图2: 点云 + 基础UKF(虚线) + 自适应UKF(实线) 并排对比 ----
-% 'point_clouds'模式：左右并排显示R1和R2的点云和两种UKF轨迹
-% 输入：true_track(真值), detList(点云), trackSnapshots(基础UKF), trackSnapshots_ad(自适应UKF)
-plot_turn_spatial('point_clouds', true_track, detList_R1, detList_R2, ...
-    trackSnapshots_R1, trackSnapshots_R2, ...
-    trackSnapshots_R1_ad, trackSnapshots_R2_ad, params, 'results');
-
-% ---- 图3: R1单站对比（地图+拐弯放大+误差时间线+RMSE柱状图） ----
-% 雷达位置用 params.radar1_lat, params.radar1_lon（用于地图标注雷达站位置）
-% 最后一个参数3是图形编号，确保MATLAB新开figure窗口
-plot_turn_spatial('radar_compare', true_track, trackSnapshots_R1, trackSnapshots_R1_ad, ...
-    'R1', params.radar1_lat, params.radar1_lon, params, 'results', 3);
-
-% ---- 图4: R2单站对比（地图+拐弯放大+误差时间线+RMSE柱状图） ----
-plot_turn_spatial('radar_compare', true_track, trackSnapshots_R2, trackSnapshots_R2_ad, ...
-    'R2', params.radar2_lat, params.radar2_lon, params, 'results', 4);
-
-% ---- 图5: 融合地图对比（基础融合虚线 + 自适应融合实线 + 拐弯放大 + 信息面板） ----
-% 输入两组融合结果和各自的最佳算法索引
-% best_m_base/best_m_ad用于在信息面板中标注和突出显示最佳融合
-plot_turn_spatial('fusion_map', true_track, ...
-    all_fused_snapshots, method_names, best_m_base, ...
-    all_fused_snapshots_ad, method_names, best_m_ad, params, 'results');
-
-% ---- 图6: RMSE柱状图总览（全部方法 基础灰 vs 自适应绿 + 数值汇总） ----
-% 使用plot_turn_stats（专门为拐弯场景设计的统计图函数）
-% 对比所有6种评估标签的基础vs自适应RMSE
-plot_turn_stats('rmse_bars', fusion_eval_base, fusion_eval_ad, ...
-    method_names, best_m_base, best_m_ad, params, 'results');
+% 
+% % ---- 图1: 场景总览（拐弯航迹 + 双雷达覆盖扇区） ----
+% % 使用plot_scene_overview（通用函数，与直线场景相同）
+% % 展示拐弯航迹在双雷达覆盖扇区中的位置关系
+% plot_scene_overview(true_track, params, 'results');
+% 
+% % ---- 图2: 点云 + 基础UKF(虚线) + 自适应UKF(实线) 并排对比 ----
+% % 'point_clouds'模式：左右并排显示R1和R2的点云和两种UKF轨迹
+% % 输入：true_track(真值), detList(点云), trackSnapshots(基础UKF), trackSnapshots_ad(自适应UKF)
+% plot_turn_spatial('point_clouds', true_track, detList_R1, detList_R2, ...
+%     trackSnapshots_R1, trackSnapshots_R2, ...
+%     trackSnapshots_R1_ad, trackSnapshots_R2_ad, params, 'results');
+% 
+% % ---- 图3: R1单站对比（地图+拐弯放大+误差时间线+RMSE柱状图） ----
+% % 雷达位置用 params.radar1_lat, params.radar1_lon（用于地图标注雷达站位置）
+% % 最后一个参数3是图形编号，确保MATLAB新开figure窗口
+% plot_turn_spatial('radar_compare', true_track, trackSnapshots_R1, trackSnapshots_R1_ad, ...
+%     'R1', params.radar1_lat, params.radar1_lon, params, 'results', 3);
+% 
+% % ---- 图4: R2单站对比（地图+拐弯放大+误差时间线+RMSE柱状图） ----
+% plot_turn_spatial('radar_compare', true_track, trackSnapshots_R2, trackSnapshots_R2_ad, ...
+%     'R2', params.radar2_lat, params.radar2_lon, params, 'results', 4);
+% 
+% % ---- 图5: 融合地图对比（基础融合虚线 + 自适应融合实线 + 拐弯放大 + 信息面板） ----
+% % 输入两组融合结果和各自的最佳算法索引
+% % best_m_base/best_m_ad用于在信息面板中标注和突出显示最佳融合
+% plot_turn_spatial('fusion_map', true_track, ...
+%     all_fused_snapshots, method_names, best_m_base, ...
+%     all_fused_snapshots_ad, method_names, best_m_ad, params, 'results');
+% 
+% % ---- 图6: RMSE柱状图总览（全部方法 基础灰 vs 自适应绿 + 数值汇总） ----
+% % 使用plot_turn_stats（专门为拐弯场景设计的统计图函数）
+% % 对比所有6种评估标签的基础vs自适应RMSE
+% plot_turn_stats('rmse_bars', fusion_eval_base, fusion_eval_ad, ...
+%     method_names, best_m_base, best_m_ad, params, 'results');
 
 % ---- 图7: 全图层综合对比（地图 + 按钮控制显隐） ----
 % 'comprehensive'模式：绘制所有可用的轨迹图层

@@ -633,16 +633,13 @@ fprintf('\n========== Phase 5: 单目标航迹跟踪 ==========\n');
 
 % ---- R1 UKF 参数配置（精密站，V2调优后） ----
 % 将R1的量测噪声参数注入params，供ukf_jichu('create')构建R矩阵
-params.ukf_range_std_m = params.radar1_range_noise_std_m;      % 群距离噪声σ=7km
-params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg; % 方位角噪声σ=0.35°
-params.ukf_Q_scale = 1e5;         % Q过程噪声缩放因子（V2调优）
-params.ukf_P_pos_std = 0.10;      % 初始位置标准差0.10°（V2调优）
-params.ukf_P_vel_std = 0.004;     % 初始速度标准差0.004°/s
-params.gate_sigma = 4.0;          % 关联波门=4.0σ（V2调优，直线场景用保守值）
-params.ukf_alpha = 1e-2;          % UT散布度参数（V2调优）
-params.fuzzy_window_size = 3;     % NIS滑动窗口（V2调优）
-params.fuzzy_ema_eta = 0.10;      % 模糊自适应EMA系数（V2调优）
-params.maneuver_ema_eta = 0.10;   % 机动自适应EMA系数（V2调优）
+params.ukf_range_std_m = params.radar1_range_noise_std_m;
+params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
+params.ukf_Q_scale     = params.radar1_ukf_Q_scale;
+params.ukf_P_pos_std   = params.radar1_ukf_P_pos_std;
+params.ukf_P_vel_std   = params.radar1_ukf_P_vel_std;
+params.gate_sigma      = params.radar1_gate_sigma;
+params.tracker_K_loss  = params.radar1_tracker_K_loss;
 % ukf_jichu('create'): 创建UKF模板结构体
 %   内部初始化：state_dim(4) + sigma_points + weights + 坐标转换初始化
 %   R矩阵 = diag([σ_range², σ_az²]) （量测噪声协方差）
@@ -653,19 +650,15 @@ ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
 % ---- R2 UKF 参数配置（普通站，V2调优后） ----
 % 复制params为params_r2，然后覆写R2特有参数
 params_r2 = params;
-params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;    % σ=14km（R1的2倍）
-params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg; % σ=0.6°
-params_r2.gate_sigma = 5.0;         % 关联门放宽（V2调优，R2噪声大需更宽）
-params_r2.ukf_Q_scale = 2e5;        % Q缩放=2e5（V2调优，R1的2倍）
-params_r2.ukf_P_pos_std = 0.10;     % 初始位置不确定度（V2调优）
-params_r2.ukf_P_vel_std = 0.005;    % 初始速度不确定度
-params_r2.ukf_alpha = 1e-2;         % UT散布度参数（V2调优）
-params_r2.fuzzy_window_size = 3;    % NIS滑动窗口（V2调优）
-params_r2.fuzzy_ema_eta = 0.10;     % 模糊自适应EMA系数（V2调优）
-params_r2.maneuver_ema_eta = 0.10;  % 机动自适应EMA系数（V2调优）
-params_r2.tracker_M = 4;            % M/N逻辑: 4/8=起始条件（与R1相同）
-params_r2.tracker_N = 8;            % M/N逻辑: 4/8
-params_r2.tracker_K_loss = 12;      % 丢失容忍12帧（6分钟），普通站更宽容
+params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;
+params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
+params_r2.gate_sigma      = params.radar2_gate_sigma;
+params_r2.ukf_Q_scale     = params.radar2_ukf_Q_scale;
+params_r2.ukf_P_pos_std   = params.radar2_ukf_P_pos_std;
+params_r2.ukf_P_vel_std   = params.radar2_ukf_P_vel_std;
+params_r2.tracker_M       = 4;
+params_r2.tracker_N       = 8;
+params_r2.tracker_K_loss  = params.radar2_tracker_K_loss;
 % 创建R2的UKF模板
 ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
