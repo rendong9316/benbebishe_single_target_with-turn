@@ -102,13 +102,36 @@ function ukf = init_ukf(ukf, meas, meas2)
         [lon, lat] = meas_to_latlon_ukf(ukf, meas.range_meas, meas.azimuth_meas);
     end
 
-    % 步骤2：初始速度设为0，由UKF自行收敛
-    % 两点差分在 Pd=60% 条件下噪声大（σ_vel > 100 m/s），
-    % 初始速度错误会导致航迹发散且不可恢复。
-    % P_vel_std 已编码速度不确定性（~440 m/s），
-    % UKF 将在3-5帧内自行收敛到正确速度。
+    % 步骤2：尝试两点差分计算初始速度，带多重合理性检查
+    %   - 帧间隔 ≤ 2（时间近，杂波混入概率低）
+    %   - 速度大小在 [50, 500] m/s 范围内（亚音速）
+    % 任一条件不满足则回退到 v=0，由 UKF 自行收敛
     lon_dot = 0.0;
     lat_dot = 0.0;
+
+    if nargin >= 3 && ~isempty(meas2) && isfield(meas2, 'frameID') ...
+       && isfield(meas, 'frameID') && meas2.frameID ~= meas.frameID
+
+        n_frames_apart = abs(meas2.frameID - meas.frameID);
+
+        % 仅当两点时间接近（≤2帧）时才信任差分速度
+        % 帧间隔大将大幅增加其中一点为杂波的概率
+        if n_frames_apart <= 2
+            [lon1, lat1] = meas_to_latlon_ukf(ukf, meas.range_meas, meas.azimuth_meas);
+            [lon2, lat2] = meas_to_latlon_ukf(ukf, meas2.range_meas, meas2.azimuth_meas);
+
+            dt_sec = n_frames_apart * ukf.dt;
+            dlat_m = (lat2 - lat1) * 111320.0;
+            dlon_m = (lon2 - lon1) * 111320.0 * cosd((lat1 + lat2) / 2);
+            speed_ms = sqrt(dlat_m^2 + dlon_m^2) / max(dt_sec, 1.0);
+
+            if speed_ms >= 50 && speed_ms <= 500
+                lon_dot = (lon2 - lon1) / max(dt_sec, 1.0);
+                lat_dot = (lat2 - lat1) / max(dt_sec, 1.0);
+            end
+        end
+        % 否则保持 v=0，由 UKF 自行收敛
+    end
 
     ukf.x = [lon; lon_dot; lat; lat_dot];
 

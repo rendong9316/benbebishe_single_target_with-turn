@@ -59,21 +59,7 @@ function [innov_weighted, beta_vec, nis_2d] = pda_weight(dets_in_gate, z_pred, P
         mahal_2d(i) = innov_2d(:, i)' * (P_zz_2d \ innov_2d(:, i));
     end
 
-    % ---- Step 2: 单量测退化 → 直接返回简单新息 ----
-    if m == 1
-        z_actual = z_meas_3d(:, 1);
-        innov_weighted = z_actual - z_pred;
-        if innov_weighted(2) > 180
-            innov_weighted(2) = innov_weighted(2) - 360;
-        elseif innov_weighted(2) < -180
-            innov_weighted(2) = innov_weighted(2) + 360;
-        end
-        beta_vec = 1;
-        nis_2d = mahal_2d(1);
-        return;
-    end
-
-    % ---- Step 3: 计算 PDA 关联概率 β_i ----
+    % ---- Step 2: 计算 PDA 关联概率 β_i（含 m=1 情况，不再退化） ----
     Pg = params.pda_pd_gate;
     Pd = params.detection_probability;
     alpha = Pd * Pg;
@@ -93,7 +79,7 @@ function [innov_weighted, beta_vec, nis_2d] = pda_weight(dets_in_gate, z_pred, P
         beta_vec(i) = e(i) / (b + sum(e));
     end
 
-    % ---- Step 4: 构造 3D 完整新息向量并计算加权新息 ----
+    % ---- Step 3: 构造 3D 完整新息向量并计算加权新息 ----
     innov_3d = zeros(3, m);
     for i = 1:m
         innov_3d(:, i) = z_meas_3d(:, i) - z_pred;
@@ -105,7 +91,7 @@ function [innov_weighted, beta_vec, nis_2d] = pda_weight(dets_in_gate, z_pred, P
     end
     innov_weighted = innov_3d * beta_vec';
 
-    % ---- Step 5: 选取最高权重量测对应的 NIS 值 ----
+    % ---- Step 4: 选取最高权重量测对应的 NIS 值 ----
     [~, best_idx] = max(beta_vec);
     nis_2d = mahal_2d(best_idx);
 end

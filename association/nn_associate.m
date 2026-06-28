@@ -26,6 +26,18 @@ function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_li
         geo_gate_m = 60000;  % UKF 收敛后缩小到 60km
     end
 
+    % ---- Step 1.5: 马氏波门软启动倍率（起始后前3帧逐步收紧） ----
+    if track_life <= 1
+        gate_scale = 3.0;   % 等效 12σ（v=0 首帧预测误差极大）
+    elseif track_life == 2
+        gate_scale = 2.0;   % 等效 8σ
+    elseif track_life == 3
+        gate_scale = 1.5;   % 等效 6σ
+    else
+        gate_scale = 1.0;   % 正常 4σ
+    end
+    gate_threshold = (params.gate_sigma * gate_scale)^2 * 2;
+
     % ---- Step 2: NN 关联（地理预筛选 + 马氏距离精筛选） ----
     best_det = [];
     best_mahal = inf;
@@ -53,7 +65,6 @@ function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_li
         end
         mahal = innov' * (P_zz_2d \ innov);
 
-        gate_threshold = params.gate_sigma^2 * 2;
         if mahal < gate_threshold && mahal < best_mahal
             best_mahal = mahal;
             best_det = dp;
@@ -65,7 +76,6 @@ function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_li
     if ~isempty(best_det)
         dets_in_gate = {best_det};
     end
-    gate_threshold = params.gate_sigma^2 * 2;
     for d = 1:length(det_list)
         dp = det_list(d);
         if ~isempty(best_det) && isequal(dp, best_det)

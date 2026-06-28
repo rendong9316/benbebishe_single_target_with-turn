@@ -304,8 +304,8 @@ function params = simulation_params()
     % gate_sigma — 马氏距离门控的 sigma 倍数（2D 量测）
     %   门内概率：sigma=4 → ~99.97%，sigma=7 → ~>99.99%
     %   [turn: R1=7.0, R2=7.0 — 拐弯预测偏差大，放宽门限]
-    params.radar1_gate_sigma = 4;
-    params.radar2_gate_sigma = 5;
+    params.radar1_gate_sigma = 6;
+    params.radar2_gate_sigma = 6;
 
     % =====================================================================
     % 7.5 模糊自适应 Q（两雷达共用）
@@ -353,7 +353,7 @@ function params = simulation_params()
     % M=4, N=8: 最近 8 次扫描中至少需要 4 次检测到目标才确认一条新航迹。
     % 等效起始概率阈值 = 4/8 = 50%，在快速起始（小 N）和低虚警（大 M/N 比）
     % 之间取折中。起始延迟约 4×30 = 120 秒（最坏情况）。
-    params.tracker_M = 4;
+    params.tracker_M = 5;
     params.tracker_N = 8;
 
     % 航迹终止连续丢失帧数
@@ -503,5 +503,5 @@ function params = simulation_params()
     % 随机数生成器种子
     % 42 是一个经典的"计算机科学梗"（《银河系漫游指南》中"生命、宇宙
     % 及一切的答案"），没有特殊的数学意义，任何固定整数均可。
-    params.random_seed = 19;
+    params.random_seed = 24;
 end

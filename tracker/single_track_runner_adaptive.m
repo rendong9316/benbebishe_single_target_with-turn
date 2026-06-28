@@ -81,23 +81,64 @@ function [trackSnapshots, finalTrack] = single_track_runner_adaptive(detList, uk
                     % 3. 关联: PDA 加权新息
                     [innov_w, ~, nis_val] = pda_weight(dets_in_gate, z_pred, P_zz, params);
 
-                    % 设置机动预检测所需字段（供 ukf_zishiying 内部使用）
-                    ukf.last_innov = innov_w;
-                    ukf.last_x_pred = x_pred;
-                    ukf.last_z_pred = z_pred;
-                    ukf.last_P_zz = P_zz;
-                    ukf.last_det_list = dets;
+                    % 3.5 Probation 期保护（life≤5：NIS过大；life≤10：速度方向突变）
+                    probate_nis_limit = 50;
+                    reject_update = false;
+                    if life <= 5 && nis_val > probate_nis_limit
+                        reject_update = true;
+                    end
 
-                    % 4. 自适应 UKF: 纯 Kalman 更新 + 机动自适应 Q
-                    [lon, lat, ukf] = ukf_zishiying('update', ukf, innov_w, z_pred, ...
-                        Z_pred, X_pred, x_pred, P_pred, P_zz, params);
+                    if ~reject_update
+                        % 预更新速度方向
+                        v_pred_dir = atan2d(x_pred(4), x_pred(2));
 
-                    % 航迹维护
-                    if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
-                    ukf.nis_history(end+1) = nis_val;
-                    missed = 0;
-                    life = life + 1;
-                    quality = min(quality + 1, 15);
+                        % 设置机动预检测所需字段（供 ukf_zishiying 内部使用）
+                        ukf.last_innov = innov_w;
+                        ukf.last_x_pred = x_pred;
+                        ukf.last_z_pred = z_pred;
+                        ukf.last_P_zz = P_zz;
+                        ukf.last_det_list = dets;
+
+                        % 4. 自适应 UKF: 纯 Kalman 更新 + 机动自适应 Q
+                        [lon, lat, ukf] = ukf_zishiying('update', ukf, innov_w, z_pred, ...
+                            Z_pred, X_pred, x_pred, P_pred, P_zz, params);
+
+                        % Probation 期速度合理性检查（life≤10）
+                        if life <= 10
+                            % 速度方向突变 >90°
+                            v_new_dir = atan2d(ukf.x(4), ukf.x(2));
+                            dir_change = abs(angdiff_deg_ad(v_pred_dir, v_new_dir));
+                            if dir_change > 90
+                                reject_update = true;
+                            end
+                            % 速度大小超限 >500 m/s
+                            if ~reject_update
+                                speed_ms = sqrt(ukf.x(2)^2 + ukf.x(4)^2) ...
+                                    * 111320.0 * cosd(abs(ukf.x(3)));
+                                if speed_ms > 500
+                                    reject_update = true;
+                                end
+                            end
+                        end
+                    end
+
+                    if reject_update
+                        ukf.x = x_pred;
+                        ukf.P = P_pred;
+                        lon = x_pred(1);
+                        lat = x_pred(3);
+                        missed = missed + 1;
+                        life = life + 1;
+                        quality = max(quality - 1, 0);
+                        best_det = [];
+                    else
+                        % 航迹维护
+                        if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                        ukf.nis_history(end+1) = nis_val;
+                        missed = 0;
+                        life = life + 1;
+                        quality = min(quality + 1, 15);
+                    end
                 else
                     ukf.x = x_pred;
                     ukf.P = P_pred;
@@ -158,4 +199,12 @@ end
 % =========================================================================
 function v = iif_adapt(cond, t, f)
     if cond, v = t; else, v = f; end
+end
+
+
+% =========================================================================
+% angdiff_deg_ad — 两个角度（度）之间的最小差值，范围 (-180, 180]
+% =========================================================================
+function d = angdiff_deg_ad(a, b)
+    d = mod(b - a + 180, 360) - 180;
 end
