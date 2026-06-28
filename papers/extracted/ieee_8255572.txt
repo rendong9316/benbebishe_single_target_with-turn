@@ -1,0 +1,1331 @@
+
+--- Page 1 ---
+I. BACKGROUND ON THE SHARPLY MANEUVERING
+TARGETPROBLEM
+Trackingofremotetargetsisachallengingtaskbecause
+Multiple-Model Estimators for
+measurement systems are inaccurate, they are unaware of
+theinputforcesthatmaybeappliedtotargets,andthetar-
+Tracking Sharply Maneuvering
+gets’dynamicpropertiescannotbemodeledexactly.Some
+real-world targets, such as land vehicles with continuous
+Ground Targets
+wheel tracks, are capable of making very sharp, evasive
+maneuvers, effectively maintaining constant speed while
+making large changes in heading. Although a very differ-
+enttypeofalgorithmforzigzaggingtargetswasdeveloped
+in [1], little prior work has dealt with this specific type of
+RADU S. MATEI maneuvering target. Targets with moderate and relatively
+YAAKOV BAR-SHALOM , Fellow, IEEE
+smoothturncapabilityhavebeenextensivelystudied.
+PETER WILLETT, Fellow, IEEE
+The coordinated-turn (CT) dynamic model has been
+University of Connecticut, Storrs, CT, USA
+widely used for tracking air targets [2]. In this model, the
+turnrateω(t)isastateand,incontinuoustime,evolvesasa
+Wienerprocess(itissometimesreferredtoastheWiener-
+This paper presents algorithms that can be used to track the state processturnratemodel[3]).Theturnrateresultsinlateral
+of kinematic point targets, moving in two dimensions, that are ca- accelerations (normal to velocity) that dominate the ma-
+pable of making very sharp heading maneuvers over short periods neuveringcapabilityofthetarget.However,therearesome
+of time. Ground vehicles with continuous wheel tracks moving in an
+issues with this model when it is considered for tracking
+open field may perform such maneuvers. These targets are capable of
+60◦/s turn rates, whereas measurements are received at only 1 Hz. We sharply turning targets. First, the most popular discretiza-
+describe how an interacting multiple model estimator (IMM) should tion of the CT model approximates the Wiener process
+be designed to accommodate such maneuvers, and we introduce the as a random walk, and this approximation degrades with
+nonzero mean, white noise turn-rate model to quickly detect sharp decreased measurement rate and increased target maneu-
+turns by modeling a multimode process noise probability density func-
+verability. An alternate discretization is proposed in [4],
+tion. Results show that including such modes in an IMM achieves
+but it is still approximate. A white noise turn rate model
+significant improvement in accuracy and consistency, as compared to
+conventional coordinated-turn IMM filters. (WNTR) that circumvents this issue is proposed here for
+dealingwithsharplymaneuveringtargets.
+Kinematictargetsthatexperienceaccelerationsnormal
+to their velocity can be described by nonlinear recursive
+equations.Similarly,whenmeasurementsystemsreportpo-
+larcoordinates,theyaredescribedbynonlinearfunctionsof
+thetargetstate.Inthecurrentapplication,thedynamicequa-
+tioncontainsthenonlineareffectofaturnrateω(t)either
+asastatetobeestimatedorasastochasticinput.Themag-
+nitudeoftheanglethatthetarget’svelocityvectorcanturn
+overasamplingintervalisquitehigh(60◦,forexample)and
+thisresultsinrelativelyhighnonlinearity.Thelinearmin-
+imummean-squareerror(MSE)filterforstateestimation,
+theKalmanfilter,isnotoptimalinsuchsituations.Themost
+common suboptimal solution, the extended Kalman filter
+(EKF),usesfirst-orderTaylorseriesapproximationsofthe
+dynamicand/ormeasurementequations[3].Second-order
+correctiontermswerefirstspecifiedin[5],andBar-Shalom
+Manuscript received November 27, 2016; revised August 30, 2017; re- etal.[6]havegeneralizedthealgorithmtohandlenonlinear
+leased for publication November 2, 2017. Date of publication January 12,
+stochastic inputs and have provided computational short-
+2018; date of current version June 7, 2018.
+cuts as well. Due to its great performance, mathematical
+DOI. No. 10.1109/TAES.2018.2793019 tractability,andsinceitrequiresnointrinsicdesignparam-
+Refereeing of this contribution was handled by F. Govaers. eters (other than the parameters of the dynamic and mea-
+surementmodels),thesecond-orderEKF(SOEKF)isused
+Authors’ address: R. S. Matei, Y. Bar-Shalom, and P. Willett are with
+here.Thereare,however,manyotherchoicesfornonlinear
+the University of Connecticut, Storrs, CT 06269-4157 USA, E-mail:
+(radu@sigware.net; yaakov.bar-shalom@uconn.edu; filters.Theunscentedfilter[7]isacomputationallyefficient
+peter.willett@uconn.edu). (Corresponding author Radu S. Matei.) method that utilizes numerical differentiation to estimate
+thefirsttwomomentsofthestate.Theparticlefilter[8]runs
+0018-9251(cid:2)C 2018IEEE MonteCarlosimulationsateachtimesteptoestimateand
+1404 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.54,NO.3 JUNE2018
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 2 ---
+propagate an approximate, non-Gaussian posterior state in [22], has been heavily researched in the past decade,
+probability density function (PDF) using Bayes’ Theo- but its inclusion into the present problem is unnecessary
+rem.TheCubaturefilter[9]usesnumericalintegrationand due to the small number of modes in the model sets that
+Bayes’ Theorem to find the posterior state PDF, and only arepresentedhere.Averydifferentapproachwastakenin
+thefirsttwomomentsarecarriedtothenexttimestep.To [23], where a very unpredictable target is tracked using a
+handle the nonlinear measurement equation, we can opt non-Bayesiansegmentingalgorithm.
+for any of the previously mentioned methods, or we can Athoroughsurveyofmaneuveringtargettrackingcan
+convert the measurements from polar to Cartesian coordi- befoundin[2],[24]–[26],and[19].Inthatsurvey,aswell
+nates. A method of unbiased conversions, which includes as in [18] and [3], it is often the case that the best algo-
+second-ordercorrections,isgivenin[10]andisusedhere. rithms(consideringbothaccuracyandcomputationalload)
+It is stated in [7] that a motivation of the unscented for tracking point targets with CT capability in two di-
+filteristheneedtocalculateJacobiansandHessiansinthe mension(2D)areIMMshavingalow-process-noisewhite
+SOEKF. However, once they are calculated, they are very noiseacceleration(WNA)modeandoneormorenearlyCT
+convenientandaccurate,andtheSOEKFdoesnotrequire modes(alsoknownasWienerprocessturnratemodes)in
+anydesignparametersrelatedtoitsfirst-andsecond-order themodelsets.In2D,suchanalgorithmisknownasIMM-
+Taylorseriesapproximations.Weshowasimplederivation CT. In [27]–[29], significant improvements were made to
+oftheJacobiansandHessiansintheappendix. IMMsthatincludemodemodelswithstatevectorsthatdo
+Alone, the nonlinear methods described above do not not contain the same state variables. The work of Tugnait
+implicitly handle the nonpredictable nature of random in- [29]encompassestheothertwo,andwewilluseittocor-
+putsthataredealtwithintherealmofmaneuveringtarget rectly design prior distributions to be used in mixing the
+tracking. For example, if a kinematic target moves in a modes that contain the turn rate state ω(t) with those that
+straightlineforalongtime,thensuddenlyexecutesasharp donot.
+turn,itisnotidealtomodeltheturnrateprocessnoiseasan Someofthefilterspresentedhererelyonnonzero-mean
+integralofGaussianwhitenoise(aWienerprocess)because processnoisemodelstorepresentstraight-,left-,andright-
+thisintegrationimpliesmemoryandlow-passresponseina turningtargetmodes.Thiscorrespondstoeachmodehav-
+target’sturnbehavior,andthesharp-turnmaneuversdonot ing an approximately known input. This method has been
+exhibitsuchWienerprocessbehavior.Oneofthefirstalgo- explored only in part in the literature. It was successfully
+rithmsfordealingwithmaneuveringtargetsusedstatistical appliedin[21]byusingmultipleleft-andright-turnmodes,
+decisiontheorytoaugmentthestateofaconstant-velocity but there was no indication that this was a better method
+model with an acceleration variable when maneuvers are thanusinganIMM-CTwithmultiplemaneuveringmodes.
+detected [11]. Input estimation, which uses a history of Also, Linder and Schell [21] treated the turn rate in each
+measurement residuals to detect and estimate the magni- mode as precisely known with no variance—this proba-
+tudeofastepfunctioninput,wasdevelopedin[12]. bilistically incorrect in the present application. This paper
+Whenatargetexhibitschangesinthenatureofitsdy- generalizes the concept of nonzero-mean process noise to
+namics, then the system parameters can be modeled as handle the quick, sharp turns that some ground vehicles
+Markov jump processes, and a unified framework of esti- canperform,withoutassumingthattheturnrateisknown
+matingbothstateandparameterscanbeused,asin[13]and exactlyinanymode.
+[14].Multiple-model(MM)algorithms,wherethetarget’s Thispaperisorganizedasfollows.Theproblemformu-
+currentsystemequationisoneinasetofknown“modes,” lationisgiveninSectionII.ModificationstotheIMM-CT
+areamodernchoicefortrackingmaneuveringtargets.The andthenewwhitenoiseturnrateIMM(IMM-WNTR)are
+optimalMMestimator,alongwiththefirstsuboptimalap- presentedinSectionIIItoeffectivelytracksharplymaneu-
+proximation(GPB1,thegeneralizedpseudo-BayesianMM veringtargets.SectionIVformulatesfilterdesignparameter
+estimatoroffirstorder),waspresentedin[15].TheGPB2 selection,andSectionVdiscussesMonteCarlosimulation
+algorithm was first given in [16]. The interacting multi- results. The appendix provides a short derivation of the
+ple model estimator (IMM), which typically performs as JacobiansandHessiansoftheCTandWNTRmodels.
+well as GPB2 but with much less computation, was first
+introduced in [17]. Since its introduction, it has generally II. PROBLEMFORMULATION
+beenacceptedasthebestoverallalgorithmformaneuvering
+A. StateandMeasurementEquations
+target tracking (and other MM system applications) when
+Thetargetismodeledasapointina2-DCartesianspace
+consideringbothaccuracyandcomputationalload[3],[18],
+withstatevector
+[19],anditisusedinthispaper.Sincethen,theViterbial-
+(cid:2) (cid:3)
+gorithmhasalsobeenadaptedtotheareaofMMswitching x(t)= s (cid:4) (t) s˙ (cid:4) (t) ω(t) (cid:4)
+systems[20],andaB-Bestmodehistoryalgorithm[13]has =[x(t) y(t) x˙(t) y˙(t) ω(t)] (cid:4) (1)
+also been developed. However, while theoretically sound,
+thelattertwoalgorithmsarehard-decisionbasedandwere wheres(t)=[x(t) y(t)](cid:4) istheCartesianposition,s˙(t)=
+shown[21]tohaveweakperformancewhenthetruetarget [x˙(t) y˙(t)](cid:4) is the Cartesian velocity, and ω(t) is the turn
+modelisnotamongthemodelsinthesetdesignedforthe rateofthevelocityvector.Inthispaper,ωisastatevariable
+algorithms. Variable-structure MM estimation, introduced onlyintheCTmodel.Ourgoalistofindthemostaccurate
+VISINAETAL.:MULTIPLE-MODELESTIMATORSFORTRACKINGSHARPLYMANEUVERINGGROUNDTARGETS 1405
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 3 ---
+estimates ofthestate xˆ(k|k)fromnoisy position measure- A. CTModel
+ments.Wearealsointerestedinfindinganestimateofthe
+The CT model has been highly successful for track-
+MSEofthestateestimateP(k|k).Weareseekinghigherac-
+ing targets that are capable of true CTs, such as aircraft.
+curacythanthatcanbeobtainedfromtherawmeasurement
+Omittingthetimeparameter,thecontinuous-timemodelis
+systemandconsistencyintheestimatedMSE. ⎡ ⎤ ⎡ ⎤⎡ ⎤ ⎡ ⎤
+During a CT, the velocity vector rotates according to s˙ 0 2×2 I 2×2 0 2×1 s (cid:12) (cid:13) v x
+the turn rate ω. To model sharp maneuvers, such as those ⎢ ⎣s¨ ⎥ ⎦= ⎢ ⎣0 2×2 ωU 0 2×1 ⎥ ⎦ ⎢ ⎣s˙ ⎥ ⎦+ 0 2×3 ⎢ ⎣v y ⎥ ⎦
+t h h i a c t le c s a d n el b ib e e u ra n t d e e ly rta a k tt e e n m b p y tin c g o t n o ti e n v u a o d u e sl c y on tr v a e c n k t e io d n l a a l n t d rac v k e- - ω˙ 0 1×2 0 1×2 0 ω I 3×3 v ω
+(5)
+ingsystemsand/orincomingweapons,weshallmodeland
+simulatehighCTratesforshorttimeperiods.Positiveturn
+whereIm×nisthem×nidentitymatrix,0m×nisthem×n
+matrixofzeros,and
+rateimpliescounter-clockwise(left)rotationofthevelocity
+(cid:12) (cid:13)
+vector. 0 −1
+Thedynamicstateevolutionisdescribedbythediscrete- U= (6)
+1 0
+timesystem
+is a constant skew-symmetric matrix. The random se-
+xk+1 =f[xk ,vk] (2) quences v x(t), v y(t), and v ω(t) are the components of the
+where f is the nonlinear state transition function between
+processnoisev(t),withv ω(t)thewhitenoiseturnacceler-
+samples,andv(k)isawhiteprocessnoisevectorthatrepre- ationthatentersthesystemtoyieldarandomwalk(i.e.,an
+sentsrandominputsorthemodel’sinaccuracies.Thepro- approximateWienerprocess)turnrate.
+cessnoisevectorvk hasmeanv¯ andcovariancematrixQ. Indiscretetime,(5)istypicallyapproximatedas
+⎡ ⎤ ⎡ ⎤⎡ ⎤
+Themeasurementequationinpolarcoordinatesis
+zp(k)=[r(k) θ(k)] (cid:4) =h(xs(k),x(k))+wp(k) (3) ⎢ ⎣ s s˙ k k + + 1 1 ⎥ ⎦= ⎢ ⎣0 I 2 2 × × 2 2 ω 1 k U( V I− k Vk) 0 0 2 2 × × 1 1 ⎥ ⎦ ⎢ ⎣s s ˙ k k ⎥ ⎦
+where zp(k) is the vector that represents the noisy polar ω k+1 0 1×2 0 1×2 1 ω k
+⎡ ⎤
+t
+m
+he
+ea
+s
+s
+t
+u
+a
+r
+t
+e
+e
+m
+v
+e
+e
+n
+c
+t
+t
+s
+or
+o
+o
+f
+f
+ra
+th
+n
+e
+ge
+m
+r
+e
+(
+a
+k
+s
+)
+ur
+a
+e
+n
+m
+d
+e
+a
+n
+n
+t
+g
+s
+l
+e
+e
+n
+θ
+so
+(k
+r.
+),
+T
+a
+h
+n
+e
+d
+2
+x
+-D
+s(
+,
+k)
+ad
+is
+- ⎢
+T
+2
+2I 2×2 0 2×1
+⎥
+⎡
+⎢
+v
+x,k
+⎤
+⎥
+ditive,zero-mean,white,Gaussianvectorwp(k)describes +⎢ ⎣ TI 2×2 0 2×1 ⎥ ⎦ ⎣v y,k ⎦ (7)
+thenoiseinthemeasurement,and v
+(cid:4) (cid:5) 0 1×2 T ω,k
+(cid:2) (cid:3) σ2 0
+Rp(k)=E wp(k)w (cid:4)
+p
+(k) =
+0
+r
+σ2
+(4) where T is the measurement interval, eA is the matrix ex-
+θ ponentialofA,and
+(cid:12) (cid:13)
+i
+s
+s
+tr
+i
+a
+t
+i
+T s
+g
+h c
+h
+o e
+t-
+v
+l
+a t
+i
+a
+n
+r r i
+e
+g an e
+m
+t c
+o
+e m
+t
+m
+io
+o a
+n
+ti t
+,
+o r
+f
+i n x
+as
+. i
+t
+s
+le
+e
+f
+x
+t/
+p
+ri
+e
+g
+c
+h
+te
+t
+d
+tur
+t
+n
+o
+in
+c
+g
+on
+c
+s
+a
+i
+p
+s
+a
+t
+b
+m
+ili
+o
+ty
+s
+,
+tl
+s
+y
+lo
+o
+w
+f Vk =eω k TU = c
+s
+o
+in
+s
+ω
+ω
+k
+k
+T
+T −
+co
+s
+s
+in
+ω
+ω
+k
+k
+T
+T (8)
+turning capability, fast deceleration (braking) capability, isarotationmatrix.Touse(7),theturnrateω k isevaluated
+andrelativelyslowaccelerationcapability.Althoughestab- atthelastestimateoftheturnrateωˆk|k.Itisevidentthatthe
+lishedmethodscanbeused,suchasIMM-CTanditsvari- evolution of ω k in (7) is a random walk approximation of
+ants, these methods were mostly designed for aerospace theWienerprocessin(5).Theturnrateisassumedconstant
+applications,wherethemaximumturnsoverasinglesam- throughoutthestatepredictionintervalT,soeffectsofthe
+pling interval are only a few degrees, and where the turn turnaccelerationv k arenotpropagatedtothepositionand
+rate itself cannot suddenly change because aircraft must velocityvectorswithinthesamplinginterval.Thisissueis
+bank to turn. However, it is critical that a filter can de- discussedin[4],andanalternatediscreteapproximationis
+tect maneuvers and correct the state estimate as quickly proposed.Thediscrete-timeCTmodelgivenin(7)canalso
+as possible in the present application. It is also important beimprovedbyrunningaprediction-onlyfilterformtime
+toachieveverylowtrackingerrorduringstraight-linemo- intervalsoflength T inbetweenmeasurementsformoreac-
+m
+tion,wherethedynamicsarelinear.Allthisshouldbedone curateintegration,attheexpenseofmorecomputation[3].
+whilemaintainingthetrackingaccuracybetterthantheraw Even with effective nonlinear filtering methods, the
+measurements. continuous-time CT model itself is still not a match to
+reality.Thisisbecausethesharpturnsareofshortduration
+III. MODELSFORSHARPLYMANEUVERINGTARGETS
+and, when they do happen, the turn rate values are nearly
+Our algorithms are based on MM methods. For each independentofpreviousones.Weneedtodetectthesema-
+filter,n r willbethenumberofmodesinthemodelset,and neuvers very quickly, but we do not want to sacrifice too
+the first mode for all filters will use the nonmaneuvering muchaccuracywhentherearenoturns.Justincreasingthe
+WNA model. This linear model is typical for targets that variance of the turn acceleration σ2 needlessly increases
+ω
+performonlyoccasionalaccelerationsandcanbereviewed the filter bandwidth during nonmaneuvering, straight-line
+in[3]. motion.
+1406 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.54,NO.3 JUNE2018
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 4 ---
+B. NonzeroMean,WNTR likelihoodfunctionsformodesthatarenotineffect,thereby
+increasing the tracking accuracy during straight-line
+Ifwewanttodetectoccasionalsharpmaneuversamong
+motionandallowingforfastdetection/correctionofturning
+nearlyconstantvelocitymotion,thenithelpstomodelthe
+maneuvers.
+turnrateprocessnoiseasaGaussianmixturedensity(pos-
+Even though the WNTR modes are designed for very
+siblymultimodal)consistingofthreeGaussiantermswith
+sharp maneuvers, this filter can also perform well during
+different means: no turn (zero mean), left turn (positive
+CTs, thanks to the mode mixing. For example, during a
+mean),andrightturn(negativemean).Witharecursivees-
+CTtotheleft,theestimatormixesinsomeoftheleftturn
+timationalgorithmthatrequiresthattheprocessnoiseisap-
+mode’s output, resulting in a balance between sharp turns
+proximatedasawhiteGaussianprocess,thisisnotpossible.
+andCV.Whileitwillbeshownthatthisdoesprovidevery
+Within a MM estimator, however, this is very straightfor-
+goodpositionandvelocityestimates,thismethoddoesnot
+ward.Infact,wecanapproximateanynon-GaussianPDF
+estimatetheturnrate,whichmeansthatitisnotsuitedfor
+usingaGaussianmixture[30].MMestimators,suchasthe
+situations where long-term target predictions are needed.
+IMM,alsoallowustodescribethetimecorrelationbetween
+To remedy this, we can also include a CT mode with low
+modesintheformofatransitionprobabilitymatrix(TPM)
+process noise in the mode set. This should provide the
+[3]. We can match the TPM to the expected behavior of
+thetargetbyusingthemeansojourntimeofmodei,E[τ i], b
+ru
+e
+n
+n
+n
+e
+i
+fi
+n
+t
+g
+o
+e
+f
+st
+f
+im
+as
+a
+t
+te
+m
+o
+a
+f
+n
+ω
+eu
+.
+ver detection, as well as having a
+with,
+T
+C. ModeMixingWithPriorDistributions
+p ii =1− E[τ i] (9)
+IfweintroduceaCTmodeintheIMM,thenwemust
+beingtheprobabilityofremaininginmodei.IfE[τ ]=T, handlethemixingofmodesthathavedifferentstatevector
+2
+then p =0. That means that the sharply maneuvering components.TheCTmodeincludestheωstatecomponent,
+22
+modeisexpectedtolastonesampleandnolonger. while the WNA and WNTR models do not. According to
+ToapproximatemultimodalPDFsfortheturnratepro- theworkin[29],weshoulduseapriordistributionoftheω
+cessnoise,asweneedfortheoccasionalsharpmaneuver, statevariablewhentransitioningfromWNA/WNTRtoCT.
+wecanutilizenonzeromeanprocessnoisemodesinaMM We must select aprior meanω˜(i) and variance σ˜2(i) ofthe
+k ω,k
+estimator.Wecallamodelofthesemodesthenonzeromean turnrateforeachnon-CTmodeibyasking“Iftheprevious
+WNTRmodel.Thestateis modewasWNA/WNTR,thenwhatistheexpectedturnrate
+xk =[sk s˙k] (cid:4) (10) when starting the CT mode, and how much variance goes
+withthatexpectedturnrate?”
+andthemotionisdescribedby To answer this question, we first note that the WNA
+(cid:4) (cid:5)
+(cid:12) (cid:13) (cid:12) (cid:13) modelhasadefinitezeroturnrateatalltimes.
+s
+s
+˙
+k
+k
++
++
+1
+1
+=
+0
+I 2
+2
+×
+×
+2
+2
+ω 1 k U(
+V
+I−
+k
+Vk)
+s
+s
+˙
+k
+k
+ω˜
+k
+(i WNA) =0
++
+(cid:4) T
+2
+2I 2×2 0 2×1 (cid:5) ⎡ ⎢
+⎣v
+v x
+y
+,
+,
+k
+k
+⎤ ⎥
+⎦. (11) WhenenteringCTfrom
+σ˜ ω 2
+W
+( , i k W
+N
+NA
+T
+)
+R
+=
+,w
+0.
+ehave
+(12)
+TI 2×2 0 2×1 v ω,k ω˜
+k
+(i WNTR) =v¯
+ω
+(i WNTR)
+In(11),v ω,k isthewhitenoiseturnrate.Thesecond-order σ˜
+ω
+2(
+,
+i
+k
+WNTR) =σ
+ω
+2(i WNTR) (13)
+EKF will be used to propagate the state prediction xˆk+1|k
+and the state covariance prediction Pk+1|k, with ω k =v¯ω, meaningthattheexpectedturnratewhenexitingtheWNTR
+the mean of the white noise turn rate process noise. We mode is the mean of the white noise turn rate, and the
+propose that when tracking sharply maneuvering targets, variance of this prior is equal to the variance of the white
+it is advantageous to have at least two WNTR modes to noiseturnrate.v¯ ω (i WNTR) andσ ω 2(i WNTR) aredesignparameters
+correspondtorightandleftturns. thatareselectedforeachWNTRmode.
+An advantage of this nonzero mean process noise in a
+MMfilteristhatthemeasurementpredictionzˆ(i)
+ofeach
+IV. FILTERDESIGN
+k+1|k
+modeiisunique,unliketheIMM-CT,whereifωˆk|kiszero, A. IMM-CTDesign
+thenthemode-conditioned measurementprediction ofthe
+The first filter to test is a simple IMM-CT with mode
+maneuveringCTmodezˆ(2) isalmostthesameasthatof
+k+1|k 1, a WNA mode, and mode 2, a CT mode, matched to
+the nonmaneuvering mode zˆ(1) , resulting in less ability the possibility that the target can sharply turn its velocity
+k+1|k
+to discriminate between modes. Utilizing WNTR modes vector within a single measurement interval. In mode 1,
+guaranteesthatthemode-conditionedstatepredictionsare we set σ x =σ y to a low value of 0.1m/s2 to cover small
+unique at all times since the mean of the turn rate pro- deviations from CV (and we use these linear acceleration
+cessnoiseofeachmodeisunique,whichresultsinunique standarddeviationparametersinallsubsequentmodesde-
+measurementpredictions.Higher-magnitudemeasurement signed in this paper). In mode 2, the CT model mode, we
+residuals (innovations) will result in smaller values of the keep σ x =σ y =0.1m/s2 and set σ ω (2) =60 ◦ /s2 to handle
+VISINAETAL.:MULTIPLE-MODELESTIMATORSFORTRACKINGSHARPLYMANEUVERINGGROUNDTARGETS 1407
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 5 ---
+Fig.1. Visualizationofthewhitenoiseturnratemaneuveringprocess
+noiseasaGaussiansummixture. Fig.2. Simulatedtrajectoryandexamplemeasurements.Segment
+labelsarefromTableI.
+sharp-turn maneuvers. This parameter, the turn accelera- andE[τ ]=10s.TheTPMis
+4
+tion process noise standard deviation, is integrated as a
+⎡ ⎤
+constant over a measurement interval T to result in the p 1−p 11 1−p 11 1−p 11
+target’smostprobablesharp-turnrateσ
+ω
+T,whichis60◦/s ⎢
+⎢ 0.
+1
+5
+1
+0
+4
+0
+4
+0
+2
+.5
+⎥
+⎥
+i E n [ t τ hi ] s = ap E pl [ i τ ca ] ti = on 1 . 0 In s i , ti w al h ly ic , h w r e es s u e l t ts m i e n a a n t s y o p j i o c u a r l n IM tim M e - s C a T s (cid:6) CT-WNTR =⎢ ⎢ ⎣ 0.5 0 0 0.5 ⎥ ⎥ ⎦ . (15)
+1 2
+design. This filter is labeled IMM-CT-S. Then, we form 1−p 0 0 p
+44 44
+a second IMM to better match to the fast maneuvers by
+settingE[τ ]=1s,whichresultsinp =0,anunconven-
+2 22 D. IMM-CT-LHDesign
+tionalIMMdesign.ThisfilterislabeledIMM-CT-F.
+ToensurethataddingtwoWNTRmodesresultsinbetter
+performancethanaddingasingleCTmodewithhighturn
+B. WhiteNoiseTurnRateIMMDesign accelerationprocessnoise,wewillcompareIMM-WNTR-
+CT to a three-mode IMM-CT-LH (referring to “Low” &
+The IMM-WNTR filter has a WNA mode (mode 1), a
+“High” turn process noises, respectively). It contains a
+right-turn WNTR mode (mode 2), and a left-turn WNTR
+mode(mode3).Themodelparametersare:v¯(2) =−60 ◦ /s, WNAmode(mode1),alowprocessnoiseCTmode(mode
+ω
+v¯(3) =60 ◦ /s,andσ(2) =σ(3) =30 ◦ /s.WesetE[τ ]=10s, 2), and a high process noise CT mode (mode 3). We set
+E ω [τ ]=E[τ ]=1 ω s. Th ω is gives p =0.9 an 1 d p = σ ω (2) =1 ◦ /s2,σ ω (3) =60 ◦ /s2,E[τ 2 ]=10s,andE[τ 3 ]=1s.
+2 3 11 22
+p =0. We split the remaining probabilities by setting TheTPMis
+33
+⎡ ⎤
+theTPMto p 1−p 11 1−p 11
+⎢ 11 2 2 ⎥
+⎡ ⎢ p 11 1− 2 p 11 1− 2 p 11 ⎤ ⎥ (cid:6) CT-LH =⎢ ⎣ 1− 2 p 22 p 22 1− 2 p 22 ⎥ ⎦ . (16)
+(cid:6) =⎣ 1 0 0 ⎦. (14) 0.5 0.5 0
+WNTR
+1 0 0
+V. SIMULATIONSANDRESULTS
+A. SimulatedTrajectoryandMeasurements
+Fig. 1 shows approximately what the maneuvering
+modeturnrateprocessnoiselookslikeasaGaussiansum For numerical simulations, we use a target trajectory
+mixture. Notice that by using the nonzero mean turn rate shown in Fig. 2, along with an example of the noisy
+process noise, we can approximate a multimodal process measurements. The sampling interval is T =1s. The tar-
+noisePDF. get starts with x =0m, y =500m, x˙ =0m/s, and
+0 0 0
+y˙ =5m/s.Thesimulatedtrajectoryisdesignedtoassess
+0
+thealgorithms’behaviorfortargetsthatperformverysharp
+C. IMM-WNTR-CTDesign
+turns, rapid decelerations, moderately sharp turns without
+To design a filter that will also provide an estimate of deceleration, smooth CTs, and longitudinal acceleration.
+theturnrate,weaddaCTmode(fourthmode)totheIMM- Randomly selected, fractional time intervals are used so
+WNTR to create the IMM-WNTR-CT. This filter has the thatmaneuversdonotnecessarilystartatthesamplingin-
+same parameters as in Section IV-A, except σ(4) =1 ◦ /s2 stants.AdescriptionofthetrajectoryisgiveninTableI.
+ω
+1408 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.54,NO.3 JUNE2018
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 6 ---
+TABLEI
+TrajectoryDescriptionWithManeuverLabels
+Label StartTime Duration TurnRate Long.Acc.
+(s) (s) (◦/s) (m/s2)
+A 0 10.5 0 0
+B 10.5 1.9 −60(R) −1(br)
+– 12.4 2.3 0 1(acc)
+C 14.69 10.2 0 0
+D 24.8 1.2 −60(R) 0
+E 26.08 20.2 0 0
+F 46.28 0.9 −30(R) 0
+G 47.18 11.4 0 0
+H 58.58 30.6 5(L) 0
+I 89.18 10.5 0 0
+J 99.68 1.0 0 −5(br)
+– 100.68 5.2 0 1(acc)
+K 105.88 10 0 0
+L 115.88 0.8 80(L) 0
+M 116.68 10 0 0
+Fig.4. VelocityestimateRMSEforfivefilters.
+R=rightturn,L=leftturn,br=longitudinalbrakingmaneuver,acc=
+longitudinalaccelerationmaneuver.Twomaneuverlabelsareomittedto
+reducevisualclutterinthesimulationresults.
+Fig.5. NEESforfivefilters.Verticalaxisislimitedto7,cuttingoffthe
+IMM-CT-FandIMM-CT-Scurvesforbettervisibilityofremaining
+Fig.3. PositionestimateRMSEfor5filtersandrawmeasurements. filters.
+The total simulation time is 126.68s. The measure- and velocity state components, and it is normalized by 4
+ments are made in polar coordinates r k andθ k with a sen- toachieveanominalvalueof1foridealconsistency.Ma-
+sor located at the origin. The measurement standard de- neuvering intervals are drawn with black rectangles along
+viations are constant in polar coordinates and are given the time axis, referenced by the trajectory segment labels
+as σ r =1.5m, σ θ =1.15 ◦ . The unbiased conversion of in Table I. It can be seen from Fig. 3 that all filters, ex-
+[10] is used to feed Cartesian measurements to all filters, cept IMM-CT-S and IMM-CT-F, achieve position RMSE
+resulting in all subsequent filter operations performed in that stays well below the raw measurements, despite rela-
+Cartesian coordinates with position-dependent measure- tivelyhighmeasurementnoise.Fig.6showscloserviewsof
+ment variance; 1000 Monte Carlo runs are used for all theperformancemeasuresforthreemaneuvers:the−30 ◦ /s
+performanceevaluations. sharpturn(seesegmentsDandE),the80◦/ssharpturn(see
+◦
+segmentsLandM),andthe5 /sslowturn(seesegmentH).
+B. RMSEandNEESResults
+IMM-CT-Sdoeshavethebestperformanceduringnonma-
+The position root-mean-square error (RMSE) across neuveringsegments,butIMM-CT-SandIMM-CT-Fdonot
+thefiveestimatorsandtherawmeasurementsfromMonte showcomparableRMSEreductionaftersharpmaneuvers.
+Carlo simulations is shown in Fig. 3. The velocity RMSE It can be seen from the results that when it comes
+is shown in Fig. 4, and the normalized estimation error to position and velocity error, the IMM-WNTR is a very
+squared (NEES [3]) is shown in Fig. 5 for consistency accuratefilter.Itisslightlyoutperformedafterthefirstex-
+evaluation.TheNEESiscalculatedusingonlytheposition treme turn maneuver (see segment B), whose 2-s extreme
+VISINAETAL.:MULTIPLE-MODELESTIMATORSFORTRACKINGSHARPLYMANEUVERINGGROUNDTARGETS 1409
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 7 ---
+Fig.6. MagnifiedplotsshowingRMSEandNEESduringandafterthreekeymaneuvers.AxisunitsarethesameasinFigs.3–5(a)Pos.RMSEfor
+D,E.(b)Vel.RMSEforD,E.(c)NEESforD,E.(d)Pos.RMSEforH.(e)Vel.RMSEforH.(f)NEESforH.(g)Pos.RMSEforL,M.(h)Vel.
+RMSEforL,M.(i)NEESforL,M.
+turn and simultaneous braking mode is not matched to SimilarargumentscanbemadeaboutitsNEES.TheIMM-
+any of the filters. Apart from IMM-CT-S, which does WNTR-CT, designed to have the capability to track dur-
+not perform well after sharp maneuvers, it achieves the ing sharp or slow turns, exhibits low RMSE (almost as
+lowest RMSE in most other segments (see segments D goodasIMM-WNTR),anditprovidesωˆk|k.Itcanbeseen
+and E, most of H, and K). It may actually be surprising that it does not outperform IMM-CT-LH during straight-
+that it even achieves the best overall performance dur- line motion, but it has better RMSE and NEES after all
+ing the slow CT (see segment H). However, the IMM- maneuvers.
+WNTR is not a good choice if long-term predictions are
+needed, as is the case when measurements are slow to C. TurnRateEstimate
+arrive. This is because the filter does not attempt to es-
+It is worth noting that IMM-WNTR-CT is capable of
+timate the turn rate ω k. The NEES of the IMM-WNTR estimating the turn rate ω k. In Fig. 7, we see that this is
+containssharppeaksaftermaneuversbutrecoversquickly
+true,althoughIMM-CT-LHseemstoreacttothechangein
+after. ωfaster.ThisassuresthatIMM-WNTR-CTcanbeusedfor
+The IMM-CT-LH and the IMM-WNTR-CT are de-
+long-termpredictionifmeasurementsaredelayed.
+signed tohandleboth slowandsharpturns, andtheyboth
+arecapableoflong-termpredictionsincetheyestimatethe
+D. InspectionofModeProbabilities
+turn rate. The RMSE of IMM-CT-LH reaches very low
+InFigs.8–10,weplotthemodeprobabilitiesforIMM-
+values at times (see segments E, G, and I) but it contains
+CT-S(aconventionalIMM-CT),IMM-CT-F(anIMM-CT
+higherpeaksaftermaneuvers(seesegmentsD,H,andL).
+with zero probability of remaining in the maneuvering
+1410 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.54,NO.3 JUNE2018
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 8 ---
+Fig.7. Averageωˆk|kfromthreefilters. Fig.10. IMM-WNTRaveragemodeprobabilities.
+mode), and IMM-WNTR, respectively. We show these as
+examplesofhowtheIMMtreatsshort-durationmaneuvers
+in terms of its maneuver detection capability. The mode
+probabilities for IMM-CT-S vary considerably compared
+totheothertwobecauseofthespecifiedlongmeansojourn
+time E[τ ], which is required for conventional IMM-CT
+2
+algorithms.ForIMM-CT-F,weseethatsincep =0and
+22
+because of the random walk turn rate of the discrete CT
+model,thealgorithmisnevercapableofdetectingamaneu-
+ver.IntheIMM-WNTR,whichalsohaszeroprobabilityof
+returningtoleft-orright-turnmodes,wecanstillseesmall
+perturbationsinthemodeprobabilities(seeFig.10).These
+smallchangesinmodeprobabilitiesareenoughtoopenup
+thefilterbandwidthwhenmaneuversaredetected.
+E. ComputationalComplexity
+Thethree-modeIMM-WNTRandthefour-modeIMM-
+Fig.8. IMM-CT-Saveragemodeprobabilities.
+WNTR-CT are computationally efficient in the sense that
+the only extra computation needed, when compared to a
+single-mode filter or a two-mode IMM, is having to run
+additionalfiltersthroughtheIMM,andthisscalesbetween
+linearly(O(n r))andquadratically(O(n2
+r
+))withthenumber
+of additional modes, since each nonlinear filter only runs
+once per measurement arrival in an IMM, but the mixing
+step requires interaction between every pair of modes. As
+n r →∞,(O(n2 r ))willdominate.
+As an example, running 1000 Monte Carlo simula-
+tions on a single-threaded MATLAB platform using a
+32-b, 2.9 GHz system with 3 GB of RAM, the average
+computation times per measurement interval are: 5.6 ms
+for IMM-CT-S; 3.9 ms for IMM-CT-F; 10.5 ms for
+IMM-CT-LH; 18.6 ms for IMM-WNTR; and 24.0 ms for
+IMM-WNTR-CT.
+VI. CONCLUSION
+Thispaperpresentsanovelnonzeromean,whitenoise
+Fig.9. IMM-CT-Faveragemodeprobabilities.
+turn rate dynamic model that can be used within a MM
+estimatortotrackgroundvehicles,movinginanopenfield,
+VISINAETAL.:MULTIPLE-MODELESTIMATORSFORTRACKINGSHARPLYMANEUVERINGGROUNDTARGETS 1411
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 9 ---
+i
+a
+n
+s
+t
+l
+w
+an
+o
+d
+d
+v
+im
+eh
+e
+i
+n
+c
+s
+l
+i
+e
+o
+s
+n
+w
+s.
+i
+D
+th
+u
+c
+e
+o
+t
+n
+o
+ti
+t
+n
+h
+u
+e
+o
+ir
+u
+n
+s
+a
+w
+tu
+h
+re
+e
+,
+el
+so
+t
+m
+ra
+e
+ck
+t
+s
+a
+,
+rg
+a
+e
+r
+t
+e
+s,
+c
+s
+a
+u
+p
+c
+a
+h
+-
+∂2s˙k+1
+=UTeUω
+k
+T
+(24)
+ble of performing sharp-turn maneuvers as high as 60 ◦ /s
+∂ω
+k
+∂s˙k
+(cid:12) (cid:16) (cid:17) (cid:13)
+w
+ac
+h
+h
+il
+a
+e
+ll
+m
+en
+a
+g
+in
+e
+t
+f
+a
+o
+i
+r
+n
+c
+in
+o
+g
+nv
+a
+e
+lm
+nt
+o
+io
+s
+n
+t
+a
+c
+l
+o
+s
+n
+t
+s
+a
+t
+t
+a
+e
+n
+e
+t
+s
+s
+ti
+p
+m
+ee
+a
+d
+to
+,
+r
+a
+d
+n
+e
+d
+s
+t
+i
+h
+g
+i
+n
+s
+s
+p
+,i
+r
+n
+e
+c
+se
+lu
+n
+d
+ts
+-
+∂
+∂
+2s
+ω
+k+
+k 2
+1 =
+ω
+2
+k 3
+U+
+ω
+1
+k
+UT2−
+ω
+2
+k 2
+T −
+ω
+2
+k 3
+U eUω k T s˙k
+ingMMmethodsthatwereoriginallydesignedfortargets (25)
+w
+liv
+it
+e
+h
+d
+r
+m
+el
+a
+a
+n
+ti
+e
+v
+u
+e
+v
+ly
+er
+s
+s
+lo
+re
+w
+qu
+C
+i
+T
+res
+ca
+t
+p
+h
+a
+e
+b
+d
+il
+e
+i
+s
+ty
+ig
+.
+n
+Th
+o
+e
+ft
+n
+r
+a
+a
+t
+n
+u
+s
+r
+i
+e
+tio
+o
+n
+ft
+p
+h
+r
+e
+o
+s
+b
+h
+a
+o
+b
+r
+i
+t
+l
+-
+- ∂
+∂
+ω
+2s
+k k ∂ + s˙ 1 k =ω k −1TeUω k T −Uω k −2
+(cid:14)
+I−eUω k T
+(cid:15)
+. (26)
+ity matrices that have a distinct form compared to those
+for tracking CT targets. Having sharp left- and right-turn Note that (24) and (26) are 2×2 matrices, whereas
+modesinanIMMwiththeTPMsdescribedinthispaperis (23) and (25) are 2×1 vectors. As explained in [6],
+similar to specifying a multimodal turn rate process noise an augmented vector for the WNTR model is created
+PDF,andtheresultisafilterthatperformsextremelywell as
+in terms of position and velocity RMSE at the expense of
+not being able to perform accurate long-term prediction.
+xa =[s s˙ v ω] (cid:4) (27)
+When also including a slow-turn CT mode in the IMM- andxa =xintheCTmodel.TheHessiansare
+WNTR filter, an estimate of the turn rate is provided and ⎡ ⎤
+long-termpredictionscanbemoreaccurate.Theproposed 0 2×2 0 2×2 0 2×1
+⎢ (cid:18) (cid:19) ⎥
+fi fi us l l t t e e e d r r s i w n a g i r t e h al c t g h o o e m ri d p t y h u n m t a a , m ti a o i s c na w m ll e o y l d l i e n a l e s s x p a p r n e e y n s s e M i n v t e M e , d a e h n s e d t r i e m a . n a y to n r, on c l a i n ne b a e r ∂ ∂ 2 x x 2 a = ⎢ ⎢ ⎢ ⎣ 0 2×2 (cid:18) 0 2×2 (cid:19) (cid:4) (cid:18) ∂ ∂ ω 2s k k ∂ + s˙ 1 k(cid:19)1 ⎥ ⎥ ⎥ ⎦ (28)
+⎡ 0 1×2 ∂ ∂ ω 2s k k ∂ + s˙ 1 k 1 ∂ ∂ 2s ω k+ k 2 1 1⎤
+APPENDIX 0 2×2 0 2×2 0 2×1
+⎢ (cid:18) (cid:19) ⎥
+ces A for si u m s p e l i e n d t e h r e iv s a e t c io o n nd o - f o t r h d e er Ja E c K ob F ia w n it a h nd bo H th es t s h i e an C m T a a t n ri d - ∂ ∂ 2 x y 2 a = ⎢ ⎢ ⎢ ⎣ 0 2×2 (cid:18) 0 2×2 (cid:19) (cid:4) (cid:18) ∂ ∂ ω 2s k k ∂ + s˙ 1 k(cid:19)2 ⎥ ⎥ ⎥ ⎦ (29)
+W vel N o T ci R ty m s˙ o a d n e d ls p i o s s s it h io o n wn se h v e o re lu . t W io e ns st f a r r o t m wi ( t 7 h ) t a h s ediscretized ⎡ 0 1×2 ∂ ∂ ω 2s k k ∂ + s˙ 1 k 2 ∂ ∂ 2s ω k+ k 2 1 2⎤
+0 2×2 0 2×2 0 2×1
+s s˙k k + + 1 1 = = e sk Uω + k T U s˙k ω k −1 (cid:14) I−eUω k T (cid:15) s˙k . ( ( 1 1 7 8 ) ) ∂ ∂ 2 x x 2 a ˙ = ⎢ ⎢ ⎢ ⎢ ⎣ 0 2×2 (cid:18) 0 2×2 (cid:19) (cid:4) (cid:18) (cid:18) ∂ ∂ ω 2s˙ k k ∂ + s˙ 1 k(cid:19) (cid:19) 1 ⎥ ⎥ ⎥ ⎥ ⎦ (30)
+Thevectorsofpartialderivativesare ⎡ 0 1×2 ∂ ∂ ω 2s˙ k k ∂ + s˙ 1 k 1 ∂ ∂ 2s˙ ω k+ k 2 1 1⎤
+0 2×2 0 2×2 0 2×1
+∂ ∂ ∂ ∂ s s˙ ω ω k k + + k k 1 1 = = U (cid:2) ω T k − e 1 U T ω e k T Uω s˙k k T −Uω k −2 (cid:14) I−eUω k T (cid:15)(cid:3) s˙k . ( ( 1 2 9 0 ) ) ∂ ∂ 2 x y 2 a ˙ = ⎢ ⎢ ⎢ ⎢ ⎣ 0 0 2 1 × × 2 2 (cid:18) ∂ ∂ ω 0 2s˙ k 2 k ∂ × + s˙ 1 k 2 (cid:19) (cid:4) 2 (cid:18) (cid:18) ∂ ∂ ∂ ω ∂ 2 2 s s ˙ ˙ k ω k k ∂ + + k 2 s˙ 1 1 k(cid:19) (cid:19) 2 2 ⎥ ⎥ ⎥ ⎥ ⎦ (31)
+where (28)–(31) are evaluated at ω k =ωˆk|k in the CT
+ThisleadstotheJacobianoftheCTmodel
+model and ω k =v¯ω in the WNTR model, with [A]i be-
+∂ ∂ fk x + k 1 CT = ⎡ ⎢ ⎢ ⎣0 I 2 2 × × 2 2 ω 1U(I V − k Vk) ∂ ∂ ∂ ∂ s s˙ ω ω k k + + k k 1 1 ⎤ ⎥ ⎥ ⎦ . (21) i r A n o C g w K . t N he O i W th L r E o D w G o M f m EN at T rix A and [A] (cid:4) i the transpose of that
+0 1×2 0 1×2 1 ω k =ωˆk|k The authors would like to thank A. Corbeil from TSC for
+providingthemotivationtolookintothisproblem.
+The WNTR model is nonlinear in its process noise input
+only,so
+(cid:4) (cid:5) REFERENCES
+∂fk+1 = T 2 2I 2×2 ∂ ∂ s ω k+ k 1 . (22) [1] H.S.Son,J.B.Park,andY.H.Joo
+∂vk WNTR TI 2×2 ∂ ∂ s˙ ω k+ k 1 ω k =v¯ω S ne e u g v m e e ri n n t g ali t z a e rg d e F t CM-basedtrackingalgorithmforzigzagma-
+Int. J. Control Autom. Syst., vol. 13, no. 1, pp. 231–237,
+Next,wecomputethesecond-orderpartialderivatives Feb.2015.
+[2] X.R.LiandV.P.Jilkov
+∂2s˙k+1
+=−T2eUω k T s˙k (23)
+S
+IE
+u
+E
+rv
+E
+ey
+Tr
+o
+a
+f
+n
+m
+s.
+a
+A
+ne
+e
+u
+ro
+v
+s
+e
+p
+ri
+.
+n
+E
+g
+le
+ta
+c
+r
+t
+g
+ro
+e
+n
+t
+.
+tr
+S
+a
+y
+c
+s
+k
+t
+i
+.
+n
+,
+g
+vo
+p
+l
+a
+.
+r
+3
+t
+9
+I:
+,
+D
+no
+y
+.
+n
+4
+am
+,p
+ic
+p.
+m
+1
+o
+3
+d
+3
+e
+3
+l
+–
+s
+∂ω2 1334,Oct.2003.
+k
+1412 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.54,NO.3 JUNE2018
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 10 ---
+[3] Y.Bar-Shalom,X.R.Li,andT.Kirubarajan [18] Y.Bar-Shalom,K.C.Chang,andH.A.P.Blom
+EstimationWithApplicationstoTrackingandNavigation:The- Trackingamaneuveringtargetusinginputestimation versus
+ory,AlgorithmsandSoftware.Hoboken,NJ,USA:Wiley,2001. theinteractingmultiplemodelalgorithm
+[4] M.R.MorelandeandN.Gordon IEEETrans.Aerosp.Electron.Syst.,vol.25,no.2,pp.296–300,
+Targettrackingthroughacoordinatedturn Mar.1989.
+InProc.IEEEConf.Acoust.SpeechSignalProcess.,Mar.2005, [19] X.R.LiandV.P.Jilkov
+pp.IV/21–IV/24. SurveyofmaneuveringtargettrackingpartV:Multiplemodel
+[5] M.Athans,R.P.Wishner,andA.Bertolini methods
+Suboptimalstateestimationforcontinuous-timenonlinearsys- IEEETrans.Aerosp.Electron.Syst.,vol.41,no.4,pp.1255–
+temsfromdiscretenoisymeasurements 1321,Oct.2005.
+IEEE Trans. Autom. Control, vol. 13, no. 5, pp. 504–514, [20] F.Gustafsson,
+Oct.1968. AdaptiveFilteringandChangeDetection.Hoboken,NJ,USA:
+[6] M.RothandF.Gustafsson Wiley,2001.
+An efficient implementation of the second order extended [21] R.R.Pitre,V.P.Jilkov,andX.R.Li
+Kalmanfilter Acomparativestudyofmultiple-modelalgorithmsformaneu-
+InProc.14thInt.Conf.Inf.Fus.,Aug.2011,pp.1–6. veringtargettracking
+[7] S.J.JulierandJ.K.Uhlmann Proc.SPIE,vol.5809,pp.549–560,May2005.
+Unscentedfilteringandnonlinearestimation [22] X.R.LiandY.Bar-Shalom
+Proc.IEEE,vol.92,no.3,pp.401–422,Mar.2004. Multiple-modelestimationwithvariablestructure
+[8] F.Gustafsson IEEE Trans. Autom. Control, vol. 41, no. 4, pp. 478–493,
+etal.Particlefiltersforpositioning,navigation,andtracking Apr.1996.
+IEEE Trans. Signal Process., vol. 50, no. 2, pp. 425–437, [23] S.P.LinderandC.Schell
+Feb.2002. A non-Bayesian segmenting tracker for highly-maneuvering
+[9] I.ArasaratnamandS.Haykin targets
+CubatureKalmanfilters IEEETrans.Aerosp.Electron.Syst.,vol.41,no.4,pp.1168–
+IEEE Trans. Autom. Control, vol. 54, no. 6, pp. 1254–1269, 1177,Oct.2005.
+Jun.2009. [24] X.R.LiandV.P.Jilkov
+[10] L.Mo,X.Song,Y.Zhou,Z.Sun,andY.Bar-Shalom SurveyofmaneuveringtargettrackingpartII:Motionmodels
+Unbiasedconvertedmeasurementsfortracking ofballisticandspacetargets
+IEEETrans.Aerosp.Electron.Syst.,vol.34,no.3,pp.1023– IEEETrans.Aerosp.Electron.Syst.,vol.46,no.1,pp.96–119,
+1027,Jul.1998. Jan.2010.
+[11] R.J.McAulayandE.J.Denlinger [25] X.R.LiandV.P.Jilkov
+Adecision-directedadaptivetracker SurveyofmaneuveringtargettrackingpartIII:Measurement
+IEEETrans.Aerosp.Electron.Syst.,vol.AES-9,no.2,pp.229– models
+236,Mar.1973. InProc.SPIEConf.SignalDataProcess.SmallTargets,Jul.
+[12] Y.T.Chan,A.G.C.Hu,andJ.Plant 2001,vol.4473,pp.423–446.
+AKalmanfilterbasedtrackingschemewithinputestimation [26] X.R.LiandV.P.Jilkov
+IEEE Trans. Aerosp. Electron. Syst., vol. AES-15, no. 2, SurveyofmaneuveringtargettrackingpartIV:Decision-based
+pp.237–244,Mar.1979. methods
+[13] J.K.Tugnait InProc.SPIEConf.SignalDataProcess.SmallTargets,Apr.
+Adaptiveestimationandidentificationfordiscretesystemswith 2002,pp.511–534.
+Markovjumpparameters [27] R.Lopez,P.Danes,andF.Royer
+IEEETrans.Autom.Control,vol.AC-27,no.5,pp.1054–1065, Extending the IMM filter to heterogeneous-order state space
+Oct.1982. models
+[14] A.Doucet,N.J.Gordon,andV.Krishnamurthy InProc.IEEEConf.Decis.Control,Dec.2010,pp.7369–7374.
+Particlefiltersforstateestimationofjumplinearsystems [28] T.Yuan,Y.Bar-Shalom,P.Willett,E.Mozeson,andS.Pollak
+IEEE Trans. Signal Process., vol. 49, no. 3, pp. 613–624, AmultipleIMMestimationapproachwithunbiasedmixingfor
+Mar.2001. thrustingprojectiles
+[15] G.A.AckersonandK.S.Fu IEEETrans.Aerosp.Electron.Syst.,vol.48,no.4,pp.3250–
+Onstateestimationinswitchingenvironments 3267,Oct.2012.
+IEEE Trans. Autom. Control, vol. AC-15, no. 1, pp. 10–17, [29] K.Granstro¨m,P.Willett,andY.Bar-Shalom
+Jan.1970. IMMwithoutamatch
+[16] C.B.ChangandM.Athans InProc.Comput.Adv.Multi-SensorAdapt.Process.,Dec.2015,
+Stateestimationfordiscretesystemswithswitchingparameters pp.109–112.
+IEEE Trans. Aerosp. Electron. Syst., vol. AES-14, no. 3, [30] D.L.AlspachandH.W.Sorenson
+pp.418–425,Feb.1979. Nonlinear Bayesian estimation using Gaussian sum approxi-
+[17] H.A.P.Blom mations
+Anefficientfilterforabruptlychangingsystems IEEETrans.Autom.Control,vol.AC-17,no.4,pp.439–448,
+InProc.23rdIEEEConf.Decis.Control,pp.656–658,Dec. Aug.1972.
+1984.
+VISINAETAL.:MULTIPLE-MODELESTIMATORSFORTRACKINGSHARPLYMANEUVERINGGROUNDTARGETS 1413
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 11 ---
+Radu S. Matei received the B.S. degree in EE from the University of Connecticut,
+Storrs, CT, USA, in 2007. After gaining experience as an industry systems engineer, he is
+currently working toward the Ph.D. degree in Electrical Engineering at the Estimation
+and Signal Processing Laboratory, University of Connecticut, researching state
+estimation, target tracking, control, and nonlinear systems.
+He is a Graduate Research Assistant with the Electrical and Computer Engineering
+Department, University of Connecticut.
+Yaakov Bar-Shalom (F’84) received the B.S. and M.S. degrees from the Technion, Haifa,
+Israel, in 1963 and 1967, respectively, and the Ph.D. degree from Princeton University,
+Princeton, NJ, USA, in 1970, all in EE.
+Currently, he is Board of Trustees Distinguished Professor with the ECE Department
+and Marianne E. Klewin Professor with the University of Connecticut, Storrs, CT, USA.
+He has published more than 550 papers and book chapters. He coauthored/edited eight
+books, including Tracking and Data Fusion (YBS Publishing, 2011). His current research
+interests include estimation theory, target tracking, and data fusion.
+Dr. Bar-Shalom served as an Associate Editor of the IEEE TRANSACTIONS ON AUTO-
+MATIC CONTROL and Automatica. He was a General Chairman of the 1985 ACC, General
+Chairman of FUSION 2000, President of ISIF in 2000 and 2002, and Vice President
+for Publications during 2004–2013. Since 1995, he is a Distinguished Lecturer of the
+IEEE Aerospace and Electronic Systems Society. He is a co-recipient of the M. Barry
+Carlton Award for the best paper in the IEEE TAESystems in 1995 and 2000. In 2002,
+he was the recipient of the J. Mignona Data Fusion Award from the DoD JDL Data Fu-
+sion Group. He is a member of the Connecticut Academy of Science and Engineering.
+In 2008, he was awarded the IEEE Dennis J. Picard Medal for Radar Technologies and
+Applications, and in 2012 the Connecticut Medal of Technology. He has been listed by
+academic.research.microsoft (top authors in engineering) as #1 among the researchers
+in Aerospace Engineering based on the citations of his work. He is the recipient of the
+2015 ISIF Award for a Lifetime of Excellence in Information Fusion. This award has
+been renamed in 2016 as the Yaakov Bar-Shalom Award for a Lifetime of Excellence in
+Information Fusion. He has been elected a Fellow of the IEEE for “contributions to the
+theory of stochastic systems and of multitarget tracking.”
+Peter Willett (F’03) received the B.A.S. degree in engineering science from University
+of Toronto, in 1982, and the M.E., M.Sc. and Ph.D degrees in electrical engineering from
+Princeton University, in 1983, 1984 and 1986, respectively. Since 1986, he has been a
+faculty member with the Electrical and Computer Engineering Department, University
+of Connecticut, Storrs, CT, USA. Since 1998, he has been a Professor. His primary
+areas of research have been statistical signal processing, detection, machine learning,
+communications, data fusion, and tracking; and he has published more than 650 papers on
+these topics.
+Dr. Willett was an Editor-in- Chief for the IEEE Signal Processing Letters, 2014–2016.
+He was an Editor-in-Chief for the IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC
+SYSTEMS from 2006 to 2011, and then an AESS Vice President for Publications (2012–
+2014). He was a member of the IEEE AESS Board of Governors (2005–2010, 2011–
+2016) and of the IEEE Signal Processing Societys Sensor-Array and Multichannel (SAM)
+technical committee (and Chair 2015–2016). Since 2003, he has been an IEEE Fellow.
+1414 IEEE TRANSACTIONS ON AEROSPACE AND ELECTRONIC SYSTEMS VOL. 54, NO. 3 JUNE 2018
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:12 UTC from IEEE Xplore. Restrictions apply.

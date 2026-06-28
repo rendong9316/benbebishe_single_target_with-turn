@@ -1,0 +1,1049 @@
+
+--- Page 1 ---
+ReceivedMarch19,2019,acceptedApril6,2019,dateofpublicationApril24,2019,dateofcurrentversionMay14,2019.
+DigitalObjectIdentifier10.1109/ACCESS.2019.2912983
+An Improved IMM Algorithm Based on STSRCKF
+for Maneuvering Target Tracking
+BOHAN1,HANQIAOHUANG 2,LEILEI3,CHANGQIANGHUANG1,ANDZHUORANZHANG1
+1AeronauticsEngineeringCollege,AirForceEngineeringUniversity,Xi’an710038,China
+2UnmannedSystemResearchInstitute,NorthwesternPolytechnicalUniversity,Xi’an710072,China
+3ElectricPowerResearchInstitute,StateGridShaanxiElectricPowerCompany,Xi’an710021,China
+Correspondingauthor:HanqiaoHuang(huanghanqiao@nwpu.edu.cn)
+ThisworkwassupportedinpartbytheNationalNaturalScienceFoundationofChina,underGrant61601505.
+ABSTRACT ToovercometheIMMalgorithmiseasydivergenceandlowtrackingaccuracywhendealing
+with complex maneuvering situations, this paper proposes an improved interactive multiple model strong
+tracking square room cubature Kalman filter (IIMM-STSRCKF) algorithm under the idea of real-time
+dynamic adjustment of gain matrix and transition probability matrix. The algorithm has been improved
+in two aspects: on the one hand, the algorithm uses the idea of a strong tracking filter to deduce a new
+method for time-varying fading factor and introduce it into the square root of the state error covariance
+matrix of the SRCKF, which improves the tracking accuracy for strong maneuver; on the other hand,
+the probability difference between two consecutive time points in the IMM submodel is used to adjust
+theMarkovprobabilitytransfermatrixtoadaptivelyimprovetheswitchingspeedofthesubmodelandthe
+rationalityoftheallocation.BycomparingwithIMM-CKFalgorithmbymaneuveringtargettrackingcase
+andresultsshowthattheIIMM-STSRCKFalgorithmhasbettertrackingperformanceinnonmaneuvering,
+weakmaneuvering,andstrongmaneuveringcases.
+INDEXTERMS Complexmaneuvering,IMM,SRCKF,strongtrackingfilter.
+I. INTRODUCTION obtaininteractionsandswitchingamongdifferentsubmodels.
+Maneuvering target tracking is a typical nonlinear filtering Finally,thealgorithmperformsdatafusiononthetargetstate
+processandhasbecomeamajorareaofinterestinthefieldof filter estimation obtained by each model filter to obtain the
+stateestimationandinformationfusion,havingbeenwidely systemparameterestimation[6],[7].
+usedinradartracking,navigationcontrol,guidanceandother [8]studiesthestabilityofIMMalgorithmfromthemath-
+fields[1]. Difficulties in this field primarily arise from two ematicaltheorem,andproposestheexponentialstabilityfor
+aspects:thedesignofthetrackingmodelandtheselectionof a class of Markov jump linear systems. It proves that IMM
+anonlinearfilter[2]. algorithm has good performance in various low-cost com-
+Thetrackingmodelproblemprimarilystudieswhetherthe putingapplication.IMMfilterbasedonsteady-statefilteris
+statemodelofthetrackingsystemconformstothereal-time proposed,andfilterusesadaptivealgorithmtodeterminethe
+motion model of the target. Due to the complexity and ran- target revisit time, which improves the prediction accuracy
+domnessoftargetmotion,itisdifficulttocompletelydescribe andreducesthecomputationalload[3].[9]constructsaposi-
+different maneuvering situations in a single model, which tionestimationalgorithmbyusingthebasicIMMofajump
+leads to a mismatch between the state model and the actual Markovsystemwithtwoindependentswitchingparameters,
+movement of the target. Therefore, the tracking effect is andprovetheeffectivenessoftheIMMalgorithminthefield
+unsatisfactory.Theinteractivemultiplemodel(IMM)[3],[5] oftargettracking.
+cansolvethisproblem;itmapsthetargetmotionmodelintoa The Markov transition probability matrix determines the
+numberofknownmodelsets,witheachmodelfilterworking interaction and switching between models; thus, it strongly
+in parallel. A Markov probability transfer matrix is used to affectsthetrackingperformanceoftheIMMalgorithm[10].
+In the standard IMM algorithm, the Markov probability
+transfer matrix is artificially set to a fixed diagonally dom-
+The associate editor coordinating the review of this manuscript and
+approvingitforpublicationwasFengXia. inant matrix. However, due to the strong randomness and
+VOLUME7,2019 ThisworkislicensedunderaCreativeCommonsAttribution3.0License.Formoreinformation,seehttp://creativecommons.org/licenses/by/3.0/ 57795
+
+--- Page 2 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+high dynamics of maneuvering targets, as well as the effectthantheIMM-UKFalgorithm,buttheCKFalgorithm
+uncertainty of prior knowledge, the fixed diagonally dom- can appear asymmetric or have nonpositive values in the
+inant matrix often leads to a lag in the algorithm model covariancematrixintheprocessofiteration,whichcausesthe
+switching, which leads to the deterioration of the track- estimationaccuracytodeclineandinterruptstheiterationpro-
+ing effect[11]. Therefore, a method for adaptively adjust- cess.CKFislimitedbytheinfluenceofthethird-ordervol-
+ing the Markov transition probability matrix online is a key umerule,andtheestimationaccuracyisstilllimitedinsome
+issue for improving the tracking performance of the IMM filtering problems. In order to improve the filter precision
+algorithm[12]. of CKF, Swati and Shovan[26] are based on the spherical-
+FilterselectionisanotherkeyfactorintheIMMalgorithm. phasediameterruleandtheGauss-Laguerrequadraturerule
+The performance of the filter directly affects the tracking (CQKF), and analyze the relationship between CQKF and
+effectoftheIMMalgorithm.TheKalmanfilter(KF)isaclas- CKF. It is pointed out that CKF is a special form of CQKF
+sical linear filtering method[13],[14] that has been applied in the selection of first-order Gauss-Laguerre integration
+to signal processing and target tracking. Even though the points[27].JiaandXin[28],[31]fromColumbiaUniversity
+measurementmodelofthemaneuveringtargettrackingtends –Missouri State University analyzed the volume rule that
+to have strong nonlinearity and its state space has obvious can obtain the accuracy of arbitrary order estimation, and
+nonlinearity,theKFcanonlydealwithalineartime-invariant proposedahigh-orderCubanKalmanFilter(HCKF)method
+system;thus,itisnecessarytoselectanappropriatenonlinear with more volume points. Meanwhile, They focus on the
+filter.TheextendedKalmanfilter(EKF)[15],[16]solvesthe fifth-ordervolumeKalmanfilterandshowthefilteraccuracy
+nonlinearfilteringproblembylocallylinearizingthenonlin- is similar to the Gaussian Hermititian filter (GHQF)[32].
+ear problem through a Taylor expansion. The approximate Although the calculation is much smaller that GHQF, but it
+accuracy of the EKF for a nonlinear function is first order, is much larger that CKF, so it is not conducive to tracking
+and the Jacobian matrix must be calculated, which leads high-speedtarget[28].
+to unsatisfactory filtering accuracy. Juiler et al. proposed a The strong tracking filter is an improved extended EKF,
+deterministicsamplingapproximateGaussianfilteringalgo- which can significantly improve the speed of convergence
+rithmbasedonanunscentedtransform(UT)—unscentedKF andtrackingwhenlargeandsuddenmaneuverchangesoccur
+(UKF) algorithm[17], which does not require the Jacobian while the measurement error is unknown. STF also reduces
+matrix to be solved, has no derivative requirement for the sensitivitytoinitialconditions[19],[33].Toimprovethefil-
+state transfer function or the measurement function of non- teringeffectoftheCKF,ArasaratbanandHaykin[18]further
+linear systems, and whose accuracy can reach at least the proposed a square root CKF (SRCKF) to ensure the advan-
+third order. However, when dealing with high-dimensional tagesofapositivecovariancematrix.However,theCKFand
+systems,thealgorithmmustselectreasonableparametersto SRCKF both have poor robustness, precision and tracking
+achieveahigherprecision. effectswhenthetargetstatemutationorthemodelmatching
+Arasaratnam I et al. proposed the cubature KF (CKF) isnotaccurate.
+algorithm[18], which uses spherical-radial information to Aimed at the above problems, this paper proposes an
+obtainthecubaturecriterionandapproximatestheprobability Improved IMM strong tracking SRCKF (IIMM-STSRCKF)
+integral via Bayesian filtering. The CKF algorithm further maneuvering target tracking algorithm[19],[20] based on
+optimizes the sampling point selection method and weight the IMM algorithm and a strong tracking filter (STF). The
+distribution strategy in the UKF algorithm and solves the algorithm deduces a new equivalent method for evaluat-
+problem in which the filtering effect of the UKF algorithm ing the time-varying fading factor, which is introduced into
+is unsatisfied in high-dimensional systems. Therefore, the the square root of the state prediction error covariance
+nonlinearapproximationoftheCKFalgorithmisbetterthan matrix. This approach improves the tracking ability of the
+thatoftheUKF. SRCKFalgorithmforamaneuveringtargetwithstatemuta-
+CKF not only overcomes the application limitations of tion. In addition, the Markov probability transfer matrix
+EKF and UKF in strong nonlinear system, but also has is adjusted in real time using posterior information on the
+higherfilteringaccuracythancentraldifferenceKalmanfil- difference in conditional probability between two consecu-
+ter (CDCKF) and particle filtering[19], further, the error tive time points in the model, which effectively improves
+covariance non-positive and asymmetry problems caused the filtering accuracy. Simulation results show that the pro-
+by rounding errors and other factors are further solved. posed IIMM-STSRCKF algorithm has a superior tracking
+Reference[20]proposestheapplythematrixQRdecompo- performance.
+sition to the update error covariance matrix, thus forming The remainder of this paper is organized as follows.
+the SRCKF algorithm. SRCKF was widely used in naviga- Section 2 and Section3 provides a brief overview of the
+tionandpositioning[21],targettracking[22],robotics[23], principles and structure of the SRCKF and IMM-SRCKF
+aerospacepositioning[24]andotherfields. respectively. Section 4 details the working methodology of
+Chenetal.[9],[25]proposedcombiningtheIMMwiththe theAdaptiveSTSRCKFalgorithm.Section5introducesthe
+CKFtodesignanalgorithmformaneuveringtargettracking Modified Markov probability matrix of the IMM algorithm
+and demonstrated that the IMM-CKF has a better tracking in detail. Section 6 describes the simulation experiments.
+57796 VOLUME7,2019
+
+--- Page 3 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+Section7summarizesthepaperanddescribesdirectionsfor Step3:Measurementupdate
+futureresearch. Evaluatethecubaturepoints(i=1,2,··· ,m)
+II. SRCKFALGORITHM X i,k|k−1 =S k|k−1 ξ i +X ˆ k|k−1 (9)
+The SRCFK algorithm is based on the idea of the square Evaluatethepropagatedcubaturepoints
+rootintheKF.QRdecompositionisintroducedintheCKF
+algorithm, and the square root of the covariance matrix is Z i,k|k−1 =h (cid:0) X i,k|k−1 (cid:1) (10)
+usedinsteadofthecovariancematrixtorecursivelyupdatethe Estimatethemeasurements
+algorithm;hence,thismethodreducesthecomplexityofthe
+m
+original operation and improves the filter efficiency. Mean- Z ˆ k|k−1 = (cid:88) ω i Z i,k|k−1 (11)
+while,thenumericalinstabilitycausedbyroundingerrorsis
+i=1
+avoided, and the filter accuracy and stability are improved.
+Evaluatethestateerrorvariancematrixsquareroot
+The QR decomposition process in the SRCKF algorithm is
+asfollows: S ZZ,k|k−1 =Tria (cid:0)(cid:2)η k|k−1 S R,k (cid:3)(cid:1) (12)
+The error covariance matrix is P = AAT, and the QR
+decomposition is introduced. Then AT = QR, where Q is where
+theorthogonalmatrix,andRistheuppertriangularmatrix. R k = S R,k ST R,k (13)
+P =AAT =(QR)TQR=RTQTQR=RTR=SST (1) η k|k−1 = √ 1
+m
+(cid:104) Z 1,k|k−1 −Z ˆ k|k−1 Z 2,k|k−1
+whereS=Tria[A]isthesquarerootoftheerrorcovariance, (cid:105)
+whichcanbeobtainedbyCholeskydecomposition. −Z ˆ k|k−1 ···Z m,k|k−1 −Z ˆ k|k−1 (14)
+S and S are defined as the square root of the pro-
+Q R Calculatethecrosscovariancematrix
+cessnoiseandmeasurementnoisevariance,respectively.For
+a constant speed tracking model, the specific steps of the P XZ,k|k−1 =χ k|k−1 ηT k|k−1 (15)
+SRCKFalgorithmaresummarizedasfollows:
+DeterminetheKalmangain
+Step1:Initialization
+ThestateinitialmeanisX ˆ 0 ,theerrorcovarianceisP 0 ,and K k = (cid:16) P XZ,k|k−1 /ST ZZ,k|k−1 (cid:17) S ZZ,k|k−1 (16)
+P isdecomposedbyCholeskydecompositiontoobtainthe
+0
+followingthesquareroot: Updatethestatevalue
+(cid:16) (cid:17)
+S 0 =chol(P 0 )T (2) X ˆ k =X ˆ k|k−1 +K k Z k −Z ˆ k|k−1 (17)
+Step2:Timeupdate Updatethestatecovariancesquareroot
+Evaluatethecubaturepoints(i=1,2,··· ,m)
+S k =Tria (cid:0)(cid:2)χ k|k−1 −K k η k|k−1 K k S R,k (cid:3)(cid:1) (18)
+X i,k−1 =S k−1 ξ i +X ˆ k−1 (3)
+III. IMM-SRCKFALGORITHM
+Evaluatethepropagatedcubaturepoints TheIMMalgorithmisatrackingalgorithmbasedonthegen-
+X ∗ i,k|k−1 =(cid:56) k|k−1 X i,k−1 (4) e
+a
+r
+b
+a
+i
+l
+l
+i
+i
+z
+ty
+ed
+m
+p
+a
+s
+tr
+e
+i
+u
+x
+d
+t
+o
+o
+-
+a
+B
+c
+a
+c
+y
+u
+e
+r
+s
+a
+i
+t
+a
+e
+n
+ly
+a
+s
+lg
+w
+o
+i
+r
+tc
+it
+h
+hm
+fro
+,
+m
+usi
+o
+n
+n
+g
+e
+t
+m
+he
+od
+M
+e
+a
+l
+r
+to
+ko
+a
+v
+no
+p
+t
+r
+h
+o
+e
+b
+r
+-
+.
+Estimatethepredictedstate This algorithm was designed as a model set that contains a
+finite number of different types of motion submodels, each
+m
+X k|k−1 = (cid:88) ω i X ∗ i,k|k−1 (5) of which has a corresponding filter. Each filter operates in
+parallel,andthemodelsareswitchedbetweenoneanotherby
+i=1
+Markovchains.Duringthetrackingprocess,thesystemwill
+Calculate the square root of the state prediction error
+judgethematchingdegreebetweenthemodelandthecurrent
+covariance
+target maneuver according to the probability of each model
+S k|k−1 =Tria (cid:0)(cid:2)χ∗ k|k−1 S Q,k−1 (cid:3)(cid:1) (6) being assigned. The matching degree with the actual target
+maneuverishigherwhenthemodelprobabilityisgreater,and
+where vice versa. Furthermore, the interactive operation between
+modelsisperformedaccordingtothisprinciple,andfinally,
+Q k−1 = S Q,k−1 ST Q,k−1 (7) the outputted results of the estimated values of all of the
+1 (cid:104)
+χ∗ k|k−1 = √
+m
+X ∗ 1,k|k−1 −X ˆ k|k−1 X ∗ 2,k|k−1 s
+d
+u
+e
+b
+te
+m
+ct
+o
+t
+d
+h
+e
+e
+ls
+ta
+a
+r
+r
+g
+e
+e
+f
+t
+u
+m
+se
+a
+d
+n
+.
+e
+B
+u
+e
+v
+c
+e
+a
+r
+u
+a
+s
+n
+e
+d
+th
+h
+e
+as
+al
+a
+g
+c
+o
+e
+ri
+r
+t
+t
+h
+a
+m
+in
+d
+se
+o
+l
+e
+f
+s
+-a
+n
+d
+o
+ju
+t
+s
+n
+t
+e
+m
+ed
+en
+t
+t
+o
+,
+(cid:105)
+−X ˆ k|k−1 ···X ∗ m,k|k−1 −X ˆ k|k−1 (8) ithasabettertrackingeffectinmaneuveringtargettracking.
+Fig.1presentsaschematicdiagramoftheIMMalgorithmfor
+Tria(·)indicatestheQRdecompositionofthematrix. themultimodel.
+VOLUME7,2019 57797
+
+--- Page 4 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+ˆj
+corresponding state and error covariance matrix are X and
+k
+j
+P , respectively. The commonly used filter algorithms are
+k
+EKF,UKF,CKF,etc.;here,theSRCKFalgorithmisused.
+Step4Updatemodelprobability
+a) Calculatethelikelihoodofthejthmodel
+(cid:16) (cid:17) (cid:104) (cid:105)
+(cid:51)j = P Z /M j,Zk−1 =N γj :0,S j
+k k k k k
+1 (cid:20) 1(cid:16) (cid:17)T (cid:16) (cid:17)−1(cid:16) (cid:17)(cid:21)
+= exp − γj S j γj (23)
+(cid:114) (cid:12) (cid:12) 2 k k k
+(cid:12)2πS j(cid:12)
+(cid:12) k(cid:12)
+wheretheresidualcovariancematrixS j
+k
+=P zz,k|k−1
+b) Calculatetheconditionprobability
+(cid:16) (cid:17) 1
+FIGURE1. IMM-SRCKFalgorithmflowchart. µj =P M j/Zk = (cid:51)j c¯j (24)
+k k c k
+N
+The steps of the IMM algorithm are summarized as fol- wherec= (cid:80)(cid:51)j c¯jisanaturalizationconstant.
+k
+lows: j=1
+Step5Outputinteraction
+Step1Inputinteraction
+LetusconsiderNtrackingmodels.Whenthemotionmatch N
+modelisMi attimek−1andM j attimek,themodelmixed X ˆ = (cid:88) X ˆjµj (25)
+k−1 k k k k
+probabilityisµi/j
+,whichisdefinedasfollows: j=1
+k−1
+µi k / − j 1 = P (cid:16) M k i −1 /M k j,Z k−1 (cid:17) P k = (cid:88) N µj k (cid:104) P j k + (cid:16) X ˆj k −X ˆ k (cid:17)
+1 (cid:16) (cid:17) (cid:16) (cid:17) j=1
+= c¯j P M k j/M k i −1 ,Z k−1 P M k i −1 /Z k−1 × (cid:16) X ˆj −X ˆ (cid:17)T (cid:21) , j=1,···N (26)
+1 k k
+= p µi , i,j=1,···N (19)
+c¯j ij k−1
+IV. ADAPTIVESTSRCKFALGORITHM
+wherep representstheMarkovtransitionprobabilityofthe
+ij
+TheSRCKFalgorithmhasasimplestructureandhightrack-
+modelfromitokattimek−1,µi representstheprobability
+k−1 ing precision, but its ability to adapt to sudden changes in
+of model i as the matching model at time k −1, and c¯j is a
+the maneuvering target state is poor. This paper combines
+normalizedconstantasfollows:
+the algorithm with the STF and proposes the STSRCKF
+N
+(cid:88) algorithm. The main idea of the algorithm is to introduce a
+c¯j = p µi , j=1,···N (20)
+ij k−1 fadingfactorintothesquarerootofthestatepredictionerror
+i=1
+variancematrixoftheSRCKFalgorithm,dynamicallyadjust
+Step2Modeinteraction thegainmatrixandcompeltheoutputresidualsequencesto
+ˆi
+UsingtheinitialestimateX ofthemodelitocalculate beorthogonaltooneanother,toextractasmuchusefulinfor-
+k−1
+theinitialconditionofthemodelj mationaspossiblefromtheresidual,andfurtherimprovethe
+X ˆ0 k j −1 = E (cid:16) X k−1 |M k j,Z k−1 (cid:17) ada T p o ti o v v e e t r r c a o c m ki e n t g h a e b p i o li o ty rs o t f ab th il e it a y lg o o f r t i h t e hm EK . Falgorithmforan
+N uncertainmodel,theUKFcombinedwiththeSTFalgorithm
+= (cid:88) X ˆi µi/j , i,j=1,···N (21) in[21] is used. It is noted that the filter has strong tracking
+k−1 k−1
+i=1 characteristics; thus, the following two conditions must be
+P 0 k j −1 = (cid:88) N µi k / − j 1 (cid:104) Pi k−1 + (cid:16) X ˆi k−1 −X ˆ0 k j −1 (cid:17) sat 1 is . fi E ed (cid:20) : (cid:16) X k −X ˆ k (cid:17)(cid:16) X k −X ˆ k (cid:17)T (cid:21) =min
+i × =1 (cid:16) X ˆi k−1 −X ˆ0 k j −1 (cid:17)T(cid:21) , i,j=1,···N (22) wh 2 e . re E γ (cid:0) k γ + k j + r j e γ p T k re (cid:1) s = ent 0 sth k eo = ut 0 p , u 1 t , r 2 es . i . d . u , al j . = cas 1 e ,2 1 , i . s . t . heindex
+for which the filter achieves the optimal estimation perfor-
+Step3Modelfilter mance, which is the optimal estimate with the minimum
+ˆ0j 0j
+X and P obtained in step 2 are used as the initial meansquareerror.Orthogonalityisrequiredbycase2,which
+k−1 k−1
+inputs and are combined with the specific measurement Z means that the output residual sequences at different times
+k
+to filter j = 1,···N parallel models. The estimates of the mustbekeptorthogonal[22].
+57798 VOLUME7,2019
+
+--- Page 5 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+Theprincipleoforthogonalityhasbeendescribedindetail. calculated. The SRCKF algorithm is a quadrature Gaussian
+Whenasystemmodelisinastablestate,theoutputresidual filteralgorithm,andthemeasurementmatrixH isnotdeter-
+k
+shouldbeawhiteGaussiannoisesequencethatisstatistically minedinthecalculationprocess;hence,itcannotbedirectly
+independentunderoptimalfiltering. obtainedbythealgorithm,andthemethodofthefadingfactor
+(cid:16) (cid:17) cannotbedirectlyappliedtotheSRCKF.Therefore,toavoid
+G=E γ γT =0, k =0,1,2..., j=1,2,... (27)
+k+j k solving the Jacobian matrix, a new method for finding the
+fadingfactorundertheSRCKFalgorithmisderived.
+where
+(l) (l) (l)
+WithP ,P ,andP asthestateprediction
+G 0,k =E (cid:16) γ k γ k T (cid:17) =H k P k|k−1 HT k +R k (28) covarianc k e |k m −1 atrix zz , ,k th |k e −1 output p xz r , e k d |k i − ct 1 ion covariance matrix
+andthecrosscovariancematrixbeforethetime-varyingfad-
+Qwillincreasewhenthestateofthesystemchangessuddenly
+ingfactorisintroduced,respectively,soobtain
+asfollows:
+G 0,k >H k P k|k−1 HT k +R k (29) P ( k l | ) k−1 = E (cid:20)(cid:16) X k −X ˆ k|k−1 (cid:17)(cid:16) X k −X ˆ k|k−1 (cid:17)T (cid:21) (35)
+aim T s he to s i t n ro c n re g a t s r e ac th k e in e g rr fi o l r te c r ov so a l r v ia e n s c t e he pr a e b d o ic v t e io f n or m m a u t l r a i , x w ,f h o i r c c h - P ( Z l Z ) ,k|k−1 = E (cid:20)(cid:16) Z k −Z ˆ k|k−1 (cid:17)(cid:16) Z k −Z ˆ k|k−1 (cid:17)T (cid:21)
+ing the residual sequence of the output to be orthogonal. (cid:20)(cid:16) (cid:17)(cid:16) (cid:17)T (cid:21)
+Hence,theleftandrightsidesoftheinequalityareequal,thus = H k E X k −X ˆ k|k−1 X k −X ˆ k|k−1 HT k
+suppressingthefilterdivergence.
+= H P (l) HT (36)
+A t G im 0, e k -v = ar H yi k ng (cid:16) λ f k a F di k n P g k| f k a − c 1 t F or T k λ + k+ Q 1 k− is 1 (cid:17) in H tr T k od + uc R ed k in (3 th 0 e ) P ( X l Z ) ,k|k−1 = E k (cid:20)(cid:16) X k|k k − − 1 X ˆ k k|k−1 (cid:17)(cid:16) Z k −Z ˆ k|k−1 (cid:17)T (cid:21)
+e o q p u ti a m ti a o l n it , y a o n f d th P e k fi + l 1 t | e k r. is multiplied by λ k+1 to ensure the = E (cid:20)(cid:16) X k −X ˆ k|k−1 (cid:17)(cid:16) X k −X ˆ k|k−1 (cid:17)T (cid:21) HT k
+In previous engineering applications, the STF primarily = P (l) HT (37)
+uses a time-varying suboptimal fading factor to reduce the k|k−1 k
+influence of the previous time point on the current filter (37)transformsinto
+andtomakethecurrentfiltervaluemoretime-sensitive.The
+selectionmethodisgenerallyasfollows:
+H =
+(cid:20)(cid:16)
+P
+(l) (cid:17)−1
+P
+(l) (cid:21)T
+=
+(cid:16)
+P
+(l) (cid:17)−1(cid:16)
+P
+(l) (cid:17)T
+k k|k−1 XZ,k|k−1 k|k−1 XZ,k|k−1
+(cid:40)
+c , c >1 tr[N ]
+λ = k k , c = k (31) (38)
+k 1, c k ≤1 k tr[M k ]
+Substituting(38)into(39),(40)is
+N = G −βR −H Q HT (32)
+k k k k k−1 k
+M = H (cid:56)P (cid:56)THT (33) N k = G k −βR k −H k Q k−1 HT k
+k k k k
+where tr[·] represents the operand of the matrix trace and = G k −βR k − (cid:16) P ( X l Z ) ,k|k−1 (cid:17)T (cid:16) P ( k l | ) k−1 (cid:17)−1
+β ≥ 1isafadingfactor,whichisintendedtomakethestate
+×Q
+(cid:16)
+P
+(l) (cid:17)−1
+P
+(l)
+(39)
+estimation smoother. The value of the fading factor can be k−1 k|k−1 XZ,k|k−1
+selectedempirically.DHZhouetal.studiedthespecificvalue M = H (cid:56)P (cid:56)THT
+k k k k
+o is f m th o e r fi e l t t h e a r n an 5 d ,a pr β ov v e a d lu t e ha o t f w 3 h c e a n n th en e s m ur e e as th u e re o m p e ti n m t a d l im fi e lt n e s r i i o n n g = H k (cid:16) P ( k l | ) k−1 −Q k−1 (cid:17) HT k
+effect[23]. H k is a linearized matrix of the measurement = H P (l) HT −H Q HT
+k k|k−1 k k k−1 k
+equation, which can be obtained by solving the Jacobian
+matrix,andG k isthecovarianceoftheactualoutputresidual = H k P ( k l | ) k−1 HT k +N k −G k +βR k
+sequence, which can be obtained by the following approxi- = P (l) −R +N −G +βR
+ZZ,k|k−1 k k k k
+mation.
+γ γT, k =1 = P ( Z l Z ) ,k|k−1 +N k −G k −(1−β)R k (40)
+ 1 1
+G k =  ρG k− 1 1 + + ρ γ k γT k , k >1 (34) QR Si d n e c c e o t m he p S os R it C io K n F , t a h lg e o s r t i a th te m p i r n e t d ro ic d t u io c n es c t o h v e a i r d ia e n a c o e f m m a a t t r r i i x x
+(l) (l)
+P andtheoutputpredictioncovariancematrixP
+whereγ1isthetheoreticaloutputresidualsequence;accord- k|k−1 ZZ,k|k−1
+intheaboveequationarecalculatedbythetheircorrespond-
+ingto[24],0 < ρ ≤ 1istheforgettingfactorandisusually (l) (l)
+ingsquarerootsS andS :.
+givenasρ =0.95. k|k−1 ZZ,k|k−1
+Accordingtotheabovedescription,thetraditionalmethod P (l) = S (l) S (l) T (41)
+for obtaining the fading factor is based on the EKF algo- k|k−1 k|k−1 k|k−1
+rithm;thus,thecomplicatedJacobianmatrixH k needstobe P ( Z l Z ) ,k|k−1 = S Z (l Z ) ,k|k−1 S ( Z l Z ) ,k|k−1 T (42)
+VOLUME7,2019 57799
+
+--- Page 6 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+UndertheSRCKFalgorithm,N andM areexpressedas wherep˜ij isnormalizedasfollows:
+k k k
+fo N ll k ow = s: G k −βR k − (cid:16) P ( X l Z ) ,k|k−1 (cid:17)T (cid:16) S ( k l | ) k−1 S ( k l | ) k−1 T (cid:17)−1 · p ij,k = (cid:80) N p˜ i p j ˜ ,k ij,k = (cid:80) N ζ k j ζ · k j p · i p j,k ij − ,k 1 −1 = (cid:80) N e (cid:16) e µ (cid:16) j k µ − j k µ − j k µ − j k 1 − (cid:17) 1 p (cid:17) i p j,k ij − ,k 1 −1
+(cid:16) (cid:17)−1 j=1 j=1 j=1
+Q S (l) S (l) T P (l) (43)
+k−1 k|k−1 k|k−1 XZ,k|k−1 (48)
+M k = S ( Z l Z ) ,k|k−1 S ( Z l Z ) ,k|k−1 T +N k −G k −(1−β)R k (44) where p ij,k represents the transfer probability of the final-
+modified moment k. According to (48), if the probability
+(l) (l) (l) of submodel j increases at time k, the j column element p ij
+GivenP k|k−1 ,P ZZ,k|k−1 ,andP XZ,k|k−1 ,thetime-varying k
+of the modified transition probability matrix also increases;
+fadingfactorcanbeobtainedbyexpressions(41),(42),(43)
+thus,theproportionofmodeljasthematchingmodelinthe
+and(44)undertheSRCKFalgorithm.
+filteringestimationwillfurtherincreaseinthemodelmixed
+ij
+interaction of the next algorithm time point. Conversely, p
+V. MODIFIEDMARKOVPROBABILITYMATRIX k
+decreases and the proportion of model j as a nonmatching
+According to the IMM algorithm analysis, if the probabil-
+model in the filter estimation will be further reduced when
+ity of a motion submodel is greater at a certain moment,
+theprobabilityofsubmodeljdecreasesattimek.Therefore,
+thematchingdegreebetweenthemodelandtherealmotion
+this online real-time adjustment of the model transfer prob-
+patternofthetargetishigher;thereby,theprobabilityofthe
+abilitycanrestricttheuseofnonmatchedinformationwhile
+other submodels moving towards this model is greater. For
+expandingtheadvantagesofmatchinginformation.Inmodel
+theNthmotionsubmodel,iftheconditionalprobabilitiesof
+submodeljattimek−1andkareµj andµj
+,respectively,
+switching,theroleofthematchingmodelisincreased,while
+(cid:16) k−1 (cid:17) k the influence of the nonmatching model is reduced, and the
+thentheprobabilitydifference
+µj −µj
+ofthemodelat
+k k−1 switchingspeedandfilteringaccuracyofthealgorithmmodel
+consecutivetimepointsdirectlyreflectsthechangeinmatch- areimproved.
+ing degree between the model and the real moving target.
+Thus,thispaperusesthisposteriorinformationtocorrectthe VI. EXPERIMENTSANDRESULTS
+transition probability between models. Due to the nonnega- The root mean square error (RMSE) is used to evaluate the
+tivity of the transfer probability value, and considering the tracking results of the algorithms. The position RMSE is
+nonnegativemonotonicityoftheexponentialfunction, definedasfollows:
+(cid:118)
+(cid:117) M
+ζ k j =e (cid:16) µj k −µj k−1 (cid:17) , j=1,···N (45) RMSE(k) = (cid:117) (cid:116) M 1 (cid:88) [(x k m−xˆ k m)2+(ym k −yˆm k )2] (49)
+m=1
+where ζj represents the probability change rate of model 1 (cid:88) N
+k ARMSE = RMSE(K) (50)
+j. ζj > 1 when the model j probability becomes larger N
+(cid:16) k (cid:17) n=1
+µj k −µj k−1 > 1. Similarly, when the probability of the where(x
+k
+m,ym
+k
+)and(xˆ
+k
+m,yˆm
+k
+)arethetruepositioncoordinates
+modeldecreasesorremainsconstant,thecorrespondingprob- andestimatedcoordinatesofthetargetatthek −thmoment
+ability change rate is ζj < 1 or ζj = 1, respectively. inthem−thsimulation,respectively.ThespeedRMSEcan
+k k
+Therefore,ζj
+canbeusedasthecorrectioncoefficientofeach besimilarlyobtained.
+k
+element in the transition probability matrix to complete the
+adaptiveadjustmentofthetransitionprobabilityasfollows: A. MEASUREMENTANDTRACKINGMODEL
+For target tracking in a two-dimensional plane, the spatial
+p˜ ij,k =ζ
+k
+j ·p ij,k−1 , i,j=1,···N (46) m
+rat
+e
+e
+as
+β˙
+ure
+a
+m
+tt
+e
+i
+n
+m
+t
+e
+in
+k
+f
+.
+o
+T
+rm
+he
+at
+f
+i
+r
+o
+e
+n
+qu
+s
+e
+e
+n
+le
+c
+c
+y
+ts
+d
+a
+o
+z
+m
+im
+ai
+u
+n
+th
+m
+β
+ea
+k
+s
+a
+u
+n
+re
+d
+m
+it
+e
+s
+n
+c
+t
+h
+in
+a
+f
+n
+o
+g
+r
+e
+-
+k
+˙
+mationselectstheDopplerfrequencychangeratef attime
+wherep ij,k−1 representstherowiandcolumnjelementofthe dk
+k.
+transitionprobabilitymatrixattimek−1andp˜ ij,k represents (cid:18) (cid:19)
+x
+thetransitionprobabilityatthemodifiedtimek.Atthesame β = arctan k (51)
+k
+time,theelementsinthetransitionprobabilitymatrixarenon- y k
+negative,andthesumofallelementsineachrowisequalto β˙ = x˙ k y k −x k y˙ k (52)
+1duetothepropertiesoftime-homogeneousMarkovchains. k x2+y2
+k k
+f (cid:16) (cid:17) f (x˙ y −x y˙ )2
+  0
+N
+≤p ij ≤1, i,j=1,···N f ˙ dk = − c T r k β˙ k 2 =− T c (cid:0) x k
+k
+2 k +y2
+k
+(cid:1) k 3/ k 2 (53)
+(cid:88) (47)
+
+j=1
+p ij =1 w
+th
+h
+e
+e
+p
+re
+ro
+f
+p
+T
+ag
+is
+at
+t
+i
+h
+o
+e
+n
+s
+s
+i
+p
+g
+e
+n
+e
+a
+d
+l
+o
+fr
+f
+e
+t
+q
+h
+u
+e
+en
+el
+c
+e
+y
+ct
+e
+r
+m
+om
+it
+a
+te
+g
+d
+ne
+b
+t
+y
+ic
+t
+w
+he
+av
+ta
+e
+r
+,
+g
+a
+e
+n
+t,
+d
+c
+th
+i
+e
+s
+57800 VOLUME7,2019
+
+--- Page 7 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+radialdistancebetweenthetargetandtheobservationstation
+(cid:113)
+attimekisr = x2+y2.Leth(X )=(cid:2)β β˙ f ˙ (cid:3)T ;then,
+k k k k k k dk
+thesystemobservationequationisasfollows:
+Z =h(X )+V (54)
+k k k
+where V k = (cid:2)σ β k σ β˙ k σ f˙ dk (cid:3)T is the observation noise and
+σ β
+k
+, σ β˙
+k
+and σ f˙
+dk
+are the zero, mean and independent white
+Gaussian noise, respectively, with the covariance matrix
+(cid:104) (cid:105)
+R k =diag σ β 2 k σ β 2 ˙ k σ f˙ 2 dk .
+In the actual tracking process, target maneuvers are
+highly dynamic and stochastic, and a single model cannot
+cover everything. However, each complex maneuver can be
+regarded as a simple weighting of several models, so it is
+necessary to establish a basic target model. This paper uses FIGURE2. Truetrajectoryofthemaneuveringtarget.
+theconstantvelocity(CV)modelandcoordinatedturn(CT)
+modeltomodelthetarget.
+UniformcircularmotionisalsocalledaCT.Withthistype w = (cid:2) w w (cid:3)T is the system disturbance noise; w and
+k x y x
+of motion, the direction of velocity is constantly changing w are zero-mean and independent white Gaussian noise,
+y
+duringtheentireprocess,whilethespeedandangularveloc- respectively; and Q = E (cid:2)(cid:48)w wT(cid:48)T(cid:3) is the state noise
+k k k
+ity remain unchanged. Similarly, taking X = X T −X O = covariancematrix.
+(cid:2) x x˙ x¨ y y˙ y¨(cid:3)T as the state vector, experiment assume that
+the target radiation source exhibits uniform circular motion
+B. SIMULATIONANDANALYSIS
+in a two-dimensional plane; then, the model state equation
+To assume that the reconnaissance platform is fixed at the
+canbewrittenasfollows: origin (0,0) of the two-dimensional coordinate system, and
+X k = (cid:56)  X k−1 + s (cid:48) in w ω k T  t [ h 2 e 0k i m ni 1 ti 8 a 0 l m s / ta s t 0 e m o / f s2 th 2 e 5k t m ar 2 g 0 e 0 t m ra / d s i 0 a m tio / n s2] s T o . u N rc o e nm is an X e 0 uve = r-
+1 0
+cosωT−1
+ing, weak maneuvering and strong maneuvering motions of
+ω ω
+ 
+0 cosωT 0 −sinωT  thetargetaresimulatedbyusingtwomovementsofuniform
+=   1−cosωT sinωT   X k−1 speedandaCT.Thespecificmotionprocessisuniformlinear
+0 1 
+ ω ω  motion at the initial speed for the first 20 s, a slow, weak
+0 sinωT 0 cosωT turn occurs to the right from 21 s-80 s, with a turning rate
+T2  of ω = 0.9rad/s, and uniform linear motion is recovered
+0 from81s-100s.Att=101s,thetargetmakesastrongturn
+ 2 
+ T 0  totheleftataturningrateofω = −3.6rad/s.After60sof
++  w (55)
+ T2  k continuousmovement,themovementstatechangesagainat
+  0   t=161s,andthetargetreturnstouniformlinearmotionuntil
+2
+0 T the end of the simulation. Fig. 2 presents the true trajectory
+ofthemaneuveringtarget.
+whereωrepresentstheknownturnrateoftargetmovement;
+Itshouldbenotedthatinordertocomparetheperformance
+ω > 0 represents a left turn, and ω < 0 represents a right
+ofthetwoalgorithms,adiscussionofthemodelsetselection
+turn.w istwo-dimensionalwhiteGaussiannoisewithazero
+mean. k Q = E (cid:2)(cid:48)w wT(cid:48)T(cid:3) is the state noise covariance is neglected. It is assumed that the selected submodel can
+k k k completely cover the entire process of movement. One CV
+matrix.
+model and two CT models with the same turning rate for
+WhenthesystemmodelisthediscreteCVmodel,therela- realmotionconditions,CT1(ω = 0.9rad/s)andCT2(ω =
+tivestatevectorX k =X Tk −X Tk =(cid:2) x k x˙ k x¨ k y k y˙ k y¨ k (cid:3)T of −3.6rad/s), are employed to describe the actual motion of
+thetargetemitterandtheobservationplatformistakenasthe
+the target. The initial Markov transition probability matrix
+statevariable.Therefore,theequationofstateofthesystem  0.95 0.025 0.025 
+canbeobtainedasfollows: is set as 0.025 0.95 0.025; the initial probability
+X k =f (X k−1 )+(cid:48)w k =(cid:56)X k−1 +(cid:48)w k (56) ofeachsub 0 m .0 o 2 d 5 elis 0 [ . 0 0 . 2 2 5 ,0.4, 0 0 . . 9 4 5 ],forwhichtheCVmodel
+(cid:20) (cid:21)
+I TI probabilityis0.2;theinitialvalueofthestateerrorcovariance
+where (cid:56) = 2 2 is the state transition matrix, T is
+0I 2 I 2 matrix P 0 = diag[500050]; the observation period is T =
+the measurement interval, I 2 is the 2 × 2 identity matrix; 1s; the observation time is N = 200s; the target radiation
+(cid:48) = (cid:20) T 2 2 I 2 (cid:21) is the state noise transfer matrix; frequencyisf T = 10GHz;andthemeasurementaccuracyof
+TI the azimuth angle, azimuth angle change rate and Doppler
+2
+VOLUME7,2019 57801
+
+--- Page 8 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+FIGURE3. ComparisonofthevelocityRMSEintheXdirection. FIGURE6. ComparisonofthepositionRMSEintheYdirection.
+FIGURE4. ComparisonofthepositionRMSEintheXdirection.
+FIGURE7. ComparisonoftheCVmodelprobabilitycurves.
+has more tracking advantages during abrupt maneuvering
+mutation.Fromtheperspectiveofthefilteralgorithm,these
+results occur because the covariance of the actual output
+residual sequence of the STSRCKF algorithm is extremely
+smallinthenonmaneuverandweakmaneuvercases,causing
+thetime-varyingfadingfactortoapproach1,whichleadsthe
+STSRCKFalgorithmtodegenerateintothestandardSRCKF
+algorithm. However, the advantages of the fading factor in
+theSTSRCKFalgorithmcanbefullyreflectedwhenastrong
+maneuver leads to a rapid increase in the filtering residual.
+In the algorithm, the dynamic change of the fading factor
+increases with an increase in the predicted residual, and the
+squarerootoftheerrorcovarianceisadjustedonline.Then,
+the gain matrices of the system are adjusted to one another,
+FIGURE5. ComparisonofthevelocityRMSEintheYdirection. and the residual sequences are forced to be orthogonal to
+oneanother;thus,thesystem’sadaptivetrackingandtracking
+frequencychangerateare10mrad,0.2mrad/sand0.6Hz/s, performanceabilitiesareimproved.
+respectively. From Fig. 7∼ Fig. 9, it can be seen that the improved
+The simulation results in Fig. 3∼Fig. 6 show that the IMMalgorithmismorereasonableintheallocationofeach
+improved IMM algorithm has a higher tracking accuracy submodel,withafasterswitchingspeed.Whenthefourtarget
+throughouttheentiremotionprocess.Comparedwithnonma- states of 21 s, 81 s, 101 s and 161 s change, the original
+neuverandweakmaneuvermotion,theimprovedalgorithm algorithm model has a slow switching speed, and the three
+57802 VOLUME7,2019
+
+--- Page 9 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+TABLE1. ARMSEforpositionandacceleration.
+VII. CONCLUSIONS
+FIGURE8. ComparisonoftheCT1modelprobabilitycurves.
+Inthispaper,anIIMM–STSRCKFalgorithmisproposedfor
+complexstrongmaneuvers.BasedontheIMM,thisalgorithm
+uses strong tracking to deduce a new equivalent method for
+evaluatingthetime-varyingfadingfactor,whichisintroduced
+into the square root of the state error covariance matrix of
+theSRCKFalgorithm,thusgivingtheSTSRCKFalgorithm
+the ability to track strong maneuvers. Furthermore, adap-
+tive adjustment of the Markov probability transfer matrix
+is achieved by using the probability difference between
+two consecutive time points in the IMM algorithm, which
+improvestheswitchingspeedandtherationalityofthesub-
+model.ComparedwiththetraditionalIMMalgorithmmodel,
+the IIMM-STSRCKF algorithm exhibits greatly improved
+tracking accuracy, model switching speed and computation.
+Methodsforfurtherimprovingthereal-timeperformanceof
+thealgorithmfortrackingcomplexmaneuveringtargetswill
+beinvestigatedinfutureresearch.
+FIGURE9. ComparisonoftheCT2modelprobabilitycurves.
+REFERENCES
+[1] Y.Lietal.,‘‘Apassivedetectionandtrackingdiversmethodbasedon
+submodels have a large difference from the ideal transition energy detection and EKF algorithm,’’ in Cluster Computing, vol. 7.
+probability curve; thus, the matching degree with the real Sep.2017,pp.1–10.
+model is low. In comparison, the improved IMM algorithm [2] W.Zhu,W.Wang,andG.Yuan,‘‘Animprovedinteractingmultiplemodel
+filteringalgorithmbasedonthecubatureKalmanfilterformaneuvering
+makes full use of the posterior information of the con-
+targettracking,’’Sensors,vol.16,no.6,p.805,Jun.2016.
+ditional probability difference and can quickly switch to [3] F.Masoumi-Ganjgah,R.Fatemi-Mofrad,andN.Ghadimi,‘‘Targettrack-
+matchtherealmotionwhenthestatechanges,thuscomplet- ingwithfastadaptiverevisittimebasedonsteadystateIMMfilter,’’Digit.
+SignalProcess.,vol.69,pp.154–161,Oct.2017.
+ingtherationalallocationofdifferentsubmodelsandmaking
+[4] S.VasuhiandV.Vaidehi,‘‘Targettrackingusinginteractivemultiplemodel
+the probability curves of each model very close to the ideal forwirelesssensornetwork,’’Inf.Fusion,vol.27,pp.41–53,Jan.2016.
+transitionprobabilitycurve.Therefore,thetrackingeffectof [5] B.Jiaetal.,‘‘Spaceobjecttrackingandmaneuverdetectionviainteracting
+multiplemodelcubatureKalmanfilters,’’presentedattheIEEEAerosp.
+theimprovedIMMalgorithmissuperior.
+Conf.,BigSky,MT,USA,Mar.2015,pp.1–8.
+To more fully illustrate the advantages of the IIMM- [6] R. Marino, ‘‘Adaptive observers for single output nonlinear systems,’’
+STSRCKF algorithm. The algorithm is compared to IEEETrans.Autom.Control,vol.35,no.9,pp.1054–1058,Sep.1990.
+the standard IMM, STSRCKF, STCKF and STFQM. [7] C.-Y.Yang,B.-S.Chen,andF.-L.Liao,‘‘Mobilelocationestimationusing
+fuzzy-basedIMManddatafusion,’’IEEETrans.MobileComupt.,vol.9,
+Table 1 shows the SRMSE values of the filter. The accu-
+no.10,pp.1424–1436,Oct.2010.
+racy of IIMM-STSRCKF is significantly improved and the [8] I.Hwang,C.E.Seah,andS.Lee,‘‘Astudyonstabilityoftheinteracting
+tracking stability is relatively stable. STSRCKF is better multiplemodelalgorithm,’’IEEETrans.Autom.Control,vol.62,no.2,
+pp.901–906,Feb.2017.
+thatSRCKFinaccuracyandstability.thesefindingssuggest
+[9] W.LiandY.Jia,‘‘Locationofmobilestationwithmaneuversusingan
+that the strong tracking filter has a good effect on complex IMM-basedcubatureKalmanfilter,’’IEEETrans.Ind.Electron.,vol.59,
+maneuvering target. The equivalent solution method of the no.11,pp.4338–4348,Nov.2012.
+[10] H.-S. Kim, J. G. Park, and D. Lee, ‘‘Adaptive fuzzy IMM algorithm
+newtime-varyingfadingfactorimprovesthefilteringpreci-
+foruncertaintargettracking,’’Int.J.ControlAutom.Syst.,vol.7,no.6,
+sionoftheIMMalgorithm. pp.1001–1008,Jun.2009.
+VOLUME7,2019 57803
+
+--- Page 10 ---
+B.Hanetal.:ImprovedIMMAlgorithmBasedonSTSRCKFforManeuveringTargetTracking
+[11] B.-D.KimandJ.-S.Lee,‘‘IMMalgorithmbasedontheanalyticsolutionof [37] D.H.ZhouandP.M.Frank,‘‘Strongtrackingfilteringofnonlineartime-
+steadystateKalmanfilterforradartargettracking,’’presentedattheIEEE varyingstochasticsystemswithcolourednoise:Applicationtoparameter
+Int.RadarConf.,Arlington,VA,USA,May2005. estimation and empirical robustness analysis,’’ Int. J. Control, vol. 65,
+[12] Q. Shen, ‘‘Kurtosis-based IMM filter for multiple MEMS gyroscopes no.2,pp.295–307,Feb.1996.
+fusion,’’SensorRev.,vol.37,no.3,Mar.2017. [38] D.-J. Jwo, C.-F. Yang, C.-H. Chuang, and T.-Y. Lee, ‘‘Performance
+[13] Z.DuanandX.Li,‘‘Anewnonlinearstateestimatorusingthefusionof enhancementforultra-tightGPS/INSintegrationusingafuzzyadaptive
+multipleextendedKalmanfilters,’’presentedatthe18thInt.Conf.Inf. strongtrackingunscentedKalmanfilter,’’NonlinearDyn.,vol.73,no.1,
+Fusion,Washington,DC,USA,Jul.2015. pp.377–395,Jul.2013.
+[14] A.KatriniokandD.Abel,‘‘AdaptiveEKF-basedvehiclestateestimation
+withonlineassessmentoflocalobservability,’’IEEETrans.ControlSyst.
+Technol.,vol.24,no.4,pp.1368–1381,Jul.2016.
+[15] Y.Wangetal.,‘‘Dynamicpropagationcharacteristicsestimationandtrack- BO HAN was born in Xi’an, China, in 1992.
+ingbasedonanEM-EKFalgorithmintime-variantMIMOchannel,’’Inf. HereceivedtheM.S.degreeinintelligencetest-
+Sci.,vol.408,pp.70–83,Oct.2017. ing from the Air Force Engineering University,
+[16] S.J.JulierandJ.K.Uhlmann,‘‘Unscentedfilteringandnonlinearestima- in2017.HeiscurrentlypursuingthePh.D.degree
+tion,’’Proc.IEEE,vol.92,no.3,pp.401–422,Mar.2004. inUAVoperationalengineering.Hismainresearch
+[17] I.ArasaratnamandS.Haykin,‘‘CubatureKalmanfilters,’’IEEETrans. interestsareUAVpathplanning,stateprediction,
+Autom.Control,vol.54,no.6,pp.1254–1269,Jun.2009. and maneuvering decision-making, especially in
+[18] Q.Ge,D.Xu,andC.Wen,‘‘Cubatureinformationfilterswithcorrelated highdynamiccountermeasure.
+noises and their applications in decentralized fusion,’’ Signal Process.,
+vol.94,pp.434–444,Jan.2014.
+[19] I.Arasaratnam,S.Haykin,andT.R.Hurd,‘‘CubatureKalmanfilteringfor
+continuous-discretesystems:Theoryandsimulations,’’IEEETrans.Signal
+Process.,vol.58,no.10,pp.4977–4993,Oct.2010. HANQIAO HUANG was born in 1982. He
+[20] J.Duan,H.Shi,D.Liu,andH.Yu,‘‘SquarerootcubatureKalmanfilter- receivedthePh.D.degreeinnavigation,guidance
+Kalmanfilteralgorithmforintelligentvehiclepositionestimate,’’Procedia and control from Northwestern Polytechnic
+Eng.,vol.137,pp.267–276,2016. University, in 2010. He is currently an Asso-
+[21] J.P.Muñoz,M.E.Magaña,andE.Cotilla-Sanchez,‘‘Adaptivemaster– ciateProfessorandholdsapostdoctoralposition
+slaveunscentedKalmanfilterforgridvoltagefrequencyestimation,’’IET with Northwestern Polytechnical University. His
+SignalProcess.,vol.12,no.4,pp.496–505,Jun.2017. researchinterestincludesoptimizationalgorithms
+[22] H.Wang,G.Fu,X.Bian,andJ.Li,‘‘SRCKFbasedsimultaneouslocaliza- and its application in cooperative combat for
+tionandmappingofmobilerobots,’’Robot,vol.35,no.2,pp.200–207,
+unmannedcombataerialvehicle.
+2013.
+[23] X.Tang,Z.Liu,andJ.Zhang,‘‘Square-rootquaternioncubatureKalman
+filteringforspacecraftattitudeestimation,’’ActaAstron.,vol.76,no.4,
+pp.84–94,Jul./Aug.2012.
+[24] C.HaiandS.Ganlin,‘‘AttitudeangleaidedIMMCKFalgorithm,’’pre- LEI LEI wasbornin1990.HereceivedtheM.S.
+sentedattheIEEE10thInt.Conf.Electron.Meas.Instrum.,Chengdu, degreeinelectricalengineeringfromXi’anJiao-
+China,Aug.2011. tongUniversity,in2015.HeisworkinginShanxi
+[25] A.K.SinghandS.Bhaumik,‘‘Higherdegreecubaturequadraturekalman Electric Power Company. His research interests
+filter,’’ Int. J. Control Autom. Syst., vol. 13, no. 5, pp. 1097–1105, include environmental protection, water conser-
+Oct.2015.
+vation monitoring, remote sensing, and UAV
+[26] B. Jia, M. Xin, and Y. Cheng, ‘‘High-degree cubature Kalman filter,’’
+monitoring.
+Automatica,vol.49,no.2,pp.510–518,Feb.2013.
+[27] B.JiaandM.Xin,‘‘Multiplesensorestimationusinganewfifth-degree
+cubatureinformationfilter,’’Trans.Inst.Meas.Control,vol.37,no.1,
+pp.15–24,2015.
+[28] T.SunandM.Xin,‘‘MultipleUAVtargettrackingusingconsensus-based
+distributedhighdegreecubatureinformationfilter,’’presentedattheAIAA
+CHANGQIANG HUANG was born in 1961.
+Guid.,Navigat.,ControlConf.,Kissimmee,FL,USA,Jan.2015.
+HereceivedthePh.D.degreeinnavigation,guid-
+[29] T.SunandM.Xin,‘‘Hypersonicentryvehiclestateestimationusinghigh
+anceandcontrolfromNorthwesternPolytechnic
+degree cubature Kalman filter,’’ presented at the AIAA Atmos. Flight
+University, in 2006. He is currently a Professor
+Mech.Conf.,Atlanta,GA,USA,Jun.2014.
+and a Doctoral Tutor with Air Force Engineer-
+[30] B.Jia,M.Xin,andY.Cheng,‘‘Sparse-gridquadraturenonlinearfiltering,’’
+ing University. He has worked in aerial weapon
+Automatica,vol.48,no.2,pp.327–341,2012.
+systemandapplicationengineeringformorethan
+[31] T.Xu,Q.Ge,X.Feng,andC.Wen,‘‘Strongtrackingfilterwithbandwidth
+constraint for sensor networks,’’ presented at the 18th IEEE Int. Conf. 30 years. His current research interests include
+ControlAutomat.,Xiamen,China,Jul.2010. artificialintelligence,includingknowledgeextrac-
+[32] S. Ma, P. Wu, J. Ji, and X. Li, ‘‘Sensorless control of salient PMSM tionandaircombatsimulationsystems.
+withadaptiveintegratorandresistanceonlineidentificationusingstrong
+trackingfilter,’’Int.J.Electron.,vol.103,no.2,pp.217–231,2016.
+[33] G.Hu,S.Gao,Y.Zhong,B.Gao,andA.Subic,‘‘Modifiedstrongtracking
+unscentedKalmanfilterfornonlinearstateestimationwithprocessmodel
+ZHUORAN ZHANG was born in 1990. He
+uncertainty,’’Int.J.Control,vol.29,no.12,pp.1561–1577,Dec.2015.
+received the M.S. degree in unmanned aircraft
+[34] D.-J.JwoandS.-Y.Lai,‘‘Navigationintegrationusingthefuzzystrong
+combat system and technology from Air Force
+trackingunscentedKalmanfilter,’’J.Navigat.,vol.62,no.2,pp.303–322,
+Feb.2009. EngineeringUniversity,in2015,whereheiscur-
+[35] W.LiandQ.Ge,‘‘UKF-STFtrackingwithcorrelatednoisesforthenon- rently pursuing the Ph.D. degree. His research
+linearsystem,’’presentedatthe8thWorldCongr.Intell.ControlAutomat., interest includes optimization algorithm and its
+Jinan,China,Jul.2010. application in unmanother factors are futher
+[36] X. Li, Z. Xu, and D. Zhou, ‘‘Chaotic secure communication based on slovednedaerialvehiclecombatsystems.
+strongtrackingfiltering,’’Phys.Lett.A,vol.372,no.44,pp.6627–6632,
+Oct.2008.
+57804 VOLUME7,2019

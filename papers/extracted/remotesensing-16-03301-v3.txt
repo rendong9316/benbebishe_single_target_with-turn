@@ -1,0 +1,1322 @@
+
+--- Page 1 ---
+remote sensing
+Article
+Intelligent Tracking Method for Aerial Maneuvering Target
+Based on Unscented Kalman Filter
+YunlongDong1,WeiqiLi2,*,DongxueLi2,ChaoLiu1 andWeiXue2
+1 MarineTargetDetectionResearchGroup,NavalAviationUniversity,Yantai264001,China;
+hjhkdx123@163.com(Y.D.);lc2016@buaa.edu.cn(C.L.)
+2 YantaiResearchInstitute,HarbinEngineeringUniversity,Yantai264001,China;
+lidongxue@hrbeu.edu.cn(D.L.);xuewei@hrbeu.edu.cn(W.X.)
+* Correspondence:liweiqi@hrbeu.edu.cn
+Abstract:Thispaperconstructsanonlineariterativefilteringframeworkbasedonaneuralnetwork
+prediction model. It uses recurrent neural networks (RNNs) to achieve accurate regression of
+complex maneuvering target dynamic models and integrates them into the nonlinear iterative
+filteringsystemviaUnscentedTransformation(UT).Inconstructingtheneuralnetworkprediction
+model,theTemporalConvolutionalNetwork(TCN)modulesthatcapturelong-termdependencies
+andtheLongShort-TermMemory(LSTM)modulesthatselectivelyforgetnon-essentialinformation
+wereutilizedtoachieveaccurateregressionofthemaneuveringmodels.Whenembeddingtheneural
+networkpredictionmodel,thispaperproposesamethodforextractingSigmapointsusingtheUT
+transformationby‘unfolding’multi-sequencevectorsandexploresdesigntechniquesforthetime
+slidingwindowlengthofrecurrentneuralnetworks.Ultimately,anintelligenttrackingalgorithm
+basedonunscentedfiltering,calledTCN-LSTM-UKF,wasdeveloped,effectivelyaddressingthe
+difficultiesofconstructingmodelsandtransitiondelaysunderhigh-maneuveringconditionsand
+significantlyimprovingthetrackingperformanceofhighlymaneuveringtargets.
+Keywords:maneuveringtargettracking;nonlineariterativefilteringframework;recurrentneural
+networks;unscentedtransformation
+Citation:Dong,Y.;Li,W.;Li,D.;Liu,
+1. Introduction
+C.;Xue,W.IntelligentTracking
+MethodforAerialManeuvering Targettrackingistheprocessofestimatingacontinuousandaccuratetargettrajectory
+TargetBasedonUnscentedKalman by processing discrete, noise-contaminated sensor measurements. The basic idea is to
+Filter.RemoteSens.2024,16,3301. designamotionmodelforthetargetbasedonpriorknowledgeanditerativelyoptimize
+https://doi.org/10.3390/rs16173301 thismodelaccordingtothespatio-temporalvariationpatternsofthemeasurements,with
+themodeloutputservingasthetargetstateestimation. Afterdecadesofdevelopment,
+AcademicEditor:LucaPallotta
+targettrackinghasbeenwidelyappliedinradartargetdetection,precisionweaponguid-
+Received:31July2024 ance, aerospace measurement and control, UAV navigation, and autonomous driving,
+Revised:3September2024 significantlyadvancingtherelatedfields. Itisnoteworthythatinmanypracticalscenarios,
+Accepted:4September2024 thetarget’smotionpatternisnotconstantandmayexperiencestatetransitionssuchas
+Published:5September2024
+acceleration, deceleration, or turning. These uncertain maneuvering behaviors cause a
+mismatchbetweenthetrackingmodelandtheactualtargetmotioncharacteristics,resulting
+inasignificantreductionintrackingaccuracyoreventrackingdivergence.Thus,accurately
+trackingmaneuveringtargets,especiallythosewithstrongmaneuvers,haslongbeena
+Copyright: © 2024 by the authors.
+challengingprobleminradardataprocessing.
+Licensee MDPI, Basel, Switzerland.
+Thecommonlyusedmaneuveringtargettrackingmethodsmainlyfallintotwocate-
+Thisarticleisanopenaccessarticle
+gories: oneismodel-basedstatepredictionmethods,andtheotherisneuralnetwork-based
+distributed under the terms and
+state prediction methods. Model-based methods are centered around the Kalman Fil-
+conditionsoftheCreativeCommons
+Attribution(CCBY)license (https:// ter [1,2], and their tracking effectiveness depends on the accuracy of the target motion
+creativecommons.org/licenses/by/ model, initially including the Extended Kalman Filter (EKF), Unscented Kalman Filter
+4.0/). (UKF),andothers. Commonmotionmodels[3,4]mainlyincludetheConstantVelocity
+RemoteSens.2024,16,3301.https://doi.org/10.3390/rs16173301 https://www.mdpi.com/journal/remotesensing
+
+--- Page 2 ---
+RemoteSens.2024,16,3301 2of22
+(CV)model,ConstantAcceleration(CA)model,CoordinatedTurn(CT)model,andadap-
+tive tracking models such as the Singer model [5] and the current statistical model [6].
+These methods, using only a single model, can adjust model parameters according to
+measurementchanges,butstillstruggletocoveravarietyofcomplextargetmaneuvers.
+Toaddressthis,scholarshavesubsequentlyproposedmulti-modelapproachesandlater
+theInteractingMultipleModel(IMM)[7]algorithm,whichworkwithvariousmodelsin
+synchronizationandperformaweightedsummationoftheirrespectivestateestimatesto
+achieveasuperiorstateestimation. Comparedtotraditionalsingle-model-basedfiltering
+methods, they significantly improve the tracking performance of maneuvering targets.
+However,duetothelatencyinthecalculationandupdateofweights,atthemomentwhen
+thetargetmaneuvers,theprobabilitiesofthemodelsarenotaccurate,leadingtolagged
+trackingresultsandreducedtrackingprecision.
+In recent years, with the rapid development and widespread application of deep
+learning,scholarshaveproposedneuralnetwork-basedmethodsformaneuveringtarget
+tracking. Intheearliermethods, scholarsusedonlinelearning[8,9]topredicttheinno-
+vations, Kalman gain, and other parameters, thereby adaptively adjusting the motion
+modelstoobtainbetterstateestimates. However,onlinelearningcannotusemodelsand
+algorithmswithhighcomputationalcomplexity,andthelimitedtimeavailablefordatapre-
+processingleadstopoorpreprocessingeffects. Therefore,thismethodhasgraduallybeen
+replacedbydeepneuralnetworkalgorithmstrainedandlearnedonofflinedata. Recurrent
+NeuralNetworks,theearliestmodelsusedfortime-seriesprocessing,havebeenwidely
+appliedinmanyfieldssuchasweatherforecasting,stockmarketpredictions,autonomous
+driving,andnaturallanguageprocessing. Correspondingly,astrajectorydataareatypeof
+timeseries,thestrategyofintegratingdeeplearningmethodswithtraditionalprocessing
+techniques has become a prominent trend. However, for a single radar, the amount of
+trajectorymeasurementsisoftentoosmalltobuildacompleteofflinedatabase[10,11]. To
+addressthis,thispaperusesaDigitalCombatSimulator(DCS)togeneratealargeamount
+ofsimulatedflightdata,whichafterpreprocessing,areconvertedintotrajectorydatain
+Cartesiancoordinatessuitablefornetworkinput. Comparedwithcurrentdatabasesbuilt
+onsimulationdata,thisofflinesimulatedtrajectorydatabaseisclosertorealconditions.The
+resultingmodelswillhavestrongergeneralizationcapabilitiesandtrackingperformance.
+Inmaneuveringtargettrackingmethods,statepredictioniscrucial.Therearecurrently
+manyneuralnetworkmodelsdesignedforstateprediction,suchastrajectoryprediction
+algorithmsbasedonBPneuralnetworks[12],algorithmsbasedonBi-LSTM[13],stateesti-
+mationalgorithmsbasedonNARX(nonlinearautoregressivewithanexogenousinput)[14],
+Transformer-basednetworksTBN[15],andthejointdirecttrackingandclassificational-
+gorithm DeppDTC based on CNN-Transformer [16]. These algorithms primarily focus
+on whether the network can retain long-term memory of feature information based on
+attentionmechanisms,whileneglectingperformanceanalysisoftheconvolutionalneural
+network(CNN)usedforfeatureextraction. Therefore, thispaperproposesanewstate
+prediction model combining a Temporal Convolutional Network and LSTM. The TCN
+optimizestheCNNlayersbyreplacingstandardconvolutionswithdilatedconvolutions
+andcausalconvolutions. ByusingLSTM,long-termdependenciesinthemeasurements
+canbecapturedwithfewerlayers,enhancingstatepredictionaccuracyandefficiency.
+Withoutmeasurement-basedcorrection,relyingsolelyonpredictionsinevitablyintro-
+ducescumulativeerrors. Predictionsystemsbasedonneuralnetworksfacedifficultiesin-
+corporatingmeasurementsduetotheunclearspecificformofthenonlinearstatetransition
+matrix. Toaddressthisissue,somescholarshaveproposedfeasiblemethods,suchasusing
+neuralnetworkstoestimatemodelparameters,includingstatetransitionmatrices[17,18],
+transitionprobabilitymatrices(TPMs)inIMM[19],polynomialcoefficients[20],turning
+rate [21,22], and model probabilities in IMM [23], and then using traditional methods
+for filtering after obtaining specific models. Additionally, incorporating measurement
+influencesduringneuralnetworktrainingisanothermethod[24]. Althoughthisapproach
+presents significant challenges to the neural network’s feature learning capabilities, it
+
+--- Page 3 ---
+RemoteSens.2024,16,3301 3of22
+avoids the complexity of adding measurement feedback modules later, such as in the
+TrMTTalgorithm[25]. Otherstudieshavedesignednewrecursivealgorithmsonexisting
+models,suchasNTTrRT[26]. Thesemethodsabandontrajectory-to-trajectoryprediction,
+improvingpredictionaccuracybutfailingtoaddressthestatisticalquantityproblemof
+targetstatesundernonlinearpredictionsystems,introducingunnecessaryerrors. There-
+fore, thispaperproposesafusionalgorithm, TCN-LSTM-UKF(TLU),basedonneural
+networkpredictionandtheUnscentedKalmanFilter,capableofcalculatingstatestatistics
+ateachtimestepwithoutexplicitlydefiningthestatetransitionmatrix,thusincorporating
+measurement influences into the system. Firstly, we analyzed the propagation charac-
+teristicsofSigmapointsinnonlinearsystemsanddiscoveredthatthestatechangesina
+singleSigmapointacrossdifferenttimestepsexhibittemporalcorrelation. Therefore,we
+proposedamethodofextractingSigmapointsusingtheUTtransformationby‘unfolding’
+multi-sequence vectors, employing the TCN-LSTM network for time-series prediction
+of each point. The predicted state vectors and covariance matrices are computed by
+calculatingtheweightedsumoftheSigmapointsatthecurrentmoment,andthen,the
+measurementsareintroducedfollowingthebasicprinciplesofKalmanFilterstocorrect
+thestatevectorsandcovariancematrices. Additionally,weexploreddesigntechniquesfor
+thetimeslidingwindowlengthofrecurrentneuralnetworks. Throughthisapproach,the
+proposedalgorithmeffectivelyhandlesthestatepredictionissuesofnonlinearsystems
+andintroducesmeasurementfeedbackinareasonableandeffectivemannertohelpcorrect
+errorsinthepredictions.
+Thispaperisorganizedasfollows: Section2introducesthebasicprinciplesofTCNs
+andLSTM.Section3proposestheintelligentalgorithmformaneuveringtargettracking,
+TCN-LSTM-UKF. Section 4 presents the results of a simulation analysis and real data
+processing,andSection5summarizestheworkofthispaper.
+2. BasicConceptsofTCNandLSTM
+2.1. TemporalConvolutionalNetworkBasedonCausalandDilatedConvolutions
+TCN uses one-dimensional convolution (1D convolution) to process sequence data,
+dividedintothreeparts:causalconvolution,dilatedconvolution,andresidualconnection[27].
+TCNemployscausalconvolution[28],wheretheoutputattimetisonlyconvolved
+with elements at time t and earlier in the previous layer. Figure 1 illustrates causal
+convolution,usedtoassumealldatamusthaveaone-to-onecausalrelationshipintime
+order. Givenaninputsequencetimesignal,X = (x ,x ,x ,x ,x ),wherex ∈ Rn,nis
+0 1 2 3 4 t
+Remote Sens. 2024, 16, x FOR PEER REVIE t W he variabledimension,andx doesnothaveastrictcausalrelationshipintim 4 o e f o 2 r 3 d er.
+t
+Although x and x mayhaveadirectlogicalconnection,causalconvolutionensures
+0 4
+thattherelationshipbetweenx andx isinfluencedbyx ,x ,andx .
+0 4 1 2 3
+Figure1.Causalconvolution.
+Figure 1. Causal convolution.
+In convolutional neural networks, dilated convolution and receptive field are two
+important concepts. The size of the receptive field determines the range of preceding and
+succeeding information the network can capture; the larger the receptive field, the more
+information the network can capture.
+Traditional convolution processes involve performing one convolution and then
+pooling, reducing the sequence size and increasing the receptive field. However, the main
+problem is that some sequence information is lost during pooling. Dilated convolution [26]
+has the advantage of not requiring pooling, gradually increasing the receptive field
+through a series of dilated convolutions, allowing each convolution output to contain rich
+long-term tracking information. The standard convolution is given as
+ytk1 wixti
+(1)
+i0
+where w is the convolution kernel of size k, x is the input sequence, and yt rep-
+resents the output at time step t . In dilated convolution, gaps are introduced between
+the convolution kernels, and the output of dilated convolution with a dilation rate d is
+ytk1 wixtdi
+(2)
+i0
+Compared to increasing the number of convolution layers and convolution kernel
+sizes, dilated convolution can capture long-term dependencies more efficiently.
+In Temporal Convolutional Networks, residual connections (ResNet) are also an im-
+portant structural feature [30]. Figure 2 illustrates the working principle of residual con-
+nections, where ResNet directly adds the input information across layers to the output,
+allowing effective training even for very deep networks.
+
+--- Page 4 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 4 of 23
+RemoteSens.2024,16,3301 Figure 1. Causal convolution. 4of22
+In convolutional neural networks, dilated convolution and receptive field are two
+imporItnancto cnovnocleupttiso.n Tahlen seiuzrea olfn tehtew roerckesp,tidviela fiteedldc doentveormluitnioens tahned rarnecgeep otfi vpereficeelddinagre atnwdo
+suimccpeoerdtianngt cinofnocrempatst.ioTnh tehsei zneeotwftohrek rceacne pctaivpetufireel;d thdee tlaerrmgeirn tehset hreecreapntgiveeo fifeplrde,c tehdei nmgoarned
+insfuocrcmeeadtiionng tihnef onremtwatoirokn ctahne cnaeptwtuorerk. cancapture;thelargerthereceptivefield,themore
+infoTrmraadtiitoionntahle cnoentwvoolrukticoann pcarpoctuesrese.s involve performing one convolution and then
+poolinTgr,a rdeidtiuocnianlgc tohnev soelquutieonncpe rsoiczees asnesdi innvcorlevaesipnegr ftohrem reincegpotniveec fioenlvdo. lHutoiownevanerd, tthhee nmpaoino l-
+pirnogb,lermed iusc tihnagt sthome see sqeuqeunecneces iiznefoarnmdaitniocnre ias slionsgt dthuerinregc pepootilvinegfi. eDldil.atHedo cwoenvveorl,utthioenm [2a6in]
+hparso bthleem aidsvtahnattasgoem oefs enqout ernecqeuinirfionrgm patoioonlinisg,l ogstradduurianllgyp ionoclrienags.iDngil attheed croecnevpotliuvteio fine[l2d9 ]
+thhraosutghhe aad svearinetsa ogfe doiflantoetdr ecqounivroinlugtpioonosl,i nagll,ogwraindgu aelalcyhi nccornevasoilnugtitohne oruectpeputti vtoe cfioenldtatihnr oriucghh
+loansge-rtieersmo ftrdailcaktiendgc ionnfovromluatitoionns., aTlhloew stianngdeaarcdh ccoonnvvoolluuttiioonn oisu gtpivuetnt oasc ontainrichlong-term
+trackinginformation. Thestandardconvolutionisgivenas
+ytk1 wixti
+(1)
+y(t) =
+∑k−i
+1
+0
+w(i)•x(t+i) (1)
+i=0
+where w is the convolution kernel of size k, x is the input sequence, and yt rep-
+wherewistheconvolutionkernelofsizek,xistheinputsequence,andy(t)representsthe
+resents the output at time step t . In dilated convolution, gaps are introduced between
+outputattimestept. Indilatedconvolution,gapsareintroducedbetweentheconvolution
+the convolution kernels, and the output of dilated convolution with a dilation rate d is
+kernels,andtheoutputofdilatedconvolutionwithadilationratedis
+ytk1 wixtdi
+(2)
+y(t) =
+∑k−i1w0
+(i)•x(t+d•i) (2)
+i=0
+Compared to increasing the number of convolution layers and convolution kernel
+Comparedtoincreasingthenumberofconvolutionlayersandconvolutionkernel
+sizes, dilated convolution can capture long-term dependencies more efficiently.
+sizes,dilatedconvolutioncancapturelong-termdependenciesmoreefficiently.
+In Temporal Convolutional Networks, residual connections (ResNet) are also an im-
+In Temporal Convolutional Networks, residual connections (ResNet) are also an
+portant structural feature [30]. Figure 2 illustrates the working principle of residual con-
+important structural feature [30]. Figure 2 illustrates the working principle of residual
+nections, where ResNet directly adds the input information across layers to the output,
+connections,whereResNetdirectlyaddstheinputinformationacrosslayerstotheoutput,
+allowing effective training even for very deep networks.
+allowingeffectivetrainingevenforverydeepnetworks.
+Figure2.Residualconnectionstructure.
+2.2. LongShort-TermMemoryNeuralNetwork
+LSTM[31,32]isaspecialtypeofrecurrentneuralnetwork,withthecorebeingthree
+maingatecontrolsystems: forgetgate,inputgate,andoutputgate,aswellasacellstate
+thatmaintainsnetworkstates. AsshowninFigure3,thesecomponentsworktogetherto
+determinehowinformationisretained,forgotten,andtransmitted.
+
+--- Page 5 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 5 of 23
+Figure 2. Residual connection structure.
+2.2. Long Short‐Term Memory Neural Network
+LSTM [31,32] is a special type of recurrent neural network, with the core being three
+main gate control systems: forget gate, input gate, and output gate, as well as a cell state
+RemoteSens.2024,16,3301 that maintains network states. As shown in Figure 3, these components work togethe 5 r o t f o 2 2
+determine how information is retained, forgotten, and transmitted.
+Figure3.LSTMstructure.
+Figure 3. LSTM structure.
+2.3. UnscentedTransformationandUnscentedKalmanFilter
+2.3. Unscented Transformation and Unscented Kalman Filter
+The Unscented Kalman Filter [33,34] is an advanced filtering technique based on
+The Unscented Kalman Filter [33,34] is an advanced filtering technique based on the
+theUnscentedTransformation,suitableforstateestimationproblemsinhighlynonlinear
+Unscented Transformation, suitable for state estimation problems in highly nonlinear sys-
+systems. Itapproximatesthestatisticalcharacteristicsofnonlineartransformations,suchas
+tems. It approximates the statistical characteristics of nonlinear transformations, such as
+meanandcovariance,throughcarefullyselectedweightedsamplepoints.
+mean a A n s d su c m ov in ar g ia th n e ce s , t a th te ro v u e g ct h o c r aXre h fu as lly a s d e im lec e t n e s d io w n e n ig , h a t m ed e a s n amXp , l a e n p d o a in c t o s v . ariancematrixP,
+theASisgsmumaipnogi nthtse isntacltue dveectthoer mXea nhaitss ae ldfiamnedn2sniopno ni,n ats mseyamnm X et,r aicnadll ya cdoisvtarribiauntceed maraotruinx d
+Pth , ethme eSaing,mtoat aplionignt2sn i+nc1lupdoei ntthse. mean itself and 2n points symmetrically distributed
+aroundT htheefi mrsetapno, itnottaislitnhge 2mne +a n1 iptsoeinlft:s.
+The first point is the mean itself:
+X = X (3)
+0
+X  X (3)
+0
+The remaining 2n points are obtained by shifting the square root of the mean and
+The remaining 2n points are obtained by shifting the square root of the mean and
+covariancematrix,symmetricallydistributedinbothpositiveandnegativedirectionsalong
+covariance matrix, symmetrically distributed in both positive and negative directions
+eachdimension: √
+along each dimension:
+X = X+ n+λS,i =1,...,n (4)
+i i
+√
+X  X  nS ,i1,...,n (4)
+X i+n =i X− n+λSii ,i =1,...,n (5)
+whereSisthesquarerootofthecovariancematrixPobtainedthroughCholeskydecompo-
+X  X  nS ,i1,...,n (5)
+sition,λ = α2(n+κ)−nisascaliinngparameter,αicontrolsthedistancebetweenpointsand
+wthheerme eSan i(st ythpeic saqlluyalrees srothota nof1 t)h,ea ncdovκairsiaantcuen minagtrpixa raPm eotbert.ained through Cholesky de-
+compoTshiteiown,e ightso2fenachSignm aisp ao isnctalairnegc palacrualmateetdera, sfo llcoownstr:ols the distance between
+points and the mean (typically less than 1), and  is a tuning parameter.
+λ
+The weights of each Sigma point arωe 0 m ca = lcu n la + ted λ as follows: (6)
+
+ω
+0
+c =
+n+
+λ 0
+λ
+m  +n (cid:16) 1− α2+β (cid:17) (6 ( ) 7)
+1
+ωm = ωc = ,i =1,2,...,2n (8)
+i i 2(n+λ)
+where ωm represents the mean weight of the i-th Sigma point, and ωc represents the
+i i
+covarianceweightofthei-thSigmapoint. βisusedtoincorporatepriorknowledgeabout
+thedistribution,typicallysettotwoinaGaussiandistribution.
+InadditiontotheselectionoftheSigmapoints,theUnscentedKalmanFilterprocess
+requireseachSigmapointtobepropagatedthroughthenonlinearfunctiong,resultingin
+Y = g(X),i =0,...,2n (9)
+i i
+
+--- Page 6 ---
+RemoteSens.2024,16,3301 6of22
+Finally,theestimatedmeanandcovariancematrixareobtainedasfollows:
+2n
+∑
+Y = ωY (10)
+i i
+i=0
+2n
+∑ (cid:0) (cid:1)(cid:0) (cid:1)′
+P = ω Y −Y Y −Y (11)
+Y i i i
+i=0
+3. TheProposedTCN-LSTM-UKFAlgorithm
+3.1. NeuralNetworkModelBasedontheSerialStructureofTCN-LSTM
+TemporalConvolutionalNetworks(TCNs)offeradistinctadvantageovertraditional
+CNNinhandlingtime-seriesdata,especiallyfortaskslikemaneuveringtargettracking.
+Typically,beforeusingrecurrentneuralnetworksformaneuveringtargettrajectorypredic-
+tion,CNNlayersareusedtoextractmotionfeatures. However,traditionalCNNlayersare
+primarilydesignedforimageprocessing,wherethereceptivefieldofeachlayerislimited
+bythesizeandnumberofconvolutionkernels. Althoughincreasingthenumberoflayers
+canindirectlyexpandthereceptivefield,thismethodsignificantlyraisescomputational
+complexity,memoryconsumption,andtrainingtime. Moreimportantly,CNNsstruggleto
+capturelong-termdependencies,whicharecriticalintrajectorypredictiontasks. Thislimi-
+tationalsointroducestheriskof“futureinformationleakage,”whereCNNsunintentionally
+usefuturedatainpredictions,thuscompromisingtemporalcontinuityandreliability. In
+contrast,TCNsarespecificallydesignedtoaddresstheseissuesbycapturinglong-distance
+temporal dependencies even in shallow networks, improving computational efficiency.
+TCNsusedilatedconvolutions,whichexpandthereceptivefieldwithoutincreasingthe
+computationalburden,allowingthemodeltoaccessinformationfromabroadertemporal
+range. Moreover,TCNsemploycausalconvolutions,whereeachoutputatagiventime
+step depends only on the current and previous inputs, preserving temporal order and
+ensuringpredictionsarebasedsolelyonknownhistoricaldata. Thiscausality-preserving
+propertyavoidstheproblemoffutureinformationleakage. Additionally,TCNsdemon-
+stratesignificantstabilityandefficiencyadvantagesoverCNNs. Indeepneuralnetworks,
+handlinglongsequencesoftenleadstovanishingorexplodinggradients. WhileCNNs
+canpartiallymitigatethisproblembystackingmultipleconvolutionallayers,theydonot
+fully resolve it. TCNs, however, use residual connections and normalization layers to
+maintainstablegradientflowindeepnetworks,significantlyreducingtheriskofvanishing
+orexplodinggradients. TCN’sarchitecturealsoenhancesparallelcomputationcapabilities,
+asdilatedconvolutionscancovermultipletimestepssimultaneously,greatlyimproving
+computationalefficiencyforlongsequencesandbetterutilizingmodernhardware’sparallel
+computingpower. Furthermore,TCNs,withtheirrelativelysimpleconvolutionoperations
+andfewerparameters,providebettergeneralizationandstabilitywhenprocessinglarge
+andcomplextime-seriesdatasets,withalowerriskofoverfittingcomparedtoCNNs. In
+summary,TCNoffersamoreefficient,powerful,andadaptablearchitecturethanCNN,
+especiallysuitedforvarioustime-seriesdataanalysistasksrequiringthecaptureofcom-
+plextemporaldynamics. Therefore,toenablethenetworktobetterlearnthemaneuvering
+characteristicsoftargetmotion,wereplacetheCNN-LSTMneuralnetworkarchitecture
+withtheTCNlayer.
+TCNandLSTMarebothexcellenttechniquesforprocessingtime-seriesdata,each
+withitsuniqueadvantages.WhenusingLSTMalone,handlinglongtimeseriescanbecome
+challengingduetoissuessuchasgradientexplosionorgradientvanishing,whichaffects
+theaccuracyofthemodel’spredictions. ByintroducingTCN,whichhasalargerreceptive
+field,thenetworkcanbettercapturelong-termdependenciesinthesequence. Addition-
+ally,TCN’sconvolution-basedparallelprocessingstructureimprovesthecomputational
+efficiency compared to the sequential processing structure of using LSTM alone. More
+importantly,TCNcaneffectivelyfilternoiseduringthefeatureextractionphase,providing
+cleanerandmoremeaningfulfeaturesforLSTMtoprocesssubsequently,therebyenhancing
+
+--- Page 7 ---
+RemoteSens.2024,16,3301 7of22
+theoverallrobustnessandnoiseresistanceofthemodel. Therefore,thispaperproposes
+a serial network structure based on TCN and LSTM, where TCN serves as the feature
+extractor followed by LSTM layers for sequence modeling. This effectively integrates
+thestrengthsofboth,improvingtheoverallpredictionaccuracyofthemodelandcanbe
+effectivelyappliedinthesingle-steppredictionphaseofmaneuveringtargettrackingtasks.
+In summary, TCN-LSTM can handle the diversification and complexity in maneu-
+veringtargettrackingtasks,performingexcellentlyinlarge-scale,high-dimensional,and
+rapidlychangingtrackingscenarios. Thismethodhelpsimprovetrackingalgorithmper-
+formance, enhancingreliabilityandefficiencyinpracticalapplications. Figure4shows
+thespecificnetworkframework,consistingoftwoTCNlayersandoneLSTMlayer,with
+preprocessedCartesiancoordinatesystemhistoricaltrajectorydataasinput. Thestruc-
+ture is b × n × c, where b represents batch size (i.e., the number of samples processed
+simultaneously in one forward and backward pass), n represents sequence length (in
+maneuveringtargettrackingtasks,itrepresentsthenumberoftrajectorytimestepsina
+window),andcrepresentsthenumberoffeatures(inthispaper,itisconsistentwiththe
+targetstatedimension,withthetargetstatevectorcontainingninedimensionsofx,y,and
+zpositions,velocities,andaccelerations). TheTCNpartacceptsnine-dimensionalinputs
+andconsistsoftwolayers,withoutputchannelsof64and128,respectively. Thekernel
+sizeisnine,anddilatedconvolutionsareusedwithdilationratesofoneandtwotoex-
+pandthereceptivefield,allowingthemodeltoeffectivelycapturelong-termdependencies.
+To maintain the time dimension, the padding is set to 8 and 16 in the first and second
+layers, respectively. EachconvolutionallayerisfollowedbyaReluactivationfunction,
+anda0.2Dropoutisappliedtopreventoverfitting. Inaddition,residualconnectionsare
+used for each convolutional output, and if the input and output channels are different,
+a1 × 1convolutionisusedtoadjusttheinputsize. NextistheLSTMpart, whichpro-
+cessesthe128-dimensionalfeatureoutputbytheTCN.TheLSTMnetworkcontainsnine
+layersintotal,with256hiddenunitsperlayer,andaunidirectionalstructureisadopted.
+Therefore,itextractsfeaturesfromtheforwardsequence. Theoutputdimensionofthe
+Remote Sens. 2024, 16, x FOR PEER REVLIESWT Mis256,whichisthenmappedtoanine-dimensionaloutputthroughafullyco8n noef c2t3e d
+layertogeneratethefinalpredictionresults. A0.2Dropoutisalsoappliedbetweeneach
+LSTMlayer.
+Figure4.TCN-LSTMstructure.
+Figure 4. TCN-LSTM structure.
+3.2. IntelligentTrackingAlgorithmBasedonUnscentedFilters
+3.2. Intelligent Tracking Algorithm Based on Unscented Filters
+Existingdata-basedtrackingmethodsrarelycombineKalmanFilterstoaddameasure-
+Existing data-based tracking methods rarely combine Kalman Filters to add a meas-
+mentfeedbackmechanism. Usingneuralnetworkpredictionsalonecannotdynamically
+urement feedback mechanism. Using neural network predictions alone cannot dynami-
+adjustandcorrectpredictionerrors. First,thepredictionsofneuralnetworkshavesome
+cally adjust and correct prediction errors. First, the predictions of neural networks have
+some error at each time step, and when these predictions are used for subsequent predic-
+tions, these errors gradually accumulate, leading to a decline in prediction accuracy. Ad-
+ditionally, the internal working mechanisms of neural networks are complex and lack in-
+terpretability, making it difficult to understand the model’s decision-making process and
+the reliability of the results in practical applications. In contrast, Kalman Filtering methods
+have clear mathematical models, making the results easier to verify. Therefore, this paper
+proposes a TCN-LSTM-UKF intelligent tracking algorithm based on unscented filtering.
+This algorithm integrates modern neural networks and traditional Kalman Filters, lever-
+aging the powerful predictive capabilities of neural networks and the real-time correction
+capabilities of Kalman Filters. This significantly improves the tracking accuracy and ro-
+bustness of the system when dealing with highly maneuvering targets.
+To optimize filter performance and improve the system model, this paper studies the
+time dependency of Sigma points. In the Unscented Kalman Filter, although Sigma points
+at each time step are regenerated according to the current state estimate and covariance
+matrix, their generation depends on the prediction and state update from the previous
+time step. In this sense, there is an indirect temporal dependency between Sigma points
+at different times, as each set of Sigma points is adjusted based on information from the
+previous time step. By tracking the changes in each Sigma point over time, we can observe
+how they evolve with the system. In this context, the changes in Sigma points can be
+viewed as a time series reflecting the dynamic behavior of the system. Therefore, the pro-
+posed TCN-LSTM network model can be trained to understand the temporal patterns of
+Sigma point changes and predict future states. At this point, each Sigma point’s time series
+can be considered a feature sequence, and the neural network needs to capture the pat-
+terns in these sequences for prediction.
+The generation and propagation rules of Sigma points are illustrated in Figure 5. In
+UKF, the generation of Sigma points is designed to approximate the Gaussian distribution
+with a small number of discrete points and to capture the state distribution in a nonlinear
+system. Specifically, 2n + 1 Sigma points are generated from the initial state mean and
+covariance matrix, where n is the dimension of the state vector. By calculating the Chole-
+sky decomposition of the covariance matrix, we obtain vectors to offset the state mean,
+
+--- Page 8 ---
+RemoteSens.2024,16,3301 8of22
+errorateachtimestep,andwhenthesepredictionsareusedforsubsequentpredictions,
+theseerrorsgraduallyaccumulate,leadingtoadeclineinpredictionaccuracy. Additionally,
+theinternalworkingmechanismsofneuralnetworksarecomplexandlackinterpretability,
+makingitdifficulttounderstandthemodel’sdecision-makingprocessandthereliability
+oftheresultsinpracticalapplications. Incontrast,KalmanFilteringmethodshaveclear
+mathematicalmodels,makingtheresultseasiertoverify. Therefore,thispaperproposes
+aTCN-LSTM-UKFintelligenttrackingalgorithmbasedonunscentedfiltering. Thisalgo-
+rithmintegratesmodernneuralnetworksandtraditionalKalmanFilters,leveragingthe
+powerfulpredictivecapabilitiesofneuralnetworksandthereal-timecorrectioncapabilities
+ofKalmanFilters. Thissignificantlyimprovesthetrackingaccuracyandrobustnessofthe
+systemwhendealingwithhighlymaneuveringtargets.
+Tooptimizefilterperformanceandimprovethesystemmodel,thispaperstudiesthe
+timedependencyofSigmapoints. IntheUnscentedKalmanFilter,althoughSigmapoints
+ateachtimestepareregeneratedaccordingtothecurrentstateestimateandcovariance
+matrix, their generation dependson the prediction and state update fromthe previous
+timestep. Inthissense,thereisanindirecttemporaldependencybetweenSigmapoints
+atdifferenttimes,aseachsetofSigmapointsisadjustedbasedoninformationfromthe
+previoustimestep. BytrackingthechangesineachSigmapointovertime,wecanobserve
+how they evolve with the system. In this context, the changes in Sigma points can be
+viewed as a time series reflecting the dynamic behavior of the system. Therefore, the
+proposedTCN-LSTMnetworkmodelcanbetrainedtounderstandthetemporalpatterns
+ofSigmapointchangesandpredictfuturestates. Atthispoint,eachSigmapoint’stime
+seriescanbeconsideredafeaturesequence,andtheneuralnetworkneedstocapturethe
+patternsinthesesequencesforprediction.
+ThegenerationandpropagationrulesofSigmapointsareillustratedinFigure5. In
+UKF,thegenerationofSigmapointsisdesignedtoapproximatetheGaussiandistribution
+withasmallnumberofdiscretepointsandtocapturethestatedistributioninanonlin-
+ear system. Specifically, 2n + 1 Sigma points are generated from the initial state mean
+andcovariancematrix, wherenisthedimension ofthestatevector. Bycalculatingthe
+Cholesky decomposition of the covariance matrix, we obtain vectors to offset the state
+mean,generatingsymmetricSigmapointsonbothsides. TheseSigmapointsrepresent
+possiblevaluesofthestatedistributionandarecenteredaroundthestatemean,distributed
+withintherangedefinedbythecovariance,effectivelycapturingthechangesinthestate.
+WhentheSigmapointspassthroughanonlinearsystem(inthispaper,apre-trainedneural
+networkpredictionmodel),eachpointundergoesanindependentnonlineartransformation.
+ThismeansthatthenonlinearsystemmakesdifferentpredictionsforeachSigmapoint,
+producingcorrespondingoutputs. Thesepredictedresultstypicallynolongermaintaina
+linearrelationship,asthecomplexityofthenonlinearsystemleadstoanonlinearmapping
+between input and output. However, despite this nonlinear transformation, the Sigma
+pointsstillretainthestatisticalpropertiesoftheoriginalstatedistribution. Afterpassing
+throughthenonlinearsystem,thepredictedresultsofthenewSigmapointsareusedto
+re-estimatethestatemeanandcovarianceofthesystem. Bytakingaweightedaverageof
+thesepredictedresults,anewstatemeancanbecalculated,andthestatecovariancecan
+alsobere-estimated. ThisprocessallowsUKFtobettercapturechangesanduncertainties
+inthestatewhendealingwithnonlinearsystems,ensuringanaccuratedescriptionofthe
+statedistribution. Insummary,thegenerationandpropagationofSigmapointsthrougha
+nonlinearsystemensurethat,eveninthepresenceofcomplexnonlinearmappings,the
+algorithmcaneffectivelyreflectchangesinthestateandobtainmoreaccurateestimatesof
+themeanandcovariancethroughweightedsummation. ThismakesUKFmorestableand
+accuratewhenhandlingnonlinearsystemscomparedtootherfilteringmethods.
+
+--- Page 9 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 9 of 23
+generating symmetric Sigma points on both sides. These Sigma points represent possible
+values of the state distribution and are centered around the state mean, distributed within
+the range defined by the covariance, effectively capturing the changes in the state. When
+the Sigma points pass through a nonlinear system (in this paper, a pre-trained neural net-
+work prediction model), each point undergoes an independent nonlinear transformation.
+This means that the nonlinear system makes different predictions for each Sigma point,
+producing corresponding outputs. These predicted results typically no longer maintain a
+linear relationship, as the complexity of the nonlinear system leads to a nonlinear map-
+ping between input and output. However, despite this nonlinear transformation, the
+Sigma points still retain the statistical properties of the original state distribution. After
+passing through the nonlinear system, the predicted results of the new Sigma points are
+used to re-estimate the state mean and covariance of the system. By taking a weighted
+average of these predicted results, a new state mean can be calculated, and the state co-
+variance can also be re-estimated. This process allows UKF to better capture changes and
+uncertainties in the state when dealing with nonlinear systems, ensuring an accurate de-
+scription of the state distribution. In summary, the generation and propagation of Sigma
+points through a nonlinear system ensure that, even in the presence of complex nonlinear
+mappings, the algorithm can effectively reflect changes in the state and obtain more accu-
+rate estimates of the mean and covariance through weighted summation. This makes UKF
+more stable and accurate when handling nonlinear systems compared to other filtering
+RemoteSens.2024,16,3301 methods. 9of22
+Figure5.ThegenerationandpropagationrulesofSigmapoints.
+Figure 5. The generation and propagation rules of Sigma points.
+Remote Sens. 2024, 16, x FOR PEER REVIEW Based on the time dependency of Sigma points, this paper proposes an10i notfe l2l3i gent
+Based on the time dependency of Sigma points, this paper proposes an intelligent
+trackingalgorithm,TLU,formaneuveringtargetsbasedontheunscentedfilter,asshown
+tracking algorithm, TLU, for maneuvering targets based on the unscented filter, as shown
+inFigure6.
+in Figure 6.
+FigurFei g6.u TreLU6. aTlLgUoriatlhgmor ipthromcepsrso. cess.
+Initially,appropriatedatapreprocessingisconducted,convertingrawradarmeasure-
+Initially, appropriate data preprocessing is conducted, converting raw radar meas-
+mentsrecordedasrange–azimuth–elevationintoCartesiancoordinates,andpreliminary
+urements recorded as range–azimuth–elevation into Cartesian coordinates, and prelimi-
+tracking is performed using the IMM algorithm. Data from the initial n time steps are
+nary tracking is performed using the IMM algorithm. Data from the initial n time steps
+selectedastheinitialwindow,andtheSigmapointsetofthetargetstatevectorateachtime
+are selected as the initial window, and the Sigma point set of the target state vector at each
+stepintheinitialwindowiscalculated,resultinginathree-dimensionaltensorofshape
+time step in the initial window is calculated, resulting in a three-dimensional tensor of
+s×n×c,wheresrepresentsthenumberofselectedSigmapoints,andcrepresentsthe
+shape s × n × c, where s represents the number of selected Sigma points, and c represents
+dimensionofthetargetstatevector. AccordingtothegeneralpracticeoftheUnscented
+the dimension of the target state vector. According to the general practice of the Unscented
+Transformation,wehavethefollowing:
+Transformation, we have the following:
+s =2c+1 (12)
+s  2c1 (12)
+As shAoswsnh oinw FniginurFei g7u, rien 7T,LinUT, sLiUnc,es itnhcee ntehtewnoertkw-boarske-db aosneed-sotneep- sptreepdpicrteiodnic rtieoqnuirreeqsu ires
+all inaflolrimnfaotrimona tioofn thofe thtaergtaertg settasttea tfeofro trhteh epprervevioiouuss nn ttiimmee ssaammpplliinngg ppooinintsts,,e aecahchs esteot foSfi gma
+Sigma points constructed should reflect the propagation characteristics over this period
+and the motion characteristics of the target. Therefore, we first flatten the state vectors of
+the n sampling points and then construct the Sigma point set based on this one-dimen-
+sional vector. The number of points obtained with this new construction method is as fol-
+lows:
+s  2nc1 (13)
+
+--- Page 10 ---
+RemoteSens.2024,16,3301 10of22
+pointsconstructedshouldreflectthepropagationcharacteristicsoverthisperiodandthe
+motioncharacteristicsofthetarget. Therefore, wefirstflattenthestatevectorsofthen
+sampling points and then construct the Sigma point set based on this one-dimensional
+vector. Thenumberofpointsobtainedwiththisnewconstructionmethodisasfollows:
+Remote Sens. 2024, 16, x FOR PEER REVIEW 11 of 23
+s =2×n×c+1 (13)
+Fig F u i r g e u 7 re . S 7 i . gSmigam paoipnot isnetts ceotncsotnrustcrtuiocnti opnropcreoscse. ss.
+Amongthem,itisnecessarytoconstructacovariancematrixcorrespondingtothe
+Among them, it is necessary to construct a covariance matrix corresponding to the n
+n×c-dimensionalstatevectorforCholeskydecomposition. Thecovariancematricesfor
+× c-dimensional state vector for Cholesky decomposition. The covariance matrices for n
+ntimesteps,eachofshapec×c,arecombinedalongthediagonaltoformanewcovariance
+time steps, each of shape c × c, are combined along the diagonal to form a new covariance
+matrixofshape(n×c)×(n×c),asfollows:
+matrix of shape (n × c) × (n × c), as follows:
+ 
+PP 1 00 00 0 0 0 0
+1
+P
+SPigma
+=
+
+ 
+
+  
+
+0
+0
+0
+0
+P
+0
+2 P
+0
+2
+
+0 . 0 .. 0
+0 0
+0 0
+0
+ 
+ 0
+0  
+ (14
+(
+)
+14)
+Sigma    0 0 0 0 0 0 P P n−10 0  
+ 0 0 0 n10  p
+ 0 0 0 0 p   n
+n
+BeforeinputtingthesSigmapointsequencesintotheTCN-LSTMnetworkforpredic-
+Before inputting the s Sigma point sequences into the TCN-LSTM network for pre-
+tion,anormalizationmodule[35]needstobeaddedtoensurefasterandmoreefficient
+diction, a normalization module [35] needs to be added to ensure faster and more efficient
+convergence of the algorithm. After normalization, the model treats all features with
+convergence of the algorithm. After normalization, the model treats all features with con-
+consistentimportance,avoidingpoortrainingresultsduetothelargevariationrangeof
+sistent importance, avoiding poor training results due to the large variation range of po-
+positionfeatures. Intheproposedalgorithm,themin–maxnormalizationmethodisused:
+sition features. In the proposed algorithm, the min–max normalization method is used:
+x = x x  − mi m nin x (x) (15)
+xnorm max(x)−min(x ) (15)
+norm maxxminx
+AfterprocessingthedatathroughtheTCN-LSTMmodule,thefuturestatepredictions
+After processing the data through the TCN-LSTM module, the future state predic-
+ofthesSigmapointsareobtained. Sincethesubsequentprocessisbasedontherecursive
+tions of the s Sigma points are obtained. Since the subsequent process is based on the
+modeloftheUKF,onlyonetimesteppredictionresultisoutputatthispoint. TheUKFuses
+recursive model of the UKF, only one time step prediction result is output at this point.
+The UKF uses this prediction result and new measurement data to update the state esti-
+mate, optimizing potential prediction errors.
+The TLU algorithm combines dynamic model selection (IMM), deep learning (TCN-
+LSTM), and advanced filtering technology (UKF) with a data-driven core. Compared to
+traditional model-based tracking algorithms, it offers higher prediction accuracy and per-
+forms excellently in handling high-maneuvering target tracking problems in complex en-
+vironments. More importantly, regarding the issue of unknown model parameters in
+
+--- Page 11 ---
+RemoteSens.2024,16,3301 11of22
+thispredictionresultandnewmeasurementdatatoupdatethestateestimate,optimizing
+potentialpredictionerrors.
+Remote Sens. 2024, 16, x FOR PEER REVIEW 12 of 23
+TheTLUalgorithmcombinesdynamicmodelselection(IMM),deeplearning(TCN-
+LSTM), and advanced filtering technology (UKF) with a data-driven core. Compared
+totraditionalmodel-basedtrackingalgorithms,itoffershigherpredictionaccuracyand
+pneornfolirnmesare xsycesltleemntsl ywihnehna nudsilningg nheiugrha-lm naentweuovrkersi nfogrt aprrgeedtictrtiaocnk,i nthgep TroLbUle amlgsoirnitchomm pdloeexs
+ennovti rroeqnumireen dtse.teMrmorieniinmgp tohret asnptelcyi,firce gfoarrmdi nogf tthhee sitsastue etroafnusintikonno mwantrmixo. dIte clapna craalmcueltaetres tihne
+nmonealinn eaanrds ycostveamrisanwceh emnautrsiixn gbyn epuerrafolrnmetiwngo rak wsfeoigrhptreedd sicutmio no,ft htheeT SLigUmaal gpooriintht msetd porees-
+ndoitctreedq uaitr ethdee ctuerrmreinnti ntigmteh estseppe, cwifiitchfoourtm thoef ntheeeds ttaot edtersaingsni tnioenwm maetarisxu.reItmceannt cfaelecdublaatcek
+tshyestmemeasn. Tanhids caovvoaidrisa necrreomrsa itnritxrobdyucpeedrf obrym liinnegaarizwaetiiognh,t eadnds utmhiso pfrtohbeleSmig misa apdodirnetssseedt
+parnedd iscotelvdeadt bthye thcue rpreronptotismede smteepth,wodit hfooru tthteh fiernset etdimtoe cdoemsigpnarneedw tom eexaisstuirnegm treanctkfienegd baalgcok-
+sryisthtemmss. . Thisavoidserrorsintroducedbylinearization,andthisproblemisaddressedand
+solvedbytheproposedmethodforthefirsttimecomparedtoexistingtrackingalgorithms.
+4. Experimental Analysis
+4. ExperimentalAnalysis
+4.1. Analysis of Experimental Data Based on DCS
+4.1. AnalysisofExperimentalDataBasedonDCS
+4.1.1. DCS Database
+4.1.1. DCSDatabase
+As a data-driven algorithm, TLU requires a large amount of data in high-dimensional
+Asadata-drivenalgorithm,TLUrequiresalargeamountofdatainhigh-dimensional
+space to capture complex dynamics, and it places high demands on data quality and the
+spacetocapturecomplexdynamics,anditplaceshighdemandsondataqualityandthe
+sufficiency of the training process. Due to the current limited amount of measured data,
+sufficiencyofthetrainingprocess. Duetothecurrentlimitedamountofmeasureddata,it
+it is insufficient to build a comprehensive dataset. However, it is necessary to ensure that
+isinsufficienttobuildacomprehensivedataset. However,itisnecessarytoensurethatthe
+the trajectory data used meets practical needs, including various environmental changes
+trajectorydatausedmeetspracticalneeds,includingvariousenvironmentalchangesand
+and maneuvering characteristics. Therefore, this experiment abandons the use of simu-
+maneuveringcharacteristics. Therefore,thisexperimentabandonstheuseofsimulated
+lated trajectory data and instead chooses DCS simulated flight data. DCS is a highly real-
+trajectorydataandinsteadchoosesDCSsimulatedflightdata. DCSisahighlyrealistic
+istic flight simulation software that provides extremely accurate flight system simulations,
+flightsimulationsoftwarethatprovidesextremelyaccurateflightsystemsimulations,an
+an advanced physics engine, and highly realistic terrain environments. It also integrates
+advanced physics engine, and highly realistic terrain environments. It also integrates
+various civilian and military aircraft. By collecting a large amount of trajectory data from
+variouscivilianandmilitaryaircraft. Bycollectingalargeamountoftrajectorydatafrom
+this simulation, a vast offline database can be constructed. The raw data from DCS are
+thissimulation, avastofflinedatabasecanbeconstructed. TherawdatafromDCSare
+vviiddeeoo ssttrreeaamm ddaattaa,, aass sshhoowwnn iinn FFigiguurree 88,, aanndd ththee ssppeeccifiificc trtraajejeccttoorryy ddaattaa aarree eexxppoorrtteedd
+tthhrroouugghht thhees simimuulalatitoionns sooftfwtwaarreeT Taaccvvieieww1 1.9.9.4.4..
+Figure 8. DCS video stream data.
+Figure8.DCSvideostreamdata.
+TThheer raaddaarrs sccaannc cyycclleei sis0 0.2.2s s.. BBaasseedd oonne exxiissttiinnggp paarraammeetteerrss,,t thheed daattaaa arreec coonnvveerrtteeddt too
+CCaarrtteessiaiannc coooordrdininataetse,sr, erseuslutilntigngin inn innein-de-imdiemnesniosnioanltarla tjreacjteocrtyordya tdaaitna tihne tChaer Cteasriatensisayns tseyms.-
+tem.F i rst, the coordinates in the ECEF system are obtained from the original latitude
+and loFnirgsitt, uthdee cdoaotrad.inAadtedsi tinio tnhael lEy,CtEhFe sgyesotegmra parhei cobcotaoirndeidn afrteosmo tfhteh oerliogcinaalls leantistourdne eaendd
+tloonbgeipturodvei ddeadtat. oAcdodnivtieorntathlley,E tChEe Fgecoogorradpinhaicte csotoorCdianratetessia onfc tohoer dloincaalt esse.nLssor neeisds teot tboe
+radar
+4p5r.0o8v3idraeddi taon sc,oRnvsert thtoe 3E8C.9E8F7 croadoiradnins,aatnesd tHo Cs artetsoia6n5 c6o2omrd.iBnaasteeds.o nLEsqua tiiso nsest( t1o5 )4–5(.1088)3,
+radar radar radar
+radians, Rs to 38.987 radians, and Hs to 6562 m. Based on Equations (15)–(18),
+radar radar
+the ECEF coordinates of the local sensor are calculated: X x ,y ,z , and the rotation
+s s s s
+matrix Ris constructed:
+
+--- Page 12 ---
+RemoteSens.2024,16,3301 12of22
+theECEFcoordinatesofthelocalsensorarecalculated: X = [x ,y ,z ],andtherotation
+s s s s
+matrixRisconstructed:
+ 
+−sin(Rs
+radar
+) −sin(Ls
+radar
+)• cos(Rs
+radar
+) cos(Ls
+radar
+)• cos(Rs
+radar
+)
+R =  cos(Rs radar ) −sin(Ls radar )• sin(Rs radar ) cos(Ls radar )• sin(Rs radar ) (16)
+0 cos(Ls ) sin(Ls )
+radar radar
+(cid:2) (cid:3)
+TheECEFcoordinatesofthetargetareX = ECEF ,ECEF ,ECEF ,andtheCarte-
+t x y z
+siancoordinatesareobtainedbythefollowing:
+x
+real
+=inv(R)•(X
+t
+−X
+s
+) (17)
+Afterobtainingthepositionvalues,thevelocityandaccelerationneedtobecalculated.
+The velocity is a three-dimensional vector calculated based on ground speed, heading
+angle,andverticalspeed. Groundspeedandheadingangleθ determinethehorizontal
+velocitycomponents,whileverticalspeeddirectlyprovidestheverticalcomponent. The
+accelerationiscalculatedusingthelateralacceleration,longitudinalacceleration,andthe
+pitchangle.
+Thesimulatedflightdataaresufficienttoconstructalargeofflinedatabase,whichcan
+beusedasthetrainingandvalidationdatasetforthesubsequentTCN-LSTMnetwork.
+4.1.2. ParameterSettingsinDCSDataAnalysis
+The dataset used in the experiment was generated from an offline database, with
+specificparameterslistedinTable1. ThemodeltrainingprocessisshowninFigure9. In
+thismodel,weadoptedtheAdamoptimizer,whichcandynamicallyadjustthelearning
+rateofeachparametertoacceleratetheconvergenceofcomplexneuralnetworks.Theinitial
+learningratewassetto1×10−6,which,althoughrelativelylow,enablesstableupdates
+forthemodelweights,avoidingoscillationscausedbyexcessivelylargegradients. Weight
+decaywassetto1 × 10−5, helpingtocontroloverfitting, especiallywhendealingwith
+high-dimensionalandcomplexdata,bylimitingthegrowthofweightsandthusenhancing
+themodel’sgeneralizationability. Asforthelearningratedecaystrategy,althoughwedid
+notemployadynamiclearningrateadjustmentmethod,theinitiallearningrateisalready
+smallenoughtoensurethatthemodelcanstillconvergesmoothlyinthelaterstagesof
+training. Regardingbatchsize,wechose64asthetrainingbatchsize. Thisbatchsizestrikes
+abalancebetweencomputationalresourcesandmodelperformance, fullyutilizingthe
+parallelcomputingpowerofGPUswhilemaintainingstabilityduringthetrainingprocess.
+Inconclusion,thechoiceofoptimizer,weightdecay,andappropriatebatchsizesettingsall
+contributetoimprovingthemodel’strainingstabilityandpredictiveperformance.
+Table1.Simulationexperimentparametersettings.
+ParameterName Value
+Numberoftrajectories 65,519
+Proportionofthetrainingset 60%
+Proportionofthevalidationset 40%
+Learningrate 0.000001
+Weightdecay 0.00001
+Batchsize 64
+Trainingsetaccuracy 92.92%
+Validationsetaccuracy 87.21%
+Furthermore,thesizeoftheslidingwindowintheneuralnetworksignificantlyim-
+pactsmodelperformance. Awindowthatistoolargemayintroduceirrelevantinformation,
+leadingtooverfitting,whileawindowthatistoosmallmaynotcapturesufficientinforma-
+tion. Toselectanappropriatewindowsize,theexperimentusedthePearsonCorrelation
+Coefficient[36]tocalculatethecorrelationofthetargetstatevectoratdifferenttimeinter-
+
+--- Page 13 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 14 of 23
+RemoteSens.2024,16,3301 13of22
+vals. ThePearsonCorrelationCoefficientisastatisticalmeasureofthestrengthofalinear
+relationshipbetweentwosetsofdata. Theformulaisasfollows:
+∑(x −x )(x −x )
+r = (cid:113) k k k+t k+t (18)
+∑(x −x )2∑(x −x )2
+k k k+t k+t
+Fwighuerree 9.x T k raainnidngx a k n + d t vaarleidatwtioon lsoestss. of state vectors at intervals of t sampling periods,
+and x t and x t+k are their means. The range of r is −1 to 1, where 1 indicates a per-
+Remote Sens. 2024, 16, x FOR PEER REVfeIEcWt pF uosrtithievremcoorrere, ltahteio sniz,e− o1f itnhde isclaidteisnga wpeinrfdeoctwn ieng athtiev neecuorrarle lnaettiwono,rakn sdig0niifincdainc1at4lt yeo sfi m2n3o-
+pliancetas rmcoordreell aptieornfo.rAmsasnhcoe.w An iwniFnidgouwre t1h0a,tw ish etonot l=ar5g0e, tmheayP einartrsoodnuCcoe rirrerlealteivoannrte aincfhoerd-
+m0.a9t9i9o9n4,5 l,eaanddinags tto coovnetrinfiutteindgt,o wdheiclree aa swe,inthdeocwo rtrhealta tisio tnooim smpraolvl emmaeyn ntostl ocwapetdurseig snuififficcainetnlyt .
+iTnhfoerrmefoatrieo,nth. Teoe xspeleercimt aenn atpseplreocpterdiaates wlidinindgoww isnizdeo,w thsei zeexpoefr5i0m.ent used the Pearson Cor-
+relation Coefficient [36] to calculate the correlation of the target state vector at different
+time intervals. The Pearson Correlation Coefficient is a statistical measure of the strength
+of a linear relationship between two sets of data. The formula is as follows:
+x x x x 
+r  k k kt kt
+(18)
+x x 2x x 2
+k k kt kt
+where x and x are two sets of state vectors at intervals of t sampling periods, and
+k kt
+x and x are their means. The range of r is −1 to 1, where 1 indicates a perfect positive
+t tk
+correlation, −1 indicates a perfect negative correlation, and 0 indicates no linear correla-
+tion. As shown in Figure 10, when t = 50, the Pearson Correlation reached 0.999945, and
+as t continued to decrease, the correlation improvement slowed significantly. Therefore,
+the experiment selected a sliding window size of 50.
+FFigiguurere 99. .TTrraainininingg aanndd vvaalildidaatitoionn lolossss. .
+Furthermore, the size of the sliding window in the neural network significantly im-
+pacts model performance. A window that is too large may introduce irrelevant infor-
+mation, leading to overfitting, while a window that is too small may not capture sufficient
+information. To select an appropriate window size, the experiment used the Pearson Cor-
+relation Coefficient [36] to calculate the correlation of the target state vector at different
+time intervals. The Pearson Correlation Coefficient is a statistical measure of the strength
+of a linear relationship between two sets of data. The formula is as follows:
+x x x x 
+r  k k kt kt
+(18)
+x x 2x x 2
+k k kt kt
+where x and x are two sets of state vectors at intervals of t sampling periods, and
+k kt
+x and x are their means. The range of r is −1 to 1, where 1 indicates a perfect positive
+t tk
+c FFo iir ggr uue rrl e ae t 11i 0 o0.. n PP, e e− aar 1rs so ion nnd CCic ooa rrr tre eel slaa t atiio op nne .. rfect negative correlation, and 0 indicates no linear correla-
+tion. As shown in Figure 10, when t = 50, the Pearson Correlation reached 0.999945, and
+4.1.3. SystemInitialization
+4.1.3. System Initialization
+as t continued to decrease, the correlation improvement slowed significantly. Therefore,
+Due to noise potentially masking the true signal in the data, directly using noisy
+the exDpueeri mtoe nnto siseele pctoetde nat isalildlyi nmg awskinindgo wth sei zteru oef 5s0ig. nal in the data, directly using noisy
+measurements as input to the neural network may result in the network learning inac-
+measurements as input to the neural network may result in the network learning inaccu-
+curatefeatures,reducingsystemaccuracy. TheTLUalgorithmusesanIMMmodulefor
+rate features, reducing system accuracy. The TLU algorithm uses an IMM module for
+initialization. TheIMMmodelsetincludestheCVmodel,CAmodel,Singermodel,and
+threeCTmodelswithdifferentturningrates,totalingsixmodels. Theresultsofthefirst
+50samplingpointsfilteredbytheIMMareselectedastheinitialstateoftheTLUsystem
+andtheinitialinputfortheTCN-LSTMmodel.
+Figure 10. Pearson Correlation.
+4.1.3. System Initialization
+Due to noise potentially masking the true signal in the data, directly using noisy
+measurements as input to the neural network may result in the network learning inaccu-
+rate features, reducing system accuracy. The TLU algorithm uses an IMM module for
+
+--- Page 14 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 15 of 23
+initialization. The IMM model set includes the CV model, CA model, Singer model, and
+three CT models with different turning rates, totaling six models. The results of the first
+50 sampling points filtered by the IMM are selected as the initial state of the TLU system
+RemoteSens.2024,16,3301 14of22
+and the initial input for the TCN-LSTM model.
+4.1.4. Positive Definiteness of the Covariance Matrix
+4.1.4. PositiveDefinitenessoftheCovarianceMatrix
+In the TLU algorithm, performing a Cholesky decomposition on the covariance ma-
+In the TLU algorithm, performing a Cholesky decomposition on the covariance
+trix P at each time step is a crucial step. The formula is as follows:
+matrixPateachtimestepisacrucialstep. Theformulaisasfollows:
+PLLT (19)
+P = LLT (19)
+where L is a lower triangular matrix used to generate Sigma points that approximate
+twheh eprreoLbaibsialitlyo wdeisrtrtirbiauntigounl ainr mstaatteri exsutismedattioong.e HneorwateeveSrig, dmuae ptoo itnhtes itnhaaptparpopprroixaitme saettteitnhge
+opfr opbroabceilsist ynodiissetr aibnudt imonodinel setrartoeres,s ttihme actoiovnar.iaHnocew mevaetrr,ixd umeayto btehceominea pnporno-pproisaitteivsee dtteinfig-
+noiftep,r moceeasnsinngo iiste isa nsydmmmoedterilce brruotr ns,otth aell coofv iatsr ieaingceenvmaalutreisx amrea pyobseitciovme. eTnhoisn c-apno sciatiuvsee dtheef-
+Cinhiotel,esmkeya dneicnogmitpiosssityiomnm toe tfraiicl,b purtevneonttainllgo sfuibtsseeqigueennvt arelucuesrsaivree popoesirtaivtieo.nTs.h Iins tchaen ecxapuesre-
+itmheenCth, oal ereskgyuldareiczoamtiopno smitieothnotdo f[a3i7l], pwraesv ecnhtoisnegns; uab vseeqryu esnmtarlel cpuorssiitvieveo pvearluatei o(n0.s0.0I0n1)t hise
+aedxpdeerdi mtoe ntht,ea drieagguolnaarli zealteimonenmtse tohfo tdhe[3 c7o]vwaraisanchceo smena;traixv ewryhesnm iatl lisp noositt ipvoesvitaivluee d(e0fi.0n0i0te1,)
+misaakdidnegd itt optohseitidviea gdoenfianlietele. mExenptesriomfethnetaclo rveasruialtnsc sehmowat rtihxawt htheins imtiesthnoodtp ios seitffivecetdiveefi annitde,
+dmoaeks innogt iitnptroosdituivcee edrerfionrsi.t e. Experimentalresultsshowthatthismethodiseffectiveand
+doesnotintroduceerrors.
+4.1.5. Comparative Experiment and Result Analysis
+4.1.5. ComparativeExperimentandResultAnalysis
+The test set used in this experiment is a simulated trajectory newly generated from
+the oTfflhienete dstatsaebtaussee, dcoinnstihsitsinegx poef r5im86e nsatmispalisnimg uploaitnetds, twraijtehc tao rryadnaerw slycagne ncyecrlaet eodf f0r.o2ms.
+Fthigeuorfefl 1in1 eshdoawtasb athsee, tcroajnescitsotrinyg ofo fth5e8 6seslaemctepdli ntegstp soeitn, tcso,mwpitahriangra tdhaer tsrcuaen trcayjcelcetoorfy0, .t2hes .
+rFeisguulrt etr1a1ckshedo wbys tthhee tTrLajUec atolgryoroitfhtmhe, asnelde cttheed rteessutlst ettr,accokmedp abryi nthget htreadtriutieontraalj eaclgtoorryi,ththme
+IrMesMul-tat.r IaMckMed-ab iynctlhuedTesL tUhraeleg omriotdhemls,: aCnVd, tChAe,r easnudl tCtTra. cAkse sdhboywtnh eint rthade ifitigounrael, athlgeo trriathckm-
+iInMgM ac-cau.rIMacMy o-af tihnecl TuLdUes athlgroeerimthomd eisl ss:uCpVe,rCioAr t,oa nthdaCt oTf. Athses thraodwintioinnathl eInfitegruarcet,ivthee Mtrualctkipinleg
+accuracyoftheTLUalgorithmissuperiortothatofthetraditionalInteractiveMultiple
+Model (IMM) algorithm. Whether in the smooth sections with small maneuvers or the
+Model(IMM)algorithm. Whetherinthesmoothsectionswithsmallmaneuversorthe
+sharp turning sections with large maneuvers, the TLU algorithm consistently tracks the
+sharpturningsectionswithlargemaneuvers,theTLUalgorithmconsistentlytracksthe
+target stably and provides better tracking performance.
+targetstablyandprovidesbettertrackingperformance.
+Figure11.Trajectorygraph.
+Figure 11. Trajectory graph.
+Toensuretherigoroftheexperiment,thispaperselectsfiveexistingmaneuvering
+To ensure the rigor of the experiment, this paper selects five existing maneuvering
+targettrackingalgorithmsforcomparativeanalysisontheTLUalgorithm. Randomradar
+target tracking algorithms for comparative analysis on the TLU algorithm. Random radar
+measurementerrorsweregeneratedforthesimulatedtrajectorytoconduct50MonteCarlo
+measurement errors were generated for the simulated trajectory to conduct 50 Monte
+experiments, and the position and velocity RMSE in three directions were obtained, as
+Carlo experiments, and the position and velocity RMSE in three directions were obtained,
+showninFigure12. Amongthem,theradarmeasurementnoiseisGaussiannoisewitha
+as shown in Figure 12. Among them, the radar measurement noise is Gaussian noise with
+meanof0. Thestandarddeviationforrangemeasurementsis5–10m,andthestandard
+a mean of 0. The standard deviation for range measurements is 5–10 m, and the standard
+deviationforazimuthandelevationanglesare0.05π/180degreesto0.1π/180degrees.
+dAedvdiaittiioonna flolyr, aIzMimMu-athi santhde eIlMevMatiaolng oarnitghlems athrea ti 0 n .0 c 5 lu  d 1 e 8 s 0 C Vd,eCgAre,easn tdo C 0 T .1 mo 18 d 0 el sd.eIMgrMee-sb.
+extendsthemodelsetofIMM-abyaddingtheSingermodelandCTmodelswithdifferent
+turningrates. TBNisapredictiontrackingalgorithmbasedonTransformer,CNN-LSTMis
+atrackingmodelthatusesCNNforfeatureextractionandLSTMforinformationmemory
+andfiltering,andLTRisanalgorithmwhereLSTMpredictstheprobabilitiesofeachmodel
+inIMMtoassistIMMintargettracking.
+
+--- Page 15 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 16 of 23
+Additionally, IMM-a is the IMM algorithm that includes CV, CA, and CT models. IMM-b
+extends the model set of IMM-a by adding the Singer model and CT models with different
+turning rates. TBN is a prediction tracking algorithm based on Transformer, CNN-LSTM
+is a tracking model that uses CNN for feature extraction and LSTM for information
+RemoteSens.2024,16,3301 memory and filtering, and LTR is an algorithm where LSTM predic1ts5 othf2e2 probabilities of
+each model in IMM to assist IMM in target tracking.
+X-axis Position Error Y-axis Position Error
+120 160
+TLU TLU
+imm-a 140 imm-a
+100 imm-b imm-b
+TBN TBN
+CNN-LSTM 120 CNN-LSTM
+LTR LTR
+80
+100
+60 80
+60
+40
+40
+20
+20
+0 0
+0 50 100 150 200 250 300 0 50 100 150 200 250 300
+time step time step
+(a) (b)
+Z-axis Position Error X-axis Velocity Error
+60 70
+TLU TLU
+imm-a imm-a
+50 imm-b 60 imm-b
+TBN TBN
+CNN-LSTM CNN-LSTM
+LTR 50 LTR
+40
+40
+30
+30
+20
+20
+10 10
+0 0
+0 50 100 150 200 250 300 0 50 100 150 200 250 300
+time step time step
+(c) (d)
+Y-axis Velocity Error Z-axis Velocity Error
+80 60
+TLU TLU
+70 imm-a imm-a
+imm-b 50 imm-b
+TBN TBN
+60 CNN-LSTM CNN-LSTM
+LTR LTR
+40
+50
+40 30
+30
+20
+20
+10
+10
+0 0
+0 50 100 150 200 250 300 0 50 100 150 200 250 300
+time step time step
+(e) (f)
+Figure12.CompFarigisuorne o1f2R. CMoSmEpraersiusoltns foofr RdMiffSeEr ernetsualltgso froitrh dmiffseornensti malugloartiethdmdsa toan. (saim–cu)lraetperde sdeantta. (a), (b), and (c)
+thecomparisonorfepporseisteionnt tthraec ckoinmgppaerirsfoonrm oaf npcoesiatlioonng trtahcekxin-agx pise,ryf-oarxmisa,nacned azlo-anxgis thfoer xs-iaxxdisi,f fye-raexnits, and z-axis for
+six different algorithms, respectively, while (d), (e), and (f) represent the comparison of velocity
+algorithms,respectively,while(d–f)representthecomparisonofvelocitytrackingperformancealong
+tracking performance along the x-axis, y-axis, and z-axis for six different algorithms, respectively.
+thex-axis,y-axis,andz-axisforsixdifferentalgorithms,respectively.
+Overall,asshowOnveirnaFlli,g ausr seh1o2w,TnB inN FaingdurCe N12N, -TLBSNTM anadr eClNimNit-eLdSTtoMu asrine glihmisitteodri ctoa lusing historical
+datatopredictdthaetat atrog petresdtaictet tahned talarcgketc sutrarteen atnsdy sltaecmk coubrsreernvta styiosntesmfo orbrseesruvlattcioornrse cfotiro rne.sult correction.
+AlthoughtheypAelrtfhoorumghe xtcheelyle pnetlryfoartmc eerxtaceinlletinmtley paot icnetrst,atihne tiirmoev peroailnltesr, rtohreiirs olavregrearllc eormro-r is larger com-
+paredtootheraplgaoreridth tmo os,thaenrd atlhgeoirritshymstse,m ansdta tbhieliitry siysspteomor .stLaTbRil,itwy hisi lpeoeonrh. aLnTcRin, gwshyilset eemnhancing system
+stabilitybyincorporatingtraditionalfilteringalgorithmsintoitspredictions,excessively
+reliesonfeature-richtrainingdatasets. Forreal-worlddata,thespecificmotionmodelof
+thetargetisunknownandcannotbeusedtoconstructthedataset. Simulatedtrajectories
+alsofailtoprovidedatadiversity,resultingininsufficientmodelgeneralizationcapability
+forLTR.Consequently,LTRdoesnotoffersignificantadvantagesovertraditionalKalman
+Filtermethodsintrackingperformance,asitdoesnotpredictthetarget’sstatevector.
+
+--- Page 16 ---
+RemoteSens.2024,16,3301 16of22
+FromFigure12a,b,itcanbeseenthatTLU’strackingaccuracyinthex-axisandy-axis
+positionsissignificantlybetterthanTBNandCNN-LSTMandcomparabletoIMMandLTR.
+AccordingtoFigure12c,f,TLUcompletelyoutperformstheotherfivealgorithmsinterms
+ofthez-axispositionandvelocitytrackingaccuracy,demonstratingTLU’sstrongcapability
+incapturingtargetverticalmaneuvers. AccordingtoFigure12d,e,TLU’strackingaccuracy
+in x-axis and y-axis velocities is comparable to that of TBN and superior to that of the
+otherfouralgorithms. Insummary,theTLUalgorithmshowscertainimprovementsin
+position and velocity tracking accuracy compared to the other five algorithms and can
+maintainstableerrorduringsignificantmaneuvers,withlessimpactfromtimelag. The
+more pronounced motion characteristics of the target in the z-axis, i.e., larger altitude
+changes,andrelativelystablenoiseinthez-axisdirectionenableTLUtobettercapture
+z-axismaneuverfeatures,resultinginbettertrackingperformancethaninthex-andy-axes.
+Inaddition,fortheperformanceevaluationofanalgorithm,computationalspeedisan
+important metric alongside error analysis, as it impacts whether the algorithm can be
+applied in real-world environments. On an NVIDIA 3060 Ti, the processing times for
+differentalgorithmswithaninputsequencelengthof50andabatchsizeof64areshown
+inTable2. Inpracticalapplications,thereisoftenaneedtobalancebetweencomputational
+speed and tracking accuracy. Lightweight algorithms like IMM have an advantage in
+speedbutmaynotprovidesufficientaccuracywhendealingwithcomplexmaneuvering
+targets. Ontheotherhand,deeplearningmodelscancapturemorecomplexdynamics
+but come with higher computational costs. Due to the parallel computing structure of
+TCN, our proposed TLU algorithm achieves a notable improvement in computational
+speedwhilemaintainingtrackingaccuracy,makingitsignificantlyfasterthanotherneural
+network-basedmodelsandcomparabletolightweighttraditionalKalmanFilteralgorithms.
+Table2.Theprocessingtimesfordifferentalgorithms.
+Algorithm TimeConsumedperTry[ms]
+TLU 23
+TBN 30
+CNN-LSTM 35
+IMM-a 21
+IMM-b 25
+LTR 27
+InscenarioswithvaryingSNR,theprobabilityoftargetdetectioncandiffersignifi-
+cantly. WhentheSNRislow,thetargetmightnotbedetectedatcertaintimes,resultingin
+measurementloss. Weassumedthatonemeasurementpointislostforeveryfivepoints
+andconductednewsimulationstotesttherobustnessofthealgorithm. Theresultsare
+shown in Figure 13, where TLU-a represents the tracking results without any missing
+points,andTLU-brepresentsthetrackingresultswithmissingpoints.
+
+--- Page 17 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 18 of 23
+RemoteSens.2024, 16,3301 17of22
+(a) (b)
+(c) (d)
+(e) (f)
+Figure 13. Tracking errors under different SNRs. (a), (b), and (c) represent the comparison of posi-
+tion tracking performance along the x-axis, y-axis, and z-axis of TLU under different signal-to-
+noise ratios, respectively, while (d), (e), and (f) represent the comparison of velocity tracking per-
+formance along the x-axis, y-axis, and z-axis of TLU under different signal-to-noise ratios, respec-
+tively.
+4.2. Results and Analysis of Radar Data Processing
+The experiment verified that the proposed TLU algorithm performs significantly well
+on simulated trajectories. However, to verify the algorithm’s data transferability and con-
+sider the diversity of real-world environments, this paper also applies the TLU algorithm
+to radar measurements for performance analysis. The experiment used ten measured tra-
+jectories, and one of these trajectories was selected as the test set. This trajectory consists
+of 290 time steps, with a radar scan cycle of approximately 0.2–0.3 s. Among them, the
+radar measurement noise is Gaussian noise with a mean of 0. The standard deviation for
+range measurements is 30 m, and the standard deviation for azimuth and elevation angles
+are 0.2180 degrees. This trajectory has a large turning maneuver, making it suitable
+for testing the algorithm’s tracking performance on highly maneuvering targets.
+]m[
+ESMR
+]m[
+ESMR
+]m[
+ESMR
+]m[
+ESMR
+]m[
+ESMR
+]m[
+ESMR
+Figure13.TrackingerrorsunderdifferentSNRs.(a–c)representthecomparisonofpositiontracking
+performancealongthex-axis,y-axis,andz-axisofTLUunderdifferentsignal-to-noiseratios,respec-
+tively,while(d–f)representthecomparisonofvelocitytrackingperformancealongthex-axis,y-axis,
+andz-axisofTLUunderdifferentsignal-to-noiseratios,respectively.
+4.2. ResultsandAnalysisofRadarDataProcessing
+The experiment verified that the proposed TLU algorithm performs significantly
+well on simulated trajectories. However, to verify the algorithm’s data transferability
+andconsiderthediversityofreal-worldenvironments, thispaperalsoappliestheTLU
+algorithm to radar measurements for performance analysis. The experiment used ten
+measured trajectories, and one of these trajectories was selected as the test set. This
+trajectory consists of 290 time steps, with a radar scan cycle of approximately 0.2–0.3 s.
+Among them, the radar measurement noise is Gaussian noise with a mean of 0. The
+standarddeviationforrangemeasurementsis30m, andthestandarddeviationforaz-
+imuth and elevation angles are 0.2π/180 degrees. This trajectory has a large turning
+maneuver,makingitsuitablefortestingthealgorithm’strackingperformanceonhighly
+maneuveringtargets.
+
+--- Page 18 ---
+RemoteSens.2024,16,3301 18of22
+Consideringthatusingonlytheninetrajectoriesoutsidethetestsetastrainingdatais
+insufficientforthenetworktolearnenoughtargetmotionfeatures,wesegmentedthese
+nine trajectories, totaling 6864 sampling points, into sliding windows of 50 time steps
+each. This resulted in 6423 trajectories of size 50 × 9. Additionally, a large amount of
+DCSsimulatedtrajectorydatawasaddedfordataaugmentation, resultinginatotalof
+71,942trainingtrajectories. Weused60%ofthesedataasthetrainingsetand40%asthe
+validationset. Thetrainingparametersweresetto1000epochs,alearningrateof0.001,
+aweightdecayof0.00001,andabatchsizeof64. Theaccuracyofthetrainedmodelon
+thetrainingsetwas90.42%,andonthevalidationset,itwas88.43%. Figure14showsthe
+tracking trajectories of TLU and IMM-a on the test set of measured data. IMM-a is the
+IMMalgorithmthatincludesCV,CA,andCTmodels. ItisevidentthattheTLUtracking
+trajectorymatchesbetterwiththetruetrajectorycomparedtoIMM-a.
+Figure14.TLUandIMMtrackingtrajectories.
+To ensure the rigor of the experiment, we collected statistics on more metrics and
+conducted performance comparisons. Figure 15 shows the three-dimensional position
+and velocity tracking errors of TLU and the other six algorithms on the test trajectory.
+SinceitisnotfeasibletoconductmultipleMonteCarloexperimentswithdifferentradar
+measurementerrorsonthemeasureddata,weusedtheabsolutevalueofthedifference
+betweenthealgorithm’strackingresultsandthetruevaluesasthetrackingerror. Thetest
+resultsshowthatTLUoutperformstheothersixalgorithmsinallsixmetrics,especiallyin
+trackingaccuracyforvelocityvalues.
+1
+
+--- Page 19 ---
+Remote Sens. 2024, 16, x FOR PEER REVIEW 19 of 23
+Considering that using only the nine trajectories outside the test set as training data
+is insufficient for the network to learn enough target motion features, we segmented these
+nine trajectories, totaling 6864 sampling points, into sliding windows of 50 time steps
+each. This resulted in 6423 trajectories of size 50 × 9. Additionally, a large amount of DCS
+simulated trajectory data was added for data augmentation, resulting in a total of 71,942
+training trajectories. We used 60% of these data as the training set and 40% as the valida-
+tion set. The training parameters were set to 1000 epochs, a learning rate of 0.001, a weight
+decay of 0.00001, and a batch size of 64. The accuracy of the trained model on the training
+set was 90.42%, and on the validation set, it was 88.43%. Figure 14 shows the tracking
+trajectories of TLU and IMM-a on the test set of measured data. IMM-a is the IMM algo-
+rithm that includes CV, CA, and CT models. It is evident that the TLU tracking trajectory
+matches better with the true trajectory compared to IMM-a.
+Figure 14. TLU and IMM tracking trajectories.
+To ensure the rigor of the experiment, we collected statistics on more metrics and
+conducted performance comparisons. Figure 15 shows the three-dimensional position
+and velocity tracking errors of TLU and the other six algorithms on the test trajectory.
+Since it is not feasible to conduct multiple Monte Carlo experiments with different radar
+measurement errors on the measured data, we used the absolute value of the difference
+between the algorithm’s tracking results and the true values as the tracking error. The test
+RemoteSens.2024,16,3301 results show that TLU outperforms the other six algorithms in all s1i9xo fm22etrics, especially
+in tracking accuracy for velocity values.
+(a) (b)
+Remote Sens. 2024, 16, x FOR PEER REVIEW 20 of 23
+Figure15.Cont.
+(c) (d)
+(e) (f)
+Figure 15. Comparison of tracking errors on radar data. (a), (b), and (c) represent the comparison
+of position tracking performance along the x-axis, y-axis, and z-axis for the seven algorithms, re-
+spectively, while (d), (e), and (f) represent the comparison of velocity tracking performance along
+the x-axis, y-axis, and z-axis for the seven algorithms, respectively.
+Considering that the position tracking accuracy of TLU is lower than its velocity
+tracking accuracy, we chose to improve the algorithm’s position tracking accuracy by us-
+ing a dual-channel tracking method with combined model predictions instead of directly
+using TCN-LSTM’s position prediction results. In this experiment, position prediction
+based on the CV model was selected, calculated as follows:
+Xk = Xk−1 +Vk T (20) pre TLU pre
+where Xk is the position prediction at time k based on the CV model, Xk−1 is the po-
+pre TLU
+sition tracking result of TLU at time k − 1, V kpre is the velocity prediction at time k based
+on TCN-LSTM, and T
+Figure15.Comparisonoftrackingerrorsonradardata.(a–c)representthecomparisonofposition
+trackingperformancealongthex-axis,y-axis,andz-axisforthesevenalgorithms,respectively,while
+(d–f)representthecomparisonofvelocitytrackingperformancealongthex-axis,y-axis,andz-axis
+forthesevenalgorithms,respectively.
+Considering that the position tracking accuracy of TLU is lower than its velocity
+trackingaccuracy,wechosetoimprovethealgorithm’spositiontrackingaccuracybyusing
+adual-channeltrackingmethodwithcombinedmodelpredictionsinsteadofdirectlyusing
+TCN-LSTM’spositionpredictionresults. Inthisexperiment,positionpredictionbasedon
+theCVmodelwasselected,calculatedasfollows:
+Xk = Xk−1 +Vk •T (20) pre TLU pre
+whereXk isthepositionpredictionattimekbasedontheCVmodel,Xk−1 istheposition
+pre TLU
+tracking result of TLU at time k − 1, Vk is the velocity prediction at time k based on
+pre
+is the radar scan period. The dual-channel prediction method ef-
+fectively combines the advantages of both model-based and data-based approaches, re-
+taining the high-accuracy velocity prediction from the data and achieving higher-accuracy
+position prediction based on the velocity prediction and model calculation, thereby im-
+proving the tracking performance of TLU.
+Figure 16 compares the position tracking results before and after improvement, with
+TLU-a and TLU-b representing the tracking results before and after improvement, respec-
+tively. As shown in Figure 16c, the improved TLU significantly enhances the position ac-
+curacy on the z-axis. Figure 16a,b also show that the improved TLU achieves higher posi-
+tion tracking accuracy on the x-axis and y-axis at certain times compared to before im-
+provement. In summary, TLU demonstrates excellent tracking performance on measured
+data, with significant improvements in position and velocity tracking accuracy compared
+to IMM-a.
+
+--- Page 20 ---
+RemoteSens.2024,16,3301 20of22
+TCN-LSTM,andTistheradarscanperiod. Thedual-channelpredictionmethodeffectively
+combinestheadvantagesofbothmodel-basedanddata-basedapproaches,retainingthe
+high-accuracyvelocitypredictionfromthedataandachievinghigher-accuracyposition
+predictionbasedonthevelocitypredictionandmodelcalculation,therebyimprovingthe
+trackingperformanceofTLU.
+Figure16comparesthepositiontrackingresultsbeforeandafterimprovement,with
+TLU-aandTLU-brepresentingthetrackingresultsbeforeandafterimprovement,respec-
+tively. As shown in Figure 16c, the improved TLU significantly enhances the position
+accuracy on the z-axis. Figure 16a,b also show that the improved TLU achieves higher
+positiontrackingaccuracyonthex-axisandy-axisatcertaintimescomparedtobefore
+improvement.Insummary,TLUdemonstratesexcellenttrackingperformanceonmeasured
+Remote Sens. 2024, 16, x FOR PEER REVIEW 21 of 23
+data,withsignificantimprovementsinpositionandvelocitytrackingaccuracycompared
+toIMM-a.
+(a) (b)
+(c)
+Figure16.CompFairgisuorne o1f6.t rCaockminpgareirsroonr soof ntrraacdkainrgd aetrarobresf oorne raanddaar fdteartaim bpefroorvee manedn ta.f(tae–r ci)mrepprorevseemntent. (a), (b), and
+thecomparisono(cf)p roespirteiosnenttr athckei ncogmpperafroisrmona nocf epaolsoitnigonth teraxc-kaixnigs, pye-arfxoisrm,aanndcez -aalxoinsgb ethfoer ex-aanxdis,a yft-earxis, and z-axis
+before and after the TLU improvement, respectively.
+theTLUimprovement,respectively.
+5. Conclusions5. Conclusions
+ThispaperproTphoisse psaapneirn pterlolipgoesnetst aranc iknitneglliaglgenort ittrhamckfionrg malagnoeruitvhemri nfogr tmaragneetsubvaersiendg targets based
+onLongShort-oTne rLmonMg eSmhoorrty-Tneerumra Mlneemtworoyr knseuanradl tnheetwUonrskcse natnedd tKhae lUmnasnceFniltteedr. KFiarlsmt,awne Filter. First, we
+introduceaTCiNnt-rLoSdTuMcen ae TuCraNln-LeStwTMor knemuordale nl,ewtwhoicrhk amchoideevle, swhhiigchhe arcphrieedviecst ihoinghaecrc uprraecdyiction accuracy
+andshorterresapnodn ssehtoirmteer croemsppoanresed ttiomeex icsotimngpamreodd etols .eSxeisctoinngd lmy,oudnelilks.e Seexciostnindglym, uenthliokdes existing meth-
+thataddameaosudrse tmhaetn tadfede dab macekasmuoredmuleen,tw feeepdrbopacoks emaondeuwles, twraet epgryobpaosseed ao nneUwn sstcreantetegdy based on Un-
+Transformationsc.eBnytedtr aTcrkainnsgfotrhmeatteimonp. oBrya ltcraocrkreinlagt itohne otefmthpeodraelc ocomrrpeolasetidonS iogfm thaep doeincotsmposed Sigma
+ofthetargetstpaoteinvtesc otof rt,heea tcahrgSeigt mstaatep ovienctt’osrt,i emaechs eSriigems,af oprominetd’sb tyimsey ssteermiesp, rfooprmageadt iboyn ,system propa-
+is input into thgeatnioenu,r aisl inneptwuto irnktof otrhefe naetuurreala nneatlwysoirsk, afnord ftehaetucroer raensaploynsids,i nagndp rtehdei cctoirornesponding pre-
+points are obtained. Finally, various statistics are calculated through weighted fusion.
+diction points are obtained. Finally, various statistics are calculated through weighted fu-
+Thisalgorithmsolvestheproblemoftheinabilitytodeterminethespecificformofthe
+sion. This algorithm solves the problem of the inability to determine the specific form of
+statetransitionmatrixinnonlinearsystemswhenusingneuralnetworksforprediction,
+the state transition matrix in nonlinear systems when using neural networks for predic-
+tion, successfully incorporating measurement influences into the system to correct predic-
+tion errors. The simulation and experiment results show that the proposed method signif-
+icantly improves the tracking accuracy of maneuvering targets.
+Author Contributions: Conceptualization, Y.D. and C.L.; methodology, Y.D. and W.L.; software,
+D.L.; validation, W.L. and C.L.; formal analysis, W.L. and C.L.; investigation, W.L.; resources, Y.D.
+and W.X.; data curation, W.L. and D.L.; writing—original draft preparation, W.L. and C.L.; writ-
+ing—review and editing, W.L. and C.L.; visualization, W.L. and D.L.; supervision, Y.D. and W.X.;
+project administration, Y.D.; funding acquisition, Y.D. All authors have read and agreed to the pub-
+lished version of the manuscript.
+Funding: This research was funded by the National Natural Science Foundation of China (Grant
+No. 62388102), the National Natural Science Foundation of China (Grant No. 62101583), the National
+Natural Science Foundation of China (Grant No. 61871392) and the Taishan Scholars Program (Grant
+No. tsqn202211246).
+
+--- Page 21 ---
+RemoteSens.2024,16,3301 21of22
+successfullyincorporatingmeasurementinfluencesintothesystemtocorrectprediction
+errors. Thesimulationandexperimentresultsshowthattheproposedmethodsignificantly
+improvesthetrackingaccuracyofmaneuveringtargets.
+AuthorContributions: Conceptualization,Y.D.andC.L.; methodology,Y.D.andW.L.; software,
+D.L.; validation, W.L. and C.L.; formal analysis, W.L. and C.L.; investigation, W.L.; resources,
+Y.D. and W.X.; data curation, W.L. and D.L.; writing—original draft preparation, W.L. and C.L.;
+writing—reviewandediting, W.L.andC.L.; visualization, W.L.andD.L.; supervision, Y.D.and
+W.X.;projectadministration,Y.D.;fundingacquisition,Y.D.Allauthorshavereadandagreedtothe
+publishedversionofthemanuscript.
+Funding:ThisresearchwasfundedbytheNationalNaturalScienceFoundationofChina(GrantNo.
+62388102),theNationalNaturalScienceFoundationofChina(GrantNo. 62101583),theNational
+NaturalScienceFoundationofChina(GrantNo.61871392)andtheTaishanScholarsProgram(Grant
+No.tsqn202211246).
+DataAvailabilityStatement: Thedatapresentedinthisstudyareavailableonrequestfromthe
+correspondingauthorduetotheinclusionofconfidentialcontentinthedatasetdesign.
+ConflictsofInterest:Theauthorsdeclarenoconflictsofinterest.
+References
+1. Li, Q.; Li, R.; Ji, K.; Dai, W.KalmanFilterandItsApplication. InProceedingsofthe20158thInternationalConferenceon
+IntelligentNetworksandIntelligentSystems(ICINIS),Tianjin,China,27–29November2015;IEEE:Piscataway,NJ,USA,2015;
+pp.74–77.
+2. Bai,Y.;Yan,B.;Zhou,C.;Su,T.;Jin,X.StateofArtonStateEstimation:KalmanFilterDrivenbyMachineLearning.Annu.Rev.
+Control2023,56,100909.[CrossRef]
+3. Li,X.R.;Jilkov,V.P.SurveyofManeuveringTargetTracking.PartI.DynamicModels.IEEETrans.Aerosp.Electron.Syst.2003,39,
+1333–1364.
+4. Wang,X.;Zhao,Q.;Tan,H.Self-TuningVisualTrackingBasedonMultipleMotionModels. InProceedingsofthe201635th
+ChineseControlConference(CCC),Chengdu,China,27–29July2016;pp.3990–3994.
+5. Jia,S.;Zhang,Y.;Wang,G.HighlyManeuveringTargetTrackingUsingMulti-ParameterFusionSingerModel. J.Syst. Eng.
+Electron.2017,28,841–850.[CrossRef]
+6. Sun,W.;Yang,Y.AdaptiveManeuveringFrequencyMethodofCurrentStatisticalModel. IEEE/CAAJ.Autom. Sin. 2016,4,
+154–160.[CrossRef]
+7. Besada,J.A.;García,J.;DeMiguel,G.;Berlanga,A.;Molina,J.M.;Casar,J.R.DesignofIMMFilterforRadarTrackingUsing
+EvolutionStrategies.IEEETrans.Aerosp.Electron.Syst.2005,41,1109–1122.[CrossRef]
+8. Xia,L.;Zhang,Y.;Liu,H.OnlineOptimizationandFeedbackElmanNeuralNetworkforManeuveringTargetTracking. In
+Proceedingsofthe20174thIAPRAsianConferenceonPatternRecognition(ACPR),Nanjing,China,20–22November2017;IEEE:
+Piscataway,NJ,USA,2017;pp.494–499.
+9. Li, B.; Yang, Z.P.; Chen, D.Q.; Liang, S.Y.; Ma, H.ManeuveringTargetTrackingofUAVBasedonMN-DDPGandTransfer
+Learning.Def.Technol.2021,17,457–466.[CrossRef]
+10. Liu,J.;Wang,Z.;Xu,M.DeepMTT:ADeepLearningManeuveringTarget-TrackingAlgorithmBasedonBidirectionalLSTM
+Network.Inf.Fusion.2020,53,289–304.[CrossRef]
+11. Lui,D.G.;Tartaglione,G.;Conti,F.;DeTommasi,G.;Santini,S.LongShort-TermMemory-BasedNeuralNetworksforMissile
+ManeuversTrajectoriesPrediction.IEEEAccess2023,11,30819–30831.[CrossRef]
+12. Song,L.;Wang,S.;Xu,D.RadarTrackPredictionMethodBasedonBPNeuralNetwork.J.Eng.2019,21,8051–8055.[CrossRef]
+13. Dai,T.;Wang,H.;Ruan,L.;Tong,H.;Wang,H.ResearchonDeepLearningMethodsofUUVManeuveringTargetTracking.In
+ProceedingsoftheGlobalOceans2020:Singapore–USGulfCoast,Singapore,5–30October2020;IEEE:Piscataway,NJ,USA,
+2020;pp.1–7.
+14. Ali,W.;Li,Y.;Raja,M.A.Z.;Khan,W.U.;He,Y.StateEstimationofanUnderwaterMarkovChainManeuveringTargetUsing
+IntelligentComputing.Entropy2021,23,1124.[CrossRef]
+15. Zhao,G.; Wang,Z.; Huang,Y.; Zhang,H.; Ma,X.Transformer-BasedManeuveringTargetTracking. Sensors2022,22,8482.
+[CrossRef]
+16. Yu,W.;Yu,H.;Du,J.;Zhang,M.;Wang,D.ADeepLearningAlgorithmforJointDirectTrackingandClassificationofManoeuvring
+Sources.IETRadarSonarNavig.2022,16,1198–1211.[CrossRef]
+17. Li,J.;Liang,X.;Yuan,S.;Li,H.;Gao,C.AStrongManeuveringTarget-TrackingFilteringBasedonIntelligentAlgorithm.Int.J.
+Aerosp.Eng.2024,2024,998133.[CrossRef]
+18. Zheng,M.;Luo,J.;Dang,Z.FeedforwardNeuralNetworkBasedTime-VaryingState-Transition-MatrixofTschauner-Hempel
+Equations.Adv.SpaceRes.2022,69,1000–1011.[CrossRef]
+
+--- Page 22 ---
+RemoteSens.2024,16,3301 22of22
+19. Zhu,H.;Xiong,W.;Cui,Y.AnAdaptiveInteractiveMultiple-ModelAlgorithmBasedonEnd-to-EndLearning.Chin.J.Electron.
+2023,32,1120–1132.[CrossRef]
+20. Zhou,X.;Qin,T.;Ji,M.;Qiao,D.ALSTMAssistedOrbitDeterminationAlgorithmforSpacecraftExecutingContinuousManeuver.
+ActaAstronaut.2024,204,568–582.[CrossRef]
+21. Liu,J.;Yang,S.;Yang,F.ACross-and-Dot-ProductNeuralNetworkBasedFilteringforManeuvering-TargetTracking.Neural
+Comput.Appl.2022,34,14929–14944.[CrossRef]
+22. Tian,W.;Fang,L.;Li,W.;Ni,N.;Wang,R.;Hu,C.;Luo,W.Deep-Learning-BasedMultipleModelTrackingMethodforTargets
+withComplexManeuveringMotion.RemoteSens.2022,14,3276.[CrossRef]
+23. Deng,L.;Li,D.;Li,R.ImprovedIMMAlgorithmBasedonRNNs.J.Phys.Conf.Ser.2020,1518,012055.[CrossRef]
+24. Cai,S.;Wang,S.;Qiu,M.ManeuveringTargetTrackingBasedonLSTMforRadarApplication.InProceedingsofthe2023IEEE
+3rdInternationalConferenceonSoftwareEngineeringandArtificialIntelligence(SEAI),Beijing,China,14–16June2023;IEEE:
+Piscataway,NJ,USA,2023;pp.235–239.
+25. Zhang,Y.;Li,G.;Zhang,X.P.;He,Y.ADeepLearningModelBasedonTransformerStructureforRadarTrackingofManeuvering
+Targets.Inf.Fusion.2024,103,102120.[CrossRef]
+26. Shen,L.;Su,H.;Li,Z.;Jia,C.;Yang,R.Self-Attention-BasedTransformerforNonlinearManeuveringTarget.IEEETrans.Geosci.
+RemoteSens.2023,61,1–13.[CrossRef]
+27. Lea,C.; Vidal,R.; Reiter,A.; Hager,G.D.TemporalConvolutionalNetworks: AUnifiedApproachtoActionSegmentation.
+InProceedingsoftheComputerVision–ECCV2016Workshops,Amsterdam,TheNetherlands,8–10and15–16October2016;
+Proceedings,PartIII.SpringerInternationalPublishing:Cham,Switzerland,2016;pp.47–54.
+28. Wan,R.;Mei,S.;Wang,J.;Liu,M.;Yang,F.MultivariateTemporalConvolutionalNetwork:ADeepNeuralNetworksApproach
+forMultivariateTimeSeriesForecasting.Electronics2019,8,876.[CrossRef]
+29. You,G.R.;Shiue,Y.R.;Su,C.T.;Huang,Q.L.EnhancingEnsembleDiversityBasedonMultiscaleDilatedConvolutioninImage
+Classification.Inf.Sci.2022,606,292–312.[CrossRef]
+30. He,K.;Zhang,X.;Ren,S.;Sun,J.DeepResidualLearningforImageRecognition. InProceedingsoftheIEEEConferenceon
+ComputerVisionandPatternRecognition(CVPR),LasVegas,NV,USA,27–30June2016; IEEE:Piscataway,NJ,USA,2016;
+pp.770–778.
+31. Hochreiter,S.;Schmidhuber,J.LongShort-TermMemory.NeuralComput.1997,9,1735–1780.[CrossRef]
+32. Zhang,L.;Cai,Y.;Huang,H.;Li,A.;Yang,L.;Zhou,C.ACNN-LSTMModelforSoilOrganicCarbonContentPredictionwith
+LongTimeSeriesofMODIS-BasedPhenologicalVariables.RemoteSens.2022,14,4441.[CrossRef]
+33. Julier,S.J.;Uhlmann,J.K.NewExtensionoftheKalmanFiltertoNonlinearSystems. InProceedingsoftheSignalProcessing,
+SensorFusion,andTargetRecognitionVI,Orlando,FL,USA,21–23April1997;SPIE:Bellingham,WA,USA,1997;Volume3068,
+pp.182–193.
+34. Gao,N.;Chen,X.;Yan,Z.;Jiao,Z.PerformanceEnhancementandEvaluationofaVectorTrackingReceiverUsingAdaptive
+TrackingLoops.RemoteSens.2024,16,1836.[CrossRef]
+35. Albert,S.;Wichtmann,B.D.;Zhao,W.;Maurer,A.;Hesser,J.;Attenberger,U.I.;Zöllner,F.G.ComparisonofImageNormalization
+MethodsforMulti-SiteDeepLearning.Appl.Sci.2023,13,8923.[CrossRef]
+36. Rahadian,H.;Bandong,S.;Widyotriatmo,A.;Joelianto,E.ImageEncodingSelectionBasedonPearsonCorrelationCoefficientfor
+TimeSeriesAnomalyDetection.Alex.Eng.J.2023,82,304–322.[CrossRef]
+37. Yu, H.; Chung, C.Y.; Wong, K.P.; Lee, H.W.; Zhang, J.H.ProbabilisticLoadFlowEvaluationwithHybridLatinHypercube
+SamplingandCholeskyDecomposition.IEEETrans.PowerSyst.2009,24,661–667.[CrossRef]
+Disclaimer/Publisher’sNote: Thestatements, opinionsanddatacontainedinallpublicationsaresolelythoseoftheindividual
+author(s)andcontributor(s)andnotofMDPIand/ortheeditor(s).MDPIand/ortheeditor(s)disclaimresponsibilityforanyinjuryto
+peopleorpropertyresultingfromanyideas,methods,instructionsorproductsreferredtointhecontent.

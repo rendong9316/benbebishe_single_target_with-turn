@@ -1,0 +1,77 @@
+{
+  "downloaded": [
+    {
+      "title": "A survey of manoeuvring target tracking methods",
+      "url": "https://arxiv.org/pdf/1503.07828.pdf",
+      "note": "综合综述 - 各种机动跟踪方法"
+    }
+  ],
+  "failed": [
+    {
+      "title": "EKF/UKF maneuvering target tracking using coordinated turn models with polar/Cartesian velocity",
+      "url": "https://ieeexplore.ieee.org/document/6916122/",
+      "note": "CT模型的EKF/UKF实现 - 极坐标vs笛卡尔速度",
+      "error": "Not a PDF (Content-Type: text/html; charset=UTF-8, size: 2060)"
+    },
+    {
+      "title": "An adaptive turn rate estimation for tracking a maneuvering target",
+      "url": "https://ieeexplore.ieee.org/document/9096293/",
+      "note": "自适应转弯率估计 - 三帧几何法估计转弯率",
+      "error": "Not a PDF (Content-Type: text/html; charset=UTF-8, size: 2060)"
+    },
+    {
+      "title": "A constant speed changing rate and constant turn rate model for maneuvering target tracking",
+      "url": "https://www.mdpi.com/1424-8220/14/3/5239",
+      "note": "CSCR+CT模型 - 同时估计速度和转弯率变化",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "title": "Models and algorithms for tracking target with coordinated turn motion",
+      "url": "https://onlinelibrary.wiley.com/doi/abs/10.1155/2014/649276",
+      "note": "CT运动模型与算法综述 - 5种CT模型对比",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "title": "Adaptive unscented Kalman filter for target tracking with unknown time-varying noise covariance",
+      "url": "https://www.mdpi.com/1424-8220/19/6/1371",
+      "note": "自适应UKF - Sage-Husa噪声协方差估计",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "title": "Multiple-model estimators for tracking sharply maneuvering ground targets",
+      "url": "https://ieeexplore.ieee.org/document/8255572/",
+      "note": "IMM对付锐角机动 - Matei, Bar-Shalom, Willett",
+      "error": "Not a PDF (Content-Type: text/html; charset=UTF-8, size: 2060)"
+    },
+    {
+      "title": "A novel strong tracking cubature Kalman filter and its application in maneuvering target tracking",
+      "url": "https://www.sciencedirect.com/science/article/pii/S1000936119302948",
+      "note": "强跟踪CKF - 渐消因子自适应调节",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "title": "Intelligent tracking method for aerial maneuvering target based on unscented Kalman filter",
+      "url": "https://www.mdpi.com/2072-4292/16/17/3301",
+      "note": "智能UKF跟踪 - 2024年新论文",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "title": "An improved IMM algorithm based on STSRCKF for maneuvering target tracking",
+      "url": "https://ieeexplore.ieee.org/document/8698226/",
+      "note": "IMM+强跟踪SRCKF - 自适应TPM",
+      "error": "Not a PDF (Content-Type: text/html; charset=UTF-8, size: 2060)"
+    },
+    {
+      "title": "Adaptive strong tracking square-root cubature Kalman filter for maneuvering aircraft tracking",
+      "url": "https://ieeexplore.ieee.org/document/8301027/",
+      "note": "自适应强跟踪SRCKF - 机动检测+渐消因子",
+      "error": "Not a PDF (Content-Type: text/html; charset=UTF-8, size: 2060)"
+    },
+    {
+      "title": "Variational nonlinear Kalman filtering with unknown process noise covariance",
+      "url": "https://ieeexplore.ieee.org/document/10247583/",
+      "note": "变分贝叶斯估计未知Q - 2023新方法",
+      "error": "Not a PDF (Content-Type: text/html; charset=UTF-8, size: 2060)"
+    }
+  ]
+}

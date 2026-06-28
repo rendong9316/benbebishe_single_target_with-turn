@@ -1,0 +1,1403 @@
+
+--- Page 1 ---
+intoconjugateandnonconjugateparts,whereastheconjugateterms
+aredirectlyoptimizedthatadmitaclosed-formsolutionandthenon-
+conjugatetermsareoptimizedbystochasticgradient,achievingthe
+Variational Nonlinear Kalman tradeoffbetweeninferencespeedandaccuracy.Theperformanceof
+theproposedmethodisverifiedonradartargettrackingapplications
+bybothsimulatedandreal-worlddata.
+Filtering With Unknown
+Process Noise Covariance
+I. INTRODUCTION
+In most state estimation problems, it is generally re-
+quired to perform the nonlinear state estimation in the
+presenceofuncertainmodelparameters.Forinstance,there
+HUALAN
+existsnonlinearcoordinatetransformationinmaneuvering
+JINJIEHU
+target tracking with remote sensing systems such as radar
+ZENGFUWANG and sonar [1], whereas the target dynamics are generally
+NorthwesternPolytechnicalUniversity,Xi’an,China
+modeled in Cartesian coordinates, and sensor measure-
+ments are processed in polar coordinates. Meanwhile, the
+QIANGCHENG modelparameters,especiallytheprocessnoisecovariance,
+NanjingResearchInstituteofElectronicsTechnologyandKeyLaboratory
+are uncertain, arising from the unexpected maneuver of
+ofIntelliSenseTechnology,Nanjing,China
+the non-cooperative target. Due to the nonlinearity of the
+models and the uncertainty of the model parameters, the
+state estimation problem is generally intractable as it in-
+volves integrals of the general nonlinear functions and
+Motivatedbythemaneuveringtargettrackingwithsensorssuch
+as radar and sonar, this article considers the joint and recursive the unknown model parameters, resulting in the posterior
+estimationofthedynamicstateandthetime-varyingprocessnoise probabilitydistributionfunction(PDF)ofthesystemstate
+covariance in nonlinear state-space models. Due to the nonlinear- lackingclosed-formsolutions.
+ity of the models and the nonconjugate prior, the state estimation
+The problems of nonlinear state estimation and model
+problem is generally intractable as it involves integrals of general
+parameter identification have their own line of research,
+nonlinearfunctionsandunknownprocessnoisecovariance,resulting
+intheposteriorprobabilitydistributionfunctionslackingclosed-form which have been active for decades in the target track-
+solutions.Thisarticlepresentsarecursivesolutionforjointnonlin- ingcommunity.Specifically,thenonlinearstateestimation
+ear state estimation and model parameters identification based on techniquescanbegenerallyclassifiedintofunctionapprox-
+theapproximateBayesianinferenceprinciple.Thestochasticsearch
+imation, moment approximation, and stochastic approxi-
+variational inference is adopted to offer a flexible, accurate, and
+mation.Functionapproximationtechniquesapproximatea
+effectiveapproximationoftheposteriordistributions.Wemaketwo
+contributionscomparedtoexistingvariationalinference-basednoise stationarynonlineardynamicalsystemwithanonstationary
+adaptive filtering methods. First, we introduce an auxiliary latent lineardynamicalsystem,suchasthefirst-orderTaylorseries
+variabletodecouplethelatentvariablesofdynamicstateandprocess expansionoftheextendedKalmanfilter(EKF)[2].Moment
+noise covariance, thereby improving the flexibility of the posterior
+approximation techniques directly approximate the poste-
+inference.Second,wesplitthevariationallowerboundoptimization
+riorPDF byGaussian approximation, wherethe moments
+ofGaussiandistributionarecomputedusingnumericalinte-
+Manuscript received 3 May 2023; revised 2 August 2023; accepted 8
+gration,suchasunscentedtransformationoftheunscented
+September2023.Dateofpublication12September2023;dateofcurrent
+version8December2023. Kalman filter (KF) [3], spherical cubature integration of
+thecubatureKF[4],andGauss–Hermiteintegrationofthe
+DOI.No.10.1109/TAES.2023.3314703
+quadrature KF [5]. Stochastic approximation techniques,
+RefereeingofthiscontributionwashandledbyM.Kok. such as the particle filter [6], directly approximate the
+ThisworkwassupportedinpartbytheNationalNaturalScienceFoun- intractableposteriorPDFbyMonteCarlointegration,i.e.,
+dation of China under Grant 62371398, Grant U21B2008, and Grant asetofweightedsamplescalledparticles.Therearethree
+61873211. maincategoriesofmethodsformodelidentification:input
+Authors’ addresses: Hua Lan, Jinjie Hu, and Zengfu Wang are with estimator,multiplemodelestimator,andnoiseadaptivees-
+theSchoolofAutomation,NorthwesternPolytechnicalUniversity,Xi’an timator.Theinputestimatortreatstheunknownparameters
+710072,China,andalsowiththeKeyLaboratoryofInformationFusion asextrainputvariablesandestimatesthemwiththesystem
+Technology,MinistryofEducation,NorthwesternPolytechnicalUniver-
+statejointly[7].Multiplemodelestimator[8]performsthe
+sity,Xi’an710072,China,E-mail:(lanhua@nwpu.edu.cn;2021262547@
+jointestimationofmodelprobabilitiesandsystemstateby
+mail.nwpu.edu.cn;wangzengfu@nwpu.edu.cn);QiangChengiswiththe
+NanjingResearchInstituteofElectronicsTechnologyandtheKeyLab- usingabankofdifferenthypotheticalmodelsrepresenting
+oratory of IntelliSense Technology, Nanjing 210039, China, E-mail: the different modes of system state. The noise adaptive
+(cqchengqiang@sina.com).(Correspondingauthor:ZengfuWang.) estimator assumes that the statistics (e.g., the mean and
+covariance) of the noise are nonstationary and unknown,
+0018-9251©2023IEEE and performs the noise statistics identification and state
+IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023 9177
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 2 ---
+estimationsimultaneously.Traditionally,thelinearstatees- a VB adaptive cubature information filter for joint state
+timationwithunknownnoisestatisticsisknownasadaptive estimationandmeasurementnoisecovarianceidentification
+Kalmanfiltering. innonlinearstate-spacemodels.
+As aforementioned, finding the optimal and analyt- However, to our best knowledge, little work has been
+ical solution of nonlinear state estimation in the pres- done on the nonlinear state estimation in the presence
+ence of model parameter uncertainties is intractable. One of unknown process noise covariance based on the VB
+should resort to approximate inference. The sampling- approach. There are two main challenges when using the
+based approximate inference, including sequential Monte existingmean-fieldVBapproachforthisproblem.First,it
+Carlo (SMC), has been widely used in nonlinear state is challenging to design the joint conjugate prior distribu-
+estimation. However, it suffers from an expensive com- tions on latent variables of the system state and process
+putational burden, especially for high-dimensional state noise covariance [21]. Second, due to the nonlinearity,
+estimation.Asanapproachofapproximateinference,varia- it is intractable to directly maximize the evidence lower
+tionalBayes(VB)[9]yieldsadeterministicapproximation bound (ELBO) by the coordinate ascent algorithm. The
+procedurethatconvertsanintractableinferenceofposterior nonconjugatepriorandnonlinearitymakethecomputation
+PDFintooptimization.Thatis,VBpositsaclassoftractable of ELBO intractable. Stochastic optimization [22] allows
+variational distributions family over the latent space and directoptimizationoftheELBObyMonteCarlointegration
+triestofindtheclosestdistributiontotheposteriorPDFin tofitthevariationalparameters,bridgingthegapbetween
+termsofKullback–Leibler(KL)divergenceviathecalculus VBandMonteCarlomethods[23],[24].Paisleyetal.[25]
+ofvariations.VB-basedmethodshaveattractedsignificant proposed a stochastic optimization method for sampling
+attentioninnonlinearstateestimationandadaptivefiltering unbiased gradients of ELBO and used control variates to
+applicationsduetotheirefficientcomputationcomparedto reducethevarianceofthestochasticgradient.
+sampling-basedmethods. Thisarticleencapsulatesthenonlinearstateestimation
+In the aspect of nonlinear state estimation, Šmídl and with uncertain process noise covariance into a variational
+Quinn[10]proposedaVB-basednonlinearstateestimation, inferenceproblem.Thenonconjugatepriorandmodelnon-
+whereVBwasusedtoacceleratethemarginalizedparticle linearity disable the existing VB-based noise adaptive fil-
+filtering.Frigolaetal.[11]addressedtheBayesianlearning teringapproaches.Weintroduceanauxiliarylatentvariable
+of nonparametric nonlinear state-space models, where the todecouplethesystemstateandprocessnoisecovariance,
+nonlinearfunctionwasmodeledbyGaussianprocesseswith suchthattheauxiliaryELBOismoreeasilyoptimizedthan
+parametersbeinglearnedbyVB.GultekinandPaisley[12] thetraditionalELBO,whichimprovestheflexibilityofthe
+presented three nonlinear filtering approaches based on posterior PDF inference. Meanwhile, we split the ELBO
+three different divergence measures, that is, the forward into nonconjugate parts (arising from the nonlinearity of
+KLdivergenceasusedinvariationalinference,thereverse thesystemmodel)andconjugateparts,wherethenoncon-
+KLdivergenceasusedinexpectation-propagation,andthe jugate parts are optimized by stochastic gradient and con-
+α−divergence. Hu et al. [13] proposed a nonlinear filter jugate parts are optimized directly, achieving the tradeoff
+basedonproximalVBapproach[14]. between inference speed and accuracy. The performance
+In the aspect of noise adaptive filtering, Särkkä and oftheproposedmethodisverifiedonradartargettracking
+Nummenmaa [15] made the first attempt at VB for joint applicationsbybothsimulatedandrealdata.
+recursiveestimationofdynamicstateandthetime-varying Therestofthisarticleisorganizedasfollows.SectionII
+measurementnoiseparametersinlinearstate-spacemodels. describes the problem formulation of nonlinear state esti-
+BychoosingtheGaussianandInverse-Gammadistributions mationwithunknownprocessnoisecovariance.SectionIII
+asconjugatepriordistributionsoflatentvariables,thejoint presents the proposed nonlinear adaptive Kalman filtering
+posterior distribution of the state and the process noise method based on stochastic search variational inference.
+covarianceareupdatediterativelybasedonthemean-field Sections IV and V provides the performance comparison
+VB method. Subsequently, this work was extended to the bysimulatedandrealdata,respectively.Finally,SectionVI
+state estimation [16] and smoother [17] in the presence concludesthisarticle.
+of both inaccurate process noise covariance and measure-
+mentnoisecovariance.Differentfrom[16],whichregarded II. PROBLEMFORMATION
+the covariance of the predicted state as latent variable,
+Consider the following discrete-time nonlinear state-
+Maetal.[18]assumedthattheconjugatepriordistribution
+spacesystem:
+directlydependsontheunderlyinglatentvariablesbyinduc-
+ingauxiliarylatentvariable,resultinginmoreaccuratestate x k = f k (x k−1 )+v k (1)
+estimation. Mbalawata et al. [19] proposed the variational y =h (x )+w (2)
+k k k k
+BayesianadaptiveMetropolisalgorithmfornonlinearstate
+estimationwithunknownmeasurementnoise,whereasthe where x
+k
+∈Rnx is the target state, y
+k
+∈Rny is the sensor
+proposaldistributionoftheMetropolisalgorithmisupdated measurement, f (·) is the known nonlinear state transi-
+k
+bytheworkofSärkkäandNummenmaa[15].Bychoosing tion function, h (·) is the known nonlinear measurement
+k
+Wishart distribution as the conjugate prior distribution of function,andv
+k
+∈Rnx andw
+k
+∈Rny areindependentzero-
+theunknowninformationmatrix,Dongetal.[20]proposed meanGaussianprocessnoisevectorandmeasurementnoise
+9178 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 3 ---
+vectorwithcorrespondingcovariancematricesQ andR , III. NONLINEAR NOISE ADAPTIVE KALMAN FILTER-
+k k
+respectively.Timeisindexedbyk.Theinitialstatevector ING
+x is assumed to follow Gaussian distribution with mean
+0 A. VariationalBayesianInference
+xˆ 0|0 and covariance matrix P 0|0 . Moreover, x 0 , v k , and w k
+areassumedtobemutuallyuncorrelated. Asaforementioned,thedifficultyofthenonlinearnoise
+The model parameters of the aforementioned state- adaptiveKalmanfilteringarisesfromsolvingtheintractable
+space system include {Q k ,R k ,xˆ 0|0 ,P 0|0 }. The initial state joint posterior PDF p(x k ,Q k |y 1:k ), which consists of the
+estimatexˆ 0|0 andP 0|0 areoftenlessimportantsincetheywill recursive steps in (3) and (4). This intractable inference
+get“washedaway”bythedataafterafewtimesteps.The can be approximated by VB methods. Here, we briefly
+nonlinearmeasurementfunctionh (·)issensor-dependent introduce VB and stochastic search VB (SSVB) [25] for
+k
+andtypicallyknowninadvance.WeassumeR isknownin theintractableELBOoptimization.
+k
+thisarticle.Formaneuveringtargettracking,thereexiststar- Let p(z k ,y k )betheprobabilisticmodelsforjointlatent
+getmotionuncertainty.Atrackerdoesnothaveaccesstoan variablesz k (e.g.,x k andQ k )andobservedvariablesy k .In
+accuratedynamicmodelofthetargetbeingtracked,making Bayesianinference,thekeyistocomputetheposteriorPDF
+itdifficulttopredictthetarget’smotionaccurately.Thereare p(z k |y k )recursively.VBtransformstheposteriorinference
+mainlythreemaneuveringmotionmodels:equivalent-noise intoanoptimizationproblem[9].Thatis,VBpositsaclass
+model, multiple models, and unknown-input model. This of distributions q(z k ;λ k ) over latent variables with varia-
+articlefocusesontheequivalent-noisemodel,whereasthe tionalparametersλ k ,andtriestofindtheclosestdistribution
+transition function f k (·) is known for describing typical to the exact posterior distributions p(z k |y k ). Closeness is
+targettrajectoriesandadapttheunknownandtime-varying measured by the KL divergence, and the closest distribu-
+parameterQ todescribethetargetmaneuver. tion is called variational distribution. Minimizing the KL
+k
+The goal of joint state estimation and model pa- divergencefromthevariationaldistributionq(z k ;λ k )tothe
+rameter identification is to compute the joint posterior posteriordistribution p(z k |y k )isequivalenttomaximizing
+PDF p(x k ,Q k |y 1:k ). Formally, the well-known recursive theELBOB(λ k ).Thus,theobjectiveofVBistosolvethe
+Bayesianfilteringsolutionconsistsofthefollowingpredict- followingoptimizationproblem:
+updatecycle.
+p(z |y )≈q(z ;λ∗ )
+k k k k (cid:3) (cid:4)
+1) Initialization: The recursion starts from the prior
+distribution p(x 0 ,Q 0 ). =argm λ a k x (cid:5) E q(zk ;λ k) logp(z k , (cid:6) y (cid:7)k )−logq(z k ;λ k ) (cid:8) .
+2) Prediction: The one-step-ahead predicted PDF for B(λ k)
+thejointlatentvariables p(x k ,Q k |y 1:k−1 )isgivenby (5)
+theChapman–Kolmogorovequation:
+(cid:2) Thechoiceofvariationalfamilyq(z ;λ )tradesoffthefi-
+k k
+p(x k ,Q k |y 1:k−1 )= p(x k |x k−1 ,Q k )p(Q k |Q k−1 ) delityoftheposteriorapproximationwiththecomplexityof
+variationaloptimization.Thesimplest(classic)variational
+× p(x k−1 ,Q k−1 |y 1:k−1 )dx k−1 dQ k−1 . (3) familyofdistributions isthemean-fieldvariationalfamily
+where the latent variables are mutually independent and
+3) Update: The aforementioned predicted PDF is up- governedbytheirparametersλ i,k .Forconjugateexponen-
+datedbymeasurementy usingtheBayesrule
+k tial models, the mean-field VB often has the closed-form
+p(x k ,Q k |y k )∝ p(y k |x k ,R k )p(x k ,Q k |y 1:k−1 ). (4) solution of (5) by the coordinate ascent, which repeatedly
+cycles through and optimizes with respect to each varia-
+In the case of linear Gaussian with known model pa- tionalparameterλ i,k .Duetothenonlinearityexistinginthe
+rameters, the posterior PDF of state x k has a closed-form joint distribution p(z ,y ), the optimization of variational
+k k
+analyticalsolutionviaKalmanfiltering.Fornonlinearfunc-
+objectives is sometimes intractable since the expectation
+t
+Q
+ion
+,
+s
+all
+f k
+th
+(·
+e
+),
+p
+h
+o
+k
+s
+(
+s
+·
+i
+)
+b
+,
+le
+an
+v
+d
+al
+u
+u
+n
+e
+k
+s
+n
+o
+o
+f
+w
+Q
+n p
+h
+r
+a
+o
+v
+c
+e
+es
+t
+s
+o
+n
+b
+o
+e
+is
+c
+e
+on
+c
+s
+o
+i
+v
+d
+a
+e
+r
+r
+i
+e
+a
+d
+nc
+in
+e E q(zk ;λ k) logp(z k ,y k )donothaveaclosed-formsolution.
+k k SSVBdirectlyoptimizestheintractablevariationalob-
+thepredictionstep,andtheupdatestepusingmeasurements jective function B(λ ) based on stochastic optimization.
+k
+hasnoclosed-formsolutionduetotheintractableintegral Assume the ELBO B(λ ) can be separated into two parts,
+computationarisingfromthenonlinearityin f k (·)andh k (·). E[f(z )] and h(z ,λ ), k where f(z ) is the function of z
+k k k k k
+One must resort to approximation to perform Bayesian whose expectation is intractable, and h(z ,λ ) is the rest
+k k
+inferenceinpractice.Twomaintechniquescanbeusedto term in B(λ ) whose expectation is tractable with closed-
+k
+approximate the intractable joint posterior distribution of
+form solution. The first step in solving (5) is to take the
+x k andQ k ,includingSMC-basedsamplingapproximation gradientoftheELBOB(λ )as
+k
+and VB-based deterministic approximation. The former
+tends to be more accurate but has higher computational ∇B(λ k )=∇ λ k E q(zk ;λ k) [f(z k )]+∇ λ k h(z k ,λ k ). (6)
+costs. The latter tends to be faster, especially in the case
+of high-dimensional latent variables. In the next section, The goal of SSVB is to make a stochastic approximation
+wesolvetheaforementionedrecursionstepsusingtheVB of the first gradient ∇ λ k E q(zk ;λ k) [f(z k )], while the second
+inferencemethod. gradientistractable.
+LANETAL.:VARIATIONALNONLINEARKALMANFILTERINGWITHUNKNOWNPROCESSNOISECOVARIANCE 9179
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 4 ---
+Use the identity ∇q(z ;λ )=q(z ;λ )∇logq(z ;λ ). The commonly used prior for the process noise co-
+k k k k k k
+The gradient of the expectation can be rewritten as an variance Q is the inverse Wishart distribution [17], [20],
+k
+expectationwithrespecttothevariationaldistribution,i.e., which serves as a conjugate prior for the positive definite
+covariance matrix of a multivariate Gaussian distribution.
+∇ λ k E q(zk ;λ k) [f(z k )]=E q(zk ;λ k) [f(z k )∇ λ k logq(z k ;λ k )]. (7) Employing the inverse Wishart prior ensures that the pos-
+With this equation in hand, we can stochastically approx- teriordistributionofQ k isalsoaninverseWishartdistribu-
+imate this expectation using Monte Carlointegration with tion when given Gaussian distributed data. Moreover, this
+samplesextractedfromthevariationaldistribution distribution guaranteesthatthecovariancematrixremains
+positivedefinite.Thus,wewritetheprioras
+(cid:9)N
+1
+∇ λ k E q(zk ;λ k) [f(z k )]= N f(zi k )∇ λ k logq(zi k ;λ k ) (8) p(Q k |y 1:k−1 )=IW(Q k |uˆ k|k−1 ,U k|k−1 ) (12)
+i=1
+where IW(P|ν,A) signifies that P follows an inverse
+wherezi k ∼iid q(z k ;λ k ),i =1,...,N,andN isthenumberof Wishart distribution with degrees of freedom parameter
+samples. ν and positive-definite scale matrix A∈Rp×p (with ν >
+Thus,thegradientofELBO∇B(λ k )isnowtractableby p+1). The mean value of P is E[P]=A/(ν− p−1).
+replacing the intractable term ∇ λ k E q(zk ;λ k) [f(z k )] with the Meanwhile, the inverse P−1 follows Wishart distribution
+unbiasedstochasticapproximationin(8).Finally,stochastic andhasthemeanE[P−1]=νA−1.Theinitialprocessnoise
+optimizationupdatesthevariationalparametersλ k atthenth covariance Q 0 is assumed to follow an inverse Wishart
+iterationwith distribution IW(Q 0 |uˆ 0|0 ,U 0|0 ) with mean value Q¯ 0 given
+λ(n+1) =λ(n)+ρ(n)∇B(λ(n)) (9) by
+k k k k
+whichcanbecarriedoutbytheAdamalgorithm[26],where Q¯ = U 0|0 (13)
+thelearningrateρ(n)followstheRobbins-Monroconditions 0 uˆ 0|0 −n x −1
+(cid:10) k (cid:10)
+that ∞ n=1 ρ k (n) =∞and ∞ n=1 (ρ k (n))2 <∞.Bydecreasing where the initial value uˆ 0|0 =τ +n x +1 andU 0|0 =τQ¯ 0
+thelearningrateρ k (n),theELBOB(λ k )convergestoalocal withτ beingthetuningparameter.
+optimalsolution. Combining(11)with(12),thejointpriordistributionof
+The practical issue of the stochastic approximation to x andQ isgivenby
+k k
+optimizetheELBOisthatthevarianceofthegradientap-
+proximation[undertheMonteCarloestimationin(8)]can p(x k ,Q k |y 1:k−1 )=N(x k |xˆ k|k−1 ,P k|k−1 )
+betoolargetobeuseful.Inordertodecreasethevariance, ×IW(Q k |uˆ k|k−1 ,U k|k−1 ). (14)
+larger N and smaller learning rate ρ are needed, leading
+k
+From (14), it is seen that the latent variables x and Q
+toslowconvergence.Variancereductionmethodsworkby k k
+are dependent since the covariance of the predicted state
+replacing the function whose expectation is approximated
+via Monte Carlo with another function that has the same P k|k−1 is related to Q k . Moreover, the joint prior distribu-
+expectationbutasmallervariance.Towardthisend,onecan tion p(x k ,Q k |y 1:k−1 ) is nonconjugate. The work of [15],
+introduceacontrolvariateg(z ),whichapproximates f(z ) [19], and [20] performs joint estimation of state x k and
+k k
+well and has a closed-form expectation under q(z ) [25]. measurementnoisecovarianceR k basedonthemean-field
+k
+Usingg(z )andascalarα ∈R,thenewfunction ˆf(z )as VB,whichisinappropriateformodelingthemaneuvering
+k k k
+target tracking problem. In order to obtain the conjugate
+follows:
+(cid:11) (cid:12) prior on joint x k and P k|k−1 , Huang et al. [16] regarded
+ˆf(z k )= f(z k )−α k g(z k )−E q(zk) [g(z k )] (10) P k|k−1 as a latent variable, and updated the joint posterior
+PDFs using VB, which is tractable but indirect since the
+hasthesameexpectationas f(z )buthasasmallervariance.
+k
+The scalar α =Cov(f,g)/Var(g) is set to minimize the unknownparametersareQ k ratherthanP k|k−1 .
+k
+variance. Therefore, one can replace f(z ) with ˆf(z ) in OnewaytoimprovetheflexibilityoftheVBmodelsis
+k k
+byintroducingauxiliarylatentvariables,whichcanbeused
+(8).
+toreducecorrelationbetweentheoriginalvariables[27].In
+B. PriorDistributionandAuxiliaryLatentVariable ordertodecomposeP k|k−1 in(14),thecontinuousauxiliary
+latentvariablem isintroduced.Then,(11)canberewritten
+Recall that the recursive Bayesian filtering consists of k
+as
+initialization,recursivestepsofstatepredictionandupdate.
+The initialization step is to model the prior distribution of p(x (cid:2)k |y 1:k−1 ,Q k )
+latent variables. In our models, the prior distribution of
+the system state x k , i.e., predicted PDF, is assumed to be = p(x k ,m k |y 1:k−1 ,Q k )dm k
+Gaussiandistribution,i.e., (cid:2)
+p(x k |y 1:k−1 ,Q k )=N(x k |xˆ k|k−1 ,P k|k−1 ) (11) = (cid:2) p(x k |m k ,Q k )p(m k |y 1:k−1 )dm k
+where xˆ k|k−1 and P k|k−1 are the predicted state and corre- = N(x k |m k ,Q k )N(m k |mˆ k|k−1 ,(cid:4) k|k−1 )dm k (15)
+spondingcovarianceattimek.
+9180 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 5 ---
+with by a distinct factor in the variational density. Thus,
+thevariationaldistributionq(x ,Q ,m ;λ )approximates
+mˆ k|k−1 =E p(xk−1) [f k (x k−1 )] p(x
+k
+,Q
+k
+,m
+k
+|y
+1:k
+)withafreefo k rm k fact k oriz k ation,i.e.,
+(cid:4) k|k−1 =E × p( ( xk f − k 1) ( [ x ( k f − k 1 ( ) x − k−1 mˆ ) k − |k− mˆ 1 ) k T |k ] − . 1 ) (16) q(x k ,Q k ,m k ;λ k )=q × (x q k ; (Q xˆ k k | ; k , uˆ P k|k k , |k U ) k|k )
+Theauxiliarylatentvariablem k ∼N(m k |mˆ k|k ,(cid:4) k|k )splits ×q(m k ;mˆ k|k ,(cid:4) k|k ) (21)
+P k|k−1 intotwoparts.NowtheprocessnoisecovarianceQ k
+isthecovarianceofthesystemstatex k ,makingtheconju-
+withλ
+k
+={xˆ
+k|k
+,P
+k|k
+,uˆ
+k|k
+,U
+k|k
+,mˆ
+k|k
+,(cid:4)
+k|k
+}.
+gate prior distribution with Gaussian and Inverse Wishart Theoptimalvariationalparametersλ∗ canbeobtained
+k
+possible. bymaximizingtheELBOB(λ k ),i.e.,
+TheobjectiveoftheVB-basedmethodwithauxiliaryla- λ∗ =argmaxB(λ ) (22)
+tentvariablesm istoapproximatetheintractablejointpos- k λ k
+k k
+terior distribution p(x k ,Q k ,m k |y k ) with the tractable vari- with
+ational distribution q(x ,Q ,m ;λ ). The KL-divergence (cid:2)
+k k k k
+withauxiliarylatentvariablem canbeexpressedas B(λ )= q(x ,Q ,m ;λ )
+k k k k k k
+D KL (q(x k ,Q k ,m k )||p(x k ,Q k ,m k )) ×log p(x k ,Q k ,m k ,y k |y 1:k−1 ) dx dQ dm
+=D (q(x ,Q )||p(x ,Q )) q(x ,Q ,m ;λ ) k k k
+KL k k k k k k k k
++E q (D KL (q(m k |x k ,Q k )||q(m k |x k ,Q k )). (17) where the log-likelihood J k =logp(y k ,x k ,Q k ,m k |y 1:k−1 )
+canbedecomposedas
+From(17),itisseenthattheELBObecomeslesstightby
+augmentinganauxiliarylatentvariable.However,theauxil- J = logN(y |h(x ),R )+logN(x |m ,Q )
+k k k k k k k
+iarylatentvariablecanleadtosignificantimprovementson +logN(m k |mˆ k|k−1 ,(cid:4) k|k−1 )
+approximatingthetrueposteriorPDFsinceonecanaccess
+tomuchmoreflexibleclassofvariationaldistribution[23], +logIW(Q k |uˆ k|k−1 ,U k|k−1 ). (23)
+[27],[28],[29]. Then,thevariationalELBOB(λ )canbewrittenas
+k
+Theconjugatepriordistributionofjointlatentvariables (cid:3) (cid:4)
+1
+x ,Q ,andm isgivenby B(λ )= − E (y −h (x ))TR −1(y −h (x ))
+k k k k 2 q(xk) k k k k k k k
+p(x k ,Q k ,m k |y 1:k−1 )=N × ( I x W k |m (Q k k , | Q uˆ k k |k ) −1 ,U k|k−1 ) − 2 1 E q(xk),q (cid:13) (mk),q(Qk) (cid:3) (x k −m k )TQ − k 1(x k −m k ) (cid:4) (cid:14)
+1
+×N(m k |mˆ k|k−1 ,(cid:4) k|k−1 ). (18) −
+2
+E q(mk) (m k −mˆ k|k−1 )T(cid:4)− k|k 1 −1 (m k −mˆ k|k−1 )
+N
+an
+e
+d
+xt
+uˆ
+,
+k
+w
+|k−
+e
+1
+w
+,
+i
+U
+ll
+k
+d
+|k
+e
+−
+te
+1 .
+rminethepriorparametersmˆ k|k−1 ,(cid:4) k|k−1
+− 2
+1
+(uˆ k|k−1 +n x +2)E q(Qk) [log|Q k |]
+Accordingtothedefinitionby(16)andusingtheMonte 1
+Carlointegration,wehave − 2 Tr(U k|k−1 E q(Qk) [Q − k 1])
+mˆ k|k−1 =
+N
+1 (cid:9)
+i=
+N
+1
+f k (cid:11) xi k−1 (cid:12) − − E E q
+q
+(
+(
+x
+Q
+k
+k
+)
+)
+[ [ l l o o g g q q ( ( x Q k
+k
+)] )] − + E c q o (m ns k) t [ . logq(m k )] (24)
+(cid:9)N (cid:11) (cid:12) Next,wewillderiveq(x k ;xˆ k|k ,P k|k ),q(Q k ;uˆ k|k ,U k|k )and
+(cid:4) k|k−1 = N × 1 (cid:11) i= f 1 k (x f i k k − ( 1 x ) i k− − 1 ) mˆ − k|k m − ˆ 1 k (cid:12) |k T −1 (19) t B q h ( ( a m λ t 1 k k a ) ) ; r m D a e ˆ s e k i | r n k t i h , d v e (cid:4) a ep t f k i u e | o k n n n ) d , c s t e r i o e n o f s t n p q o e ( o c f x f t k i x s ; v k t e xˆ a , l k t y | e d k . e , x n P k o k t a |k e n ) d d : b o R y m e B i w t x r t ( i h x t ˆ e e k|k t r h , e e s P t E k| t k L e ) r B m a O s s
+o w f it s h am xi k p − l 1 es ∼ii . d p(x k−1 ),i=1,...,NandNbeingthenumber f E o L ll B ow O s B : x ( ( 2 xˆ 5 k ) |k s , h P o k w |k n )i a n t ( t 2 h 5 e ) b ca o n tto b m ed o iv f i t d h e e d n in e t x o t t p w a o ge te . r T m h s e ,
+Intheveinof[15]and[16],thepriorparametersuˆ k|k−1 , w
+th
+h
+at
+er
+m
+eD
+ak
+x
+e
+(
+s
+xˆ k
+t
+|
+h
+k ,
+e
+P
+o
+k
+p
+|k
+t
+)
+im
+co
+iz
+n
+a
+ta
+ti
+i
+o
+n
+n
+st
+o
+h
+f
+en
+g
+o
+ra
+n
+d
+li
+i
+n
+e
+e
+n
+a
+t
+r
+i
+f
+n
+u
+tr
+n
+a
+c
+c
+t
+t
+i
+a
+o
+b
+n
+le
+h
+,
+k (
+a
+x
+n
+k
+d
+)
+U k|k−1 aregivenby E x (xˆ k|k ,P k|k ) is tractable. To deal with the intractable
+uˆ k|k−1 =β(uˆ k−1|k−1 −n x −1)+n x +1 termsD x (xˆ k|k ,P k|k ),commonapproachestypicallyinvolve
+U k|k−1 =βU k−1|k−1 (20) making tractable approximations to the nonlinear func-
+tion h (x ), and then, compute the expectation. For ex-
+k k
+whereβ ∈ (0,1]isthefactorforspreading. ample, one such approximation would pick a point x∗
+k
+and make the first-order Taylor approximation h (x )≈
+k k
+C. ApproximatedPosteriorDistributionUpdate h (x∗ )+H (x∗ )(x −x∗ )withH (x∗ )beingtheJacobian
+k k k k k k k k
+We use the mean-field variational family where the matrixofh k (x k ).Onethenreplacesh k (x k )inD x (xˆ k|k ,P k|k )
+latent variables are mutually independent, each governed withthelinearapproximationandoptimizesB x (xˆ k|k ,P k|k ).
+LANETAL.:VARIATIONALNONLINEARKALMANFILTERINGWITHUNKNOWNPROCESSNOISECOVARIANCE 9181
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 6 ---
+As stated in [14], this approximation is not tight and can existdifferentcontrolvariatesG(x )thatcansatisfythese
+k
+result in a lousy performance. In this case, the resulting requirements. For simplicity, building on the EKF frame-
+update of q(x ) is the same as the iterative EKF with workwherethenonlinearfunctionh (x )isapproximated
+k k k
+unknownmodelparameters. by first-order Taylor expansion at the expectation value
+Since the gradient of D x (xˆ k|k ,P k|k ) is not available in xˆ k|k of q(x k ), i.e., h k (x k )≈h˜ k (xˆ k|k−1 ,x k )(cid:2)h k (xˆ k|k−1 )+
+the closed form, we calculate the gradient ∇B x (xˆ k|k ,P k|k ) H k (xˆ k|k−1 )(x k −xˆ k|k−1 ), the control variate G(x k ) can be
+bysamplingfromtheapproximatePDFq(x ).Thatis, designedas[12]
+k
+∇B x (xˆ k|k ,P k|k )=∇D x (xˆ k|k ,P k|k )+∇E x (xˆ k|k ,P k|k ) ( . 26) G(x k )= − (cid:11)2 1 (cid:11) y k −h˜ (cid:11) k (cid:11) xˆ k|k−1 ,x (cid:12)(cid:12) k (cid:12)(cid:12) T R − k 1
+Nextwecalculate ∇D x (xˆ k|k ,P k|k )and∇E x (xˆ k|k ,P k|k ),re- × y k −h˜ k xˆ k|k−1 ,x k . (30)
+1
+spectively. Let S(x )=− (y −h(x ))TR −1(y −h(x )), Asstatedin[12],theEKFalgorithmcorrespondstooptimiz-
+k 2 k k k k k ingtheobjective(25)byreplacingS(x )withG(x )through
+wehave k k
+(cid:3) (cid:4) afirst-orderTaylorapproximation.Theresultingoptimiza-
+∇D x (xˆ k|k ,P k|k )=E q(xk) S(x k )∇logq(x k ) (27) tion of this approximation does not guarantee minimizing
+the KL-divergence. SSVB optimizes the objective (25)
+wheretheidentity∇q(x )=q(x )∇logq(x )isused.
+k k k using stochastic gradient descent, enabling approximate
+The gradient in (27) can be approximated by Monte
+posterior inference with a smaller KL-divergence than an
+Carlo integration with samples from the variational distri-
+EKF.Specifically,theintractablegradientofthenonlinear
+bution
+functionS(x )isapproximatedusingMonteCarlointegra-
+k
+E (cid:3) S(x )∇logq(x ) (cid:4) ≈ 1 (cid:9)N S(xi)∇logq(xi) (28) tion[see(28)],andthecontrolvariateG(x k )isintroduced
+q(xk) k k N k k toreducethevarianceof(28).
+i=1 Substituting(30)into(29),gradients∇ xˆk|k D x (xˆ k|k ,P k|k )
+s
+w
+a
+h
+m
+e
+p
+re
+le
+x
+s
+i
+k .T
+∼iid
+he
+q(
+v
+x
+a k r
+)
+ia
+,
+n
+i
+c
+=
+er
+1
+e
+,
+d
+.
+u
+.
+c
+.
+t
+N
+ion
+w
+m
+ith
+et
+N
+ho
+b
+d
+e
+s
+i
+,
+n
+w
+g
+h
+th
+ic
+e
+h
+n
+i
+u
+n
+m
+tro
+b
+d
+er
+uc
+o
+e
+f a
+o
+n
+f
+d
+th
+∇
+is
+Pk
+p
+|k
+a
+D
+g
+x
+e
+(
+.
+xˆ
+T
+k|
+h
+k
+e
+,P
+te
+k
+r
+|k
+m
+)a
+E
+r
+x
+e
+(
+g
+xˆ
+i
+k
+v
+|k
+e
+,
+n
+P
+a
+k
+s
+|k
+(
+)
+31
+in
+)s
+(
+h
+2
+o
+5
+w
+)
+n
+ca
+a
+n
+tt
+b
+h
+e
+eb
+w
+o
+r
+t
+i
+t
+t
+o
+te
+m
+n
+as
+acontrolvariatesG(x k )thatishighlycorrelatedwithS(x k ) (cid:15) (cid:16)
+b
+va
+u
+r
+t
+ia
+h
+n
+a
+c
+s
+e
+an
+of
+a
+t
+n
+h
+a
+e
+ly
+M
+ti
+o
+c
+n
+e
+t
+x
+e
+p
+C
+ec
+a
+t
+r
+a
+lo
+tio
+in
+n
+t
+,
+e
+i
+g
+s
+ra
+e
+t
+m
+io
+p
+n
+l
+.
+o
+U
+ye
+s
+d
+in
+t
+g
+o
+t
+r
+h
+e
+e
+du
+c
+c
+o
+e
+nt
+t
+r
+h
+o
+e
+l
+E x (xˆ k|k ,P k|k )=
+2
+1 log|P k|k |−
+2
+1 Tr uˆ k|k U − k|k 1P k|k
+(cid:13) (cid:14)
+(cid:11) (cid:12) (cid:11) (cid:12)
+varia
+∇
+te
+D
+G
+x
+(
+(
+x
+xˆ
+k
+k|
+)
+k
+,
+,
+t
+P
+he
+k|k
+g
+(cid:3) )
+ra
+=
+di
+α
+en
+k ∇
+ti
+E
+n
+q
+(
+(
+2
+xk
+7
+)
+)
+[G
+is
+(x
+re
+k
+w
+)]
+rittenas
+(cid:4)
+−
+2
+1 uˆ k|k xˆ k|k −mˆ k|k T U − k|k 1 xˆ k|k −mˆ k|k
+(
+.
+32)
++E (S(x )−α G(x ))∇logq(x ) (29)
+q(xk) k k k k The gradients ∇ xˆk|k E x (xˆ k|k ,P k|k ) and ∇ Pk|k E x (xˆ k|k ,P k|k ) are
+whereα =Cov(S,G)/Var(G)issettominimizethevari- givenas
+k
+ance.
+The design of the control variate G(x
+k
+) should meet ∇ xˆk|k E x (xˆ k|k ,P k|k )= −uˆ k|k U − k|k 1(xˆ k|k −mˆ k|k )
+t e w xp o e c c r t i a t t e i r o i n a: E itsho [ u G ld (x be )] an sh a o p u p l r d ox b i e ma tr t a io c n ta o b f le S . ( T x k h ) e , r a e n m di a t y s ∇ Pk|k E x (xˆ k|k ,P k|k )= 2 1 P − k|k 1− 2 1 uˆ k|k U − k|k 1. (33)
+q(xk) k
+(cid:3) (cid:4)
+1
+B x (xˆ k|k ,P k|k )= (cid:5) − 2 E q(xk) (y k −h k (x (cid:6) k (cid:7) ))TR − k 1(y k −h k (x k )) (cid:8)
+D x(xˆk|k ,Pk|k)
+(cid:3) (cid:4)
+1
+− (cid:5) 2 E q(xk),q(mk),q(Qk) (x k −m k )TQ (cid:6)(cid:7) − k 1(x k −m k ) −E q(xk) [logq(x k ) (cid:8) ]. (25)
+E x(xˆk|k ,Pk|k)
+(cid:9)N (cid:11) (cid:12) (cid:15) (cid:16)
+1
+∇ xˆk|k D x (xˆ k|k ,P k|k )= N S(xi k )−G(xi k ) P − k|k 1xi k −P − k|k 1xˆ k|k
+i=1 (cid:11) (cid:12)
++H k (xˆ k|k−1 )TR − k 1 y k −h k (xˆ k|k−1 )−H k (xˆ k|k−1 )(xˆ k|k −xˆ k|k−1 )
+(cid:9)N (cid:11) (cid:12) (cid:15) (cid:16)
+1
+∇ Pk|k D x (xˆ k|k ,P k|k )= 2N S(xi k )−G(xi k ) P − k|k 1(xi k −xˆ k|k )(xi k −xˆ k|k )TP − k|k 1−P − k|k 1
+i=1
+1
+− 2 H k (xˆ k|k−1 )TR − k 1H k (xˆ k|k−1 ). (31)
+9182 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 7 ---
+Substituting(31)and(33)into(26),wehave(34)shownat 3)Derivationsofq(Q k ;uˆ k|k ,U k|k ): RewritetheELBO
+the bottom of this page. According to (9), the variational B(λ )in(24)asthefunctionofQ andomittherestterms
+k k
+parametersxˆ k|k ,P k|k areupdatediterativelyas that are independent of Q k , denoted by B Q (uˆ k|k ,U k|k ) as
+(cid:13) (cid:15) (cid:16)(cid:14) follows:NotethattheELBOB Q (uˆ k|k ,U k|k )canberewritten
+xˆ(n+1) =xˆ(n) +ρ(n) C(n)∇ B xˆ(n),P(n) as(41)shownatthebottomofthenextpage.
+k|k k|k x
+(cid:13)
+xˆk|k x
+(cid:15)
+k|k k|k
+(cid:16) (cid:14)
+P k (n |k +1) =P k (n |k ) +ρ x (n) C(n)∇ Pk|k B x xˆ k (n |k ),P k (n |k ) C(n) (35) B Q (uˆ k|k ,U k|k )=−
+2
+1 (uˆ k|k−1 +1−uˆ k|k )E q(Qk) log|Q k |
+(cid:11) (cid:12)
+w us h e e d re to C p ( r n e ) v i e s n a tn s u y m m e m ri e c t a ri l c in p s o ta si b t i i l v i e ty d p e r fi o n b i l t e e m m s. a I tr n ix th t e ha v t ei i n s − 2 1 Tr (U k|k−1 +C k −U k|k )E q(Qk) [Q − k 1] (42)
+of[12],weselectC(n) tobeequaltoP(n).
+k|k with
+2)Derivationsofq(m k ;mˆ k|k ,(cid:4) k|k ): RewritetheELBO
+B t a e s ( r λ m f k o s ) l t l h o in w at s a (2 r ( e 4 3 ) i 6 n ) d as e s p h t e o h n w e d n e f n u a t n t o c f t t i h m o e n k , b o d o f e t n to m o m t k ed a o b n f y d t B h o i m s m (m i p ˆ t a k g t |k h e , e . (cid:4) T r k e | h k s e ) t C k = = E (xˆ q k ( | x k k) − ,q(m mˆ k k )) |k [( ) x (xˆ k k − |k − m k mˆ )( k x |k k )T − + m P k ) k T |k ] +(cid:4) k|k . (43)
+d g e ra ri d v i e e d nt di o re f c E tly LB as O fo B llo m w (m s ˆ . k F |k o , r (cid:4) D k| m k ( ) mˆ i k s |k t , r (cid:4) ac k t | a k b ), l i e t , sg w r h ad ic i h ent i s s t I o t i z s e s ro ee w n h t e h n at th th e e o g p r t a im di a e l n v t a o r f ia E ti L on B a O lp B a Q ra ( m uˆ k e |k te , r U s k a | r k e ) equals
+∇ mˆk|k D m (mˆ k|k ,(cid:4) k|k )and∇ (cid:4) k|k D m (mˆ k|k ,(cid:4) k|k )are
+∇ mˆk|k D m (mˆ k|k ,(cid:4) k|k )= −(cid:4)− k|k 1 −1 (mˆ k|k −mˆ k|k−1 ) U uˆ k k | | k k = =U uˆ k k |k |k − − 1 1 + + 1 C k . (44)
+1
+∇ (cid:4) k|k D m (mˆ k|k ,(cid:4) k|k )= − 2 (cid:4)− k|k 1 −1 . (37) D. Summary
+For E m (mˆ k|k ,(cid:4) k|k ), its gradients ∇ mˆk|k E m (mˆ k|k ,(cid:4) k|k ) and The proposed nonlinear adaptive Kalman filtering al-
+∇ (cid:4) k|k E m (mˆ k|k ,(cid:4) k|k )are gorithm based on stochastic search variational Bayesian,
+(cid:11) (cid:12) (cid:11) (cid:12)
+∇ mˆk|k E m mˆ k|k ,(cid:4) k|k =uˆ k|k U − k|k 1 xˆ k|k −mˆ k|k r ti e v f e er K re a d lm to a a n s fi S l t t o e c r h ( a S s S ti V c B se A a K rc F h ) v , a f r o i r at a ion si a n l g B le ay ti e m si e an st a e d p ap is -
+(cid:11) (cid:12)
+∇ (cid:4) k|k E m mˆ k|k ,(cid:4) k|k = 2 1 (cid:4)− k|k 1− 2 1 uˆ k|k U − k|k 1. (38) s o u f m jo m in a t ri n z o ed nl i i n ne A ar lg s o ta ri t t e hm est 1 im , w at h io ic n h a i n s d a m re o c d u e rs l iv p e ar s a o m lu e t t i e o r n s
+Let the gradients of ELBO B m (mˆ k|k ,(cid:4) k|k ) equal to zeros. identification, consisting of closed-loop iterations among
+Theoptimalvariationalparametersmˆ k|k ,(cid:4) k|k areobtained stateestimationx k ,auxiliarylatentvariablem k ,andprocess
+noisecovarianceQ ateachtime.
+as k
+mˆ k|k =mˆ k|k−1 +G k (xˆ k|k −mˆ k|k−1 ) IV. RESULTSFORSIMULATEDDATA
+(cid:4) k|k =(cid:4) k|k−1 −G k (cid:4) k|k−1 (39) In this section, we evaluate the performance of the
+proposedSSVBAKFalgorithminfourdifferentsimulated
+with
+(cid:11) (cid:12) scenariosofradarmaneuveringtargettracking.Theresults
+G k =(cid:4) k|k−1 (cid:4) k|k−1 +U k|k /uˆ k|k −1. (40) forrealscenarioswillbepresentedinthenextsection.
+(cid:9)N (cid:11) (cid:12) (cid:15) (cid:16)
+1
+∇ xˆk|k B x (xˆ k|k ,P k|k )= N S(xi k )−G(xi k ) P − k|k 1xi k −P − k|k 1xˆ k|k −uˆ k|k U − k|k 1(xˆ k|k −mˆ k|k )
+i=1 (cid:11) (cid:12)
++H k (xˆ k|k−1 )TR − k 1 y k −h k (xˆ k|k )−H k (xˆ k|k−1 )(xˆ k|k −xˆ k|k−1 )
+(cid:9)N (cid:11) (cid:12) (cid:15) (cid:16)
+1
+∇ Pk|k B x (xˆ k|k ,P k|k )= 2N S(xi k )−G(xi k ) P − k|k 1(xi k −xˆ k|k )(xi k −xˆ k|k )TP − k|k 1−P − k|k 1
+i=1
+1 1 1
+− 2 H k (xˆ k|k )TR − k 1H k (xˆ k|k )+ 2 P − k|k 1− 2 uˆ k|k U − k|k 1. (34)
+(cid:13) (cid:14)
+1
+B m (mˆ k|k ,(cid:4) k|k )=
+(cid:5)
+−
+2
+E q(mk) (m k −mˆ k|k−
+(cid:6)
+1
+(cid:7)
+)T(cid:4)− k|k 1 −1 (m k −mˆ k|k−1 )
+(cid:8)
+D m(mˆk|k ,(cid:4) k|k)
+(cid:3) (cid:4)
+1
+− (cid:5) 2 E q(xk),q(mk),q(Qk) (x k −m k )TQ (cid:6) − k (cid:7) 1(x k −m k ) −E q(mk) [logq(m k ) (cid:8) ]. (36)
+E m(mˆk|k ,(cid:4) k|k)
+LANETAL.:VARIATIONALNONLINEARKALMANFILTERINGWITHUNKNOWNPROCESSNOISECOVARIANCE 9183
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 8 ---
+stepsis300.Specifically,theactualprocessnoiselevelδ2
+Algorithm 1: SSVBAKF: Stochastic Search Varia- k
+issettoδ2fork ∈[1,100),10×δ2fork ∈[100,200),and
+tionalNonlinearAdaptiveKalmanFiltering.
+δ2 again for k ∈[200,300]. The target maneuvers during
+Require:Measurementy ,approximatedposterior
+k the middle stages. The second type of target maneuver,
+PDFsoflasttimeq(x k−1 ),q(m k−1 ),q(Q k−1 ),
+denoted as M , involves using the coordinated turn
+samplesizeN,andthemaximumnumberof 2
+model to describe target abrupt maneuvers [30]. The total
+iterationsI ;
+max numberofsimulatedstepsis400.Theturnrateparameter
+Ensure:ApproximatedposteriorPDFsofcurrent ω is set to {0,3,0,5.6,0,8.5,0,−7.25,0,7.25}◦/s
+timeq(x ),q(m ),q(Q ); k
+k k k with changes occurring at times k =
+1: Timeprediction:
+{60,120,150,214,240,272,300,338,360},respectively.
+2: Calculateprior
+Thetargetisdetectedbya2-Dradar(locatedattheori-
+p(m k |y 1:k−1 )=N(m|mˆ k|k−1 ,(cid:4) k|k−1 )via(19). gin[0m,0m]),whichprovidesmeasurementsy =[r ,θ ]T
+3: Calculateprior k k k
+consistingofranger andazimuthθ .Thenonlinearmea-
+p(Q k |y 1:k−1 )=IW(Q k |uˆ k|k−1 ,U k|k−1 )via(20). surementfunctionh k (·)isgivenby k
+4: Measurementupdate: (cid:19) k (cid:20) (cid:21)
+5: Initialization:q(0)(x k )= p(x k |y 1:k−1 ), r = x2+y2, θ =arctan y k .
+q(0)(m k )= p(m k |y 1:k−1 ), k k k k x k
+q(0)(Q k )= p(Q k |y 1:k−1 ) Four different simulated scenarios for maneuvering target
+6: foreachiterationn=1:I do
+max trackingareconsideredasfollows.
+7: Updateposteriorq(x ):Sample
+k
+xi k ∼iid q(n−1)(x k )fori =1,...,N,computethe 1) S1:AerialtargettrackingwithmaneuvertypeM 1 .
+gradients∇ xˆk|k B x (xˆ k|k ,P k|k )and 2) S2:VehicletargettrackingwithmaneuvertypeM 1 .
+∇ Pk|k B x (xˆ k|k ,P k|k )asin(34),andupdate 3) S3:ShiptargettrackingwithmaneuvertypeM 1 .
+variationalparametersxˆ k|k andP k|k via(35). 4) S4:AerialtargettrackingwithmaneuvertypeM 2 .
+8: Updateposteriorq(m ):updatevariational
+k The corresponding scenario parameters, including the
+parametersmˆ k|k and(cid:4) k|k via(39). initial state x , process noise level δ2, measurement noise
+9: Updateposteriorq(Q ):updatevariational 0
+k covarianceR,andsamplingperiodT aregiveninTableI.
+parametersuˆ k|k andU k|k via(44).
+The compared methods, including model adaptive fil-
+10: endfor
+ters and noise parameter adaptive filters, are described as
+follows.
+A. SimulationScenarios 1) Interacting multiple model unscented Kalman fil-
+The target state x =[x ,x˙ ,y ,y˙ ]T consists of target ter (IMM-UKF) [8]: This is a model adaptive fil-
+k k k k k
+position [x k ,y k ]T and target velocity [x˙ k ,y˙ k ]T. Given the ter that uses multiple process noise levels δ i 2 ∈
+initialtargetstatex ,thegroundtruthofthesimulatedtarget {0.1δ2,0.5δ2,1δ2,5δ2,10δ2} (five models in total)
+0
+trajectoryisgeneratedbysamplingfromtheGaussiandistri- forstatepredictionstep.Thenonlinearmeasurement
+butionrecursively,i.e.,x k ∼N(F k x k−1 ,Q k ).Thetransition updatestepiscarriedoutbyUKF.Themodetransi-
+matrixF isassumedtobenearlyconstantvelocitymodel tion probabilities from mode i to mode j are set to
+k
+orcoordinatedturnmodel,andtheprocessnoisecovariance P ij =0.8fori = j andP ij =0.05fori(cid:11)= j.
+Q isgivenby 2) VariationalBayesianadaptivecubatureinformation
+k
+(cid:17) (cid:18) filter (VBACIF) [20]: This is a VB-based adaptive
+T3/3 T2/2 nonlinear filter with unknown measurement noise
+Q =δ2I ⊗
+k k 2 T2/2 T covariance,wheretheintegrationofnonlinearrecur-
+siveBayesianestimationisapproximatedbyacuba-
+whereI is2×2identitymatrix,δ2 isprocessnoiselevel, tureintegrationrule.Therelevantparametersareset
+2 k
+andT isthesamplingperiod. to v =1,V =2R−1, tuning parameter τ =3, and
+0 0
+We consider two types of target maneuvers. The first variancedecreasingfactorβ =1−e−4.
+type, denoted as M , involves using the nearly constant 3) Variational Bayesian adaptive Kalman filter
+1
+velocity model to describe typical target trajectories. The with measurement conversion (VBAKF-CM):
+targetmaneuverisrepresentedbyvaryingtheprocessnoise VBAKF [16] is a VB-based adaptive linear filter
+level δ2 at different stages. The total number of simulated designed to handle both unknown process and
+k
+1 1
+B Q (uˆ k|k ,U k|k )= − 2 (uˆ k|k−1 +n k +2)E q(Qk) log|Q k |− 2 Tr(U k|k−1 E q(Qk) [Q − k 1])]
+(cid:3) (cid:4)
+1
+− 2 E q(xk),q(mk),q(Qk) (x k −m k )TQ − k 1(x k −m k ) −E q(Qk) [logq(Q k )]. (41)
+9184 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 9 ---
+TABLEI
+ScenarioParameters
+TABLEII TABLEIII
+ARMSEinPositionforSimulatedscenarios(m) SingleStepRunTimeforSimulatedscenarios(ms)
+measurement noise covariances. VBAKF-CM complete model set is available. The other three methods,
+extends VBAKF to nonlinear scenarios by VBACIF,VBAKF-CM,andSSVBAKF,allusevariational
+incorporating the unbiased converted measurement optimization. However, SSVBAKF directly optimizes the
+operator. In the simulation, the measurement noise jointnonlinearstateestimationandunknownprocessnoise
+covariance is assumed to be known. The initial covariance, which may contribute to its superior perfor-
+hyperparameters are set as u =7 and U =3Q , mancecomparedtoVBACIFandVBAKF-CM,wheread-
+0 0 0
+while the tuning parameter is τ =3, and variance justments are made indirectly to the measurement noise
+decreasingfactorisβ =1−e−4. covarianceandstatepredictcovariance,respectively.
+4) SSVBAKF:Thisisaprocessnoisecovarianceadap- Thecomputationalcostsofdifferentmethodsarecom-
+tive nonlinear filter that approximates the integra- pared in Table III, with VBAKF-CM showing the lowest
+tion of nonlinear recursive Bayesian estimation by computationalcost,whileSSVBAKFexhibitsthehighest.
+stochastic search VB. The initial hyperparameters The computational cost of IMM-UKF primarily depends
+are set as u =7 and U =3Q , while the tuning on the number of models, whereas the VB-based meth-
+0 0 0
+parameter is τ =3, the variance decreasing factor ods,includingVBACIF,VBAKF-CM,andSSVBAKF,are
+isβ =1−e−4,andthesamplingparticlenumberis influenced by the number of iterations. The VBACIF and
+N =1000. VBAKF-CMupdatethevariationalparametersanalytically,
+leading to faster results compared to the gradient-based
+For VBACIF, VBAKF-CM, and SSVBAKF, the iter-
+SSVBAKFalgorithm.SSVBAKFapproximatesthenonlin-
+ative loop will terminate if the difference between the
+ear posterior state at each iteration using sampling, which
+state estimate in two consecutive iterations is less than
+ismoretimeconsuming.Furthermore,itisevidentthatas
+agiventhreshold,specifically,||xˆ(n+1)−xˆ(n)||/||xˆ(n+1)||<
+k k k the target maneuverability decreases in different scenar-
+1e−7,orthemaximumnumberofiterationsI =1000
+max ios, the SSVBAKF algorithm demonstrates a significant
+isreached. decrease in runtime: S4 (101.78 ms) > S1 (41.59 ms)
+> S2 (31.01 ms) > S3 (3.48 ms). This is attributed to
+B. Results
+the fact that the calculation of ELBO in the execution of
+Toevaluatethetargettrackingperformance,100Monte SSVBAKFrequiresmoreiterationstoachieveconvergence
+Carlorunsarecarriedoutforeachscenariousingacomputer whenhandlingstrongertargetmaneuvers.Specifically,the
+equipped with an AMD Ryzen 76800H CPU operating at averagenumberofiterationsforSSVBAKFinScenarioS4,
+3.20 GHz. The tracking performance is evaluated using S1, S2, and S3 are 389, 159, 117, and 11, respectively. In
+the root mean square error (RMSE) and averaged RMSE contrast,theaveragenumberofVBACIFandVBAKF-CM
+(ARMSE) in target position. As shown in Fig. 1 and iterationsforallscenariosare4and5,respectively.Insum-
+Table II, SSVBAKF outperforms existing adaptive filters mary, SSVBAKF achieves improved estimation accuracy
+in all scenarios, exhibiting smaller RMSE and ARMSE but requires more computational time compared to other
+values. In Scenario S1, S2, and S3, all methods experi- methods.
+ence a decrease in estimation accuracy when the target The ELBO curves of SSVBAKF for different iter-
+maneuvers during the middle k ∈[100,200). In Scenario ations are shown in Fig. 2. At each iterative cycle,
+S4, SSVBAKF proves to be more robust compared to the the ELBO increases with the number of iterations in-
+other methods. The reason for this is that the accuracy of crease,indicatingthattheiterationprocedureinSSVBAKF
+theIMM-UKFestimationreliesontheassumptionthatthe converges.
+LANETAL.:VARIATIONALNONLINEARKALMANFILTERINGWITHUNKNOWNPROCESSNOISECOVARIANCE 9185
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 10 ---
+Fig.1. RMSEcomparisoninpositionforsimulatedscenarios.(a)S1. Fig.2. ELBOcurvesforsimulatedscenarios.(a)S1.(b)S2.(c)S3.
+(b)S2.(c)S3.(d)S4. (d)S4.
+9186 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 11 ---
+V. RESULTSFORREALDATA
+Next,weapplySSVBAKFtorealscenarios,including
+aerialtargettracking,vehicletargettracking,andshiptarget
+trackingwithdifferenttypesof2-Dsurveillanceradar.GPS
+providesthegroundtruthofthetargettrajectory.
+A. RealScenarios
+The target trajectory and its corresponding radar de-
+tection characteristics for different real scenarios are as
+follows.
+1) R1: Aerial target tracking with composite maneu-
+ver. The trajectory of the aerial target is shown
+in Fig. 3(a), consisting of six segments (maneuver
+modes): CV (segment A), left CT (segment B),
+CV (segment C), right CT (segment D), CA (seg-
+mentE),andfigure-eightflightpattern(segmentF).
+The target is detected by a surveillance radar with
+scanning period being T =10s, standard deviation
+of range error being 100 m, and standard deviation
+ofazimutherrorbeing3.5e-3rad.
+2) R2: Vehicle target tracking with round-trip maneu-
+ver. The trajectory of the vehicle target is shown
+in Fig. 3(b), which makes a round-trip maneuver.
+The target is detected by a surveillance radar with
+scanning period being T =2s, standard deviation
+ofrangeerrorbeing10m,andstandarddeviationof
+azimutherrorbeing2.5e-3rad.
+3) R3: Ship target tracking with coordinated turn ma-
+neuver. The trajectory of the ship target is shown
+in Fig. 3(c), which makes turning maneuvers with
+time-varying turning rates. The target is detected
+by a surveillance radar with scanning period being
+T =3s, standard deviation of range error being
+5 m, and standard deviation of azimuth error being
+1e-3rad.
+The parameter settings for all algorithms are the same
+asinsimulatedscenarios.
+B. Results
+Fig.4presentsthepositionRMSEcurveforthreedif-
+ferent real scenarios, and the results align with the simu-
+lationscenario,showcasingSSVBAKF’ssuperiorfiltering
+performance. In Fig. 4(a), we conduct a segment anal-
+Fig.3. Targettrajectoriesandradardetectionforrealscenarios.(a)R1.
+ysis of the RMSE for R1. The result indicates minimal (b)R2.(c)R3.
+differences in the RMSE curves among the methods in
+the nonmaneuvering and weakly maneuvering segments.
+However,SSVBAKFexhibitsamorenoticeableadvantage TABLEIV
+inthemaneuvering segments.TableVrecordstheRMSE ARMSEComparisonforRealScenarios
+comparison for the aerial target in various motion modes.
+The results reveal that all four methods perform well on
+filteringwhenthetargetmovesinastraightlineatapprox-
+imately uniform speed or when the turning maneuver is
+small(segmentsA,B,andC).However,whentheturning
+maneuverissignificant(segmentsDandF)orthetargetis
+LANETAL.:VARIATIONALNONLINEARKALMANFILTERINGWITHUNKNOWNPROCESSNOISECOVARIANCE 9187
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 12 ---
+TABLEVI
+SingleStepRunTimeforRealscenarios(ms)
+accelerated(segmentE),allmethods’filteringperformance
+decreases. Nonetheless, SSVBAKF and VBAKF-CM ex-
+hibitmorerobustnesstotargetmaneuversandachievebetter
+performancecomparedtoIMM-UKFandVBACIF.Thisis
+becausetheabilityofIMM-UKFtohandletargetmaneuvers
+relies on the complete and available “model dictionary,”
+whichcanbechallengingtodesigninpractice.Additionally,
+IMM-UKFfacesamodelswitchingdelayissue,leadingto
+significantestimationerrorsinthecaseofstrongmaneuvers.
+VBACIF’s ability to handle strong maneuvers is hindered
+byitsindirectoptimizationmechanism.
+Fig.4(b)and(c)presentstheRMSEcurvesforR2and
+R3,respectively.Unliketheaerialtargetscenario(R1),the
+targetsinR2andR3moveinamorehomogeneouspattern
+(straight lines or turns) and move more slowly (especially
+theshiptargetinR3).Therefore,allfourfilteringmethods
+canachievegoodfilteringresults.TheARMSEonfiltering
+isgiveninTableIV.TheresultsshowthatSSVBAKFhas
+achieved the best filtering results in all scenarios. When
+the model set of IMM-UKF cannot sufficiently capture
+the motion mode of the target, the filtering accuracy will
+deteriorate. In contrast, SSVBAKF estimates the process
+noisecovariancewithoutrelyingontheinitialvalueofpro-
+cessnoiselevelorthemodelset.Thisadaptiveestimation
+ensuresthatthefilteringgainstayswithinareasonablerange
+by changing the process noise covariance when the target
+undergoesmaneuvering.
+Thecomputationalcostcomparisonofdifferentrealsce-
+nariosispresentedinTableVI,indicatingthatVBAKF-CM
+has the lowest computational cost, while SSVBAKF has
+the highest computational cost. For VBACIF, the average
+numberofiterationsinScenariosR1,R2,andR3are7,3,
+and5,respectively.ForVBAKF-CM,theaveragenumber
+of iterations in Scenarios R1, R2, and R3 are 12, 3, and
+6, respectively. As for SSVBAKF, the average number of
+iterations in Scenarios R1, R2, and R3 are 750, 6, and
+Fig.4. RMSEcomparisoninpositionforrealscenarios.(a)R1.(b)R2. 600,respectively.Notably,theaveragenumberofiterations
+(c)R3. for Scenario R2 is significantly lower than the other two
+scenarios,primarilyduetotherelativelyweakmaneuvering
+of the vehicle target, allowing the algorithm to converge
+quickly.
+TABLEV
+SegmentARMSEComparisonforScenarioR1
+VI. CONCLUSION
+Inthisarticle,wehaveproposedanoptimization-based
+nonlinear adaptive Kalman filtering approach to the prob-
+lem of maneuvering target tracking, by encapsulating the
+nonlinear state estimation with uncertain process noise
+covariance into a variational inference problem. To deal
+with the problems of nonlinearity and the nonconjugate
+prior encountered by the mean-field variational inference,
+9188 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 13 ---
+thestochasticsearchvariationalinferencewithanauxiliary [20] P.Dong,Z.Jing,H.Leung,andK.Shen,“VariationalBayesianadap-
+latent variable is adopted to offer a flexible, accurate, and tivecubatureinformationfilterbasedonWishartdistribution,”IEEE
+effective approximation of the joint posterior distribution. Trans.Autom.Control,vol.62,no.11,pp.6051–6057,Nov.2017.
+[21] S. Sarkka and J. Hartikainen, “Non-linear noise adaptive Kalman
+Theproposedmethoditerativelyestimatestheprocessnoise
+filteringviavariationalBayes,”inProc.IEEEInt.WorkshopMach.
+covarianceandthetargetstate.Thesimulatedandrealex-
+Learn.SignalProcess.,2013,pp.1–6.
+perimentsdemonstratedthattheproposedmethodachieved [22] M.D.Hoffman,D.M.Blei,C.Wang,andJ.Paisley,“Stochastic
+highaccuracyandoutstandingrobustnessindifferentsce- variationalinference,”J.Mach.Learn.Res.,vol.14,pp.1303–1347,
+narios. 2013.
+[23] T. Salimans, D. Kingma, and M. Welling, “Markov chain Monte
+Carloandvariationalinference:Bridgingthegap,”inProc.Int.Conf.
+REFERENCES
+Mach.Learn.,2015,pp.1218–1226.
+[1] X.-R.LiandV.P.Jilkov,“Surveyofmaneuveringtargettracking.Part [24] C.Naesseth,S.Linderman,R.Ranganath,andD.Blei,“Variational
+I:Dynamicmodels,”IEEETrans.Aerosp.Electron.Syst.,vol.39, sequential Monte Carlo,” in Proc. Int. Conf. Artif. Intell. Statist.,
+no.4,pp.1333–1364,Oct.2003. 2018,pp.968–977.
+[2] F.GustafssonandG.Hendeby,“Somerelationsbetweenextended [25] J. Paisley, D. M. Blei, and M. I. Jordan, “Variational Bayesian
+andunscentedKalmanfilters,”IEEETrans.SignalProcess.,vol.60, inferencewithstochasticsearch,”inProc.29thInt.Conf.Int.Conf.
+no.2,pp.545–555,Feb.2012. Mach.Learn.,2012,pp.1363–1370.
+[3] S.J.JulierandJ.K.Uhlmann,“Unscentedfilteringandnonlinear [26] D.P.KingmaandJ.Ba,“Adam:Amethodforstochasticoptimiza-
+estimation,”Proc.IEEE,vol.92,no.3,pp.401–422,Mar.2004. tion,”inProc.Int.Conf.Learn.Representations,2015,pp.1–15.
+[4] I. Arasaratnam and S. Haykin, “Cubature Kalman filters,” IEEE [27] A.K.Lew,M.Cusumano-Towner,andV.K.Mansinghka,“Recur-
+Trans.Autom.Control,vol.54,no.6,pp.1254–1269,Jun.2009. siveMonteCarloandvariationalinferencewithauxiliaryvariables,”
+[5] K.ItoandK.Xiong,“Gaussianfiltersfornonlinearfilteringprob- inProc.Conf.UncertaintyArtif.Intell.,2022,pp.1096–1106.
+lems,” IEEE Trans. Autom. Control, vol. 45, no. 5, pp.910–927, [28] R.Ranganath,D.Tran,andD.Blei,“Hierarchicalvariationalmod-
+May2000. els,”inProc.Int.Conf.Mach.Learn.,2016,pp.324–333.
+[6] M.S.Arulampalam,S.Maskell,N.Gordon,andT.Clapp,“Atu- [29] L.Maaløe,C.K.Sønderby,S.K.Sønderby,andO.Winther,“Auxil-
+torialonparticlefiltersforonlinenonlinear/non-GaussianBayesian iarydeepgenerativemodels,”inProc.Int.Conf.Mach.Learn.,2016,
+tracking,”IEEETrans.SignalProcess.,vol.50,no.2,pp.174–188, pp.1445–1453.
+Feb.2002. [30] C. Nemeth, P. Fearnhead, and L. Mihaylova, “Sequential Monte
+[7] P.MookerjeeandF.Reifler,“Reducedstateestimatorforsystems Carlomethodsforstateandparameterestimationinabruptlychang-
+withparametricinputs,”IEEETrans.Aerosp.Electron.Syst.,vol.40, ing environments,” IEEE Trans. Signal Process., vol. 62, no. 5,
+no.2,pp.446–461,Apr.2004. pp.1245–1255,Mar.2014.
+[8] X.R.LiandV.P.Jilkov,“Surveyofmaneuveringtargettracking.Part
+V:Multiple-modelmethods,”IEEETrans.Aerosp.Electron.Syst.,
+vol.41,no.4,pp.1255–1321,Oct.2005.
+[9] D. M. Blei, A. Kucukelbir, and J. D. McAuliffe, “Variational in-
+ference:Areviewforstatisticians,”J.Amer.Stat.Assoc.,vol.112,
+no.518,pp.859–877,2017.
+[10] V.SmidlandA.Quinn,“VariationalBayesianfiltering,”IEEETrans.
+SignalProcess.,vol.56,no.10,pp.5020–5030,Oct.2008. HuaLanreceivedtheB.Sc.,M.Sc.,andPh.D.
+[11] R.Frigola,Y.Chen,andC.E.Rasmussen,“VariationalGaussian degreesincontroltheoryandcontrolengineer-
+process state-space models,” in Proc. Int. Conf. Adv. Neural Inf. ingfromtheSchoolofAutomation,Northwest-
+ern Polytechnical University, Xi’an, China, in
+Process.Syst.,2014,vol.4,pp.3680–3688.
+2009,2012,and2014,respectively.
+[12] S.GultekinandJ.Paisley,“NonlinearKalmanfilteringwithdiver-
+From2014to2018,hewasaLecturerwith
+genceminimization,”IEEETrans.SignalProcess.,vol.65,no.23,
+Northwestern Polytechnical University, where
+pp.6319–6331,Dec.2017. heiscurrentlyanAssociateProfessor.Hisre-
+[13] Y.Hu,X.Wang,H.Lan,Z.Wang,andQ.Pan,“Aniterativenonlinear searchinterestsincludestateestimation,target
+filter using variational Bayesian optimization,” Sensors, vol. 18, tracking,andinformationfusion.
+no.12,2018,Art.no.4222.
+[14] M.E.E.Khan,P.Baqué,F.Fleuret,andP.Fua,“Kullback-Leibler
+proximalvariationalinference,”inProc.Int.Conf.Adv.NeuralInf.
+Process.Syst.,vol.28,2015,pp.3402–3410.
+[15] S.SärkkäandA.Nummenmaa,“RecursivenoiseadaptiveKalman
+filteringbyvariationalBayesianapproximations,”IEEETrans.Au-
+tom.Control,vol.54,no.3,pp.596–600,Mar.2009.
+[16] Y. Huang, Y. Zhang, Z. Wu, N. Li, and J. Chambers, “A novel
+adaptive Kalman filter with inaccurate process and measurement
+noise covariance matrices,” IEEE Trans. Autom. Control, vol. 63,
+no.2,pp.594–601,Feb.2018.
+[17] T.Ardeshiri,E.Özkan,U.Orguner,andF.Gustafsson,“Approxi-
+JinjieHureceivedtheB.Sc.degreeinautoma-
+mateBayesiansmoothingwithunknownprocessandmeasurement
+tionfromChang’anUniversity,Xi’an,China,in
+noise covariances,” IEEE Signal Process. Lett., vol. 22, no. 12,
+2021.HeiscurrentlyworkingtowardtheM.Sc.
+pp.2450–2454,Dec.2015.
+degreeinelectronicandinformationengineering
+[18] J.Ma,H.Lan,Z.Wang,X.Wang,Q.Pan,andB.Moran,“Improved with the School of Automation, Northwestern
+adaptiveKalmanfilterwithunknownprocessnoisecovariance,”in PolytechnicalUniversity,Xi’an.
+Proc.21stInt.Conf.Inf.Fusion,2018,pp.1–5. Hisresearchinterestsincludetargettracking,
+[19] I.S.Mbalawata,S.Sarkka,M.Vihola,andH.Haario,“Adaptive variationalBayes,andinformationfusion.
+metropolis algorithm using variational Bayesian adaptive Kalman
+filter,”Comput.Statist.DataAnal.,vol.83,pp.101–115,2015.
+LANETAL.:VARIATIONALNONLINEARKALMANFILTERINGWITHUNKNOWNPROCESSNOISECOVARIANCE 9189
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 14 ---
+ZengfuWangreceivedtheB.Sc.degreeinap- QiangChengreceivedtheB.Sc.degreeincon-
+pliedmathematics,theM.Sc.degreeincontrol troltheoryandcontrolengineeringfromNan-
+theory and control engineering, and the Ph.D. jing University, Nanjing, China, in 2009, and
+degreeincontrolscienceandengineeringfrom thePh.D.degreeincontroltheoryandcontrol
+Northwestern Polytechnical University, Xi’an, engineeringfromTsinghuaUniversity,Beijing,
+China,in2005,2008,and2013,respectively. China,in2015.
+From2014to2017,hewasaLecturerwith He is currently a Senior Engineer with the
+Northwestern Polytechnical University, where NanjingResearchInstituteofElectronicsTech-
+he is currently an Associate Professor. From nology,Nanjing.Hisresearchinterestsinclude
+2014to2015,hewasaPostdoctoralResearch radartargettrackingandrecognition,andinfor-
+FellowwiththeDepartmentofElectronicEngi- mationfusion.
+neering,CityUniversityofHongKong,HongKong.From2019to2020,he
+wasaVisitingResearcherwiththeFacultyofElectricalEngineering,Math-
+ematics and Computer Science, Delft University of Technology, Delft,
+The Netherlands. His research interests include path planning, discrete
+optimization,andinformationfusion.
+9190 IEEETRANSACTIONSONAEROSPACEANDELECTRONICSYSTEMS VOL.59,NO.6 DECEMBER2023
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:55:16 UTC from IEEE Xplore. Restrictions apply.

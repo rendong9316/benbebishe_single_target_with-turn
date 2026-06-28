@@ -1,0 +1,1410 @@
+
+--- Page 1 ---
+Hindawi Publishing Corporation
+Mathematical Problems in Engineering
+Volume 2014, Article ID 649276, 10 pages
+http://dx.doi.org/10.1155/2014/649276
+Research Article
+Models and Algorithms for Tracking Target with
+Coordinated Turn Motion
+XianghuiYuan,FengLian,andChongzhaoHan
+MinistryofEducationKeyLaboratoryforIntelligentNetworksandNetworkSecurity(MOEKLINNS),
+SchoolofElectronicsandInformationEngineering,Xi’anJiaotongUniversity,Xi’an710049,China
+CorrespondenceshouldbeaddressedtoFengLian;lianfeng1981@mail.xjtu.edu.cn
+Received23July2013;Accepted15December2013;Published12January2014
+AcademicEditor:ShuliSun
+Copyright©2014XianghuiYuanetal.ThisisanopenaccessarticledistributedundertheCreativeCommonsAttributionLicense,
+whichpermitsunrestricteduse,distribution,andreproductioninanymedium,providedtheoriginalworkisproperlycited.
+Tracking target withcoordinated turn(CT)motionis highly dependent onthe models and algorithms. First,thewidely used
+modelsarecomparedinthispaper—coordinatedturn(CT)modelwithknownturnrate,augmentedcoordinatedturn(ACT)model
+withCartesianvelocity,ACTmodelwithpolarvelocity,CTmodelusingakinematicconstraint,andmaneuvercenteredcircular
+motionmodel.Then,inthesinglemodeltrackingframework,thetrackingalgorithmsforthelastfourmodelsarecomparedand
+thesuggestionsonthechoiceofmodelsfordifferentpracticaltargettrackingproblemsaregiven.Finally,inthemultiplemodels
+(MM)framework,thealgorithmbasedonexpectationmaximization(EM)algorithmisderived,includingboththebatchform
+andtherecursiveform.Comparedwiththewidelyusedinteractingmultiplemodel(IMM)algorithm,theEMalgorithmshowsits
+effectiveness.
+1.Introduction velocityvectorand𝐴isthetargetaccelerationvector.Ifthe
+dynamic model incorporates the constraint directly, it will
+Theproblemoftrackingasingletargetwithcoordinatedturn becomeahighlynonlinearone.Toavoidthisnonlinearity,the
+(CT)motionisconsidered.Themotionofacivilaircraftcan kinematic constraint was incorporated into a pseudomea-
+usuallybemodeledasmovingbyconstantspeedinstraight surementmodel[6–8].
+lines and circle segments. The former is known as constant A maneuver-centered model is introduced in [9]. The
+velocity(CV)modelandthelatteriscoordinatedturnmodel. statecomponentsare[𝑟,𝜃,𝜔]󸀠 .Themodel’sstateequationhas
+Intrackingapplications,onlythepositionpartofthestatecan alinearform,butitsmeasurementequationispseudolinear
+be measured by the sensor and the turn rate 𝜔 is often un- becausethenoisecovarianceisactuallystatedependent[10].
+known.Sothemeasurementdatacanbeseenastheincom- The center of the turn should be accurately determined,
+pletedata.Thisisaresource-constrainedproblemfortrack- whichisinherentlyanonlinearproblem.
+ingtargetwithcoordinatedturnmotion. Target dynamic models and tracking algorithms have
+CTmodelishighlydependentonthechoiceofstatecom- intimateties[1].Inthesinglemodeltrackingframework,the
+ponents [1]. The turn rate 𝜔 can be augmented in the CT trackingalgorithmsareinterpretedandcompared.
+model,calledACTmodel.TherearetwotypesofACTmod- Theinteractingmultiplemodel(IMM)approachhasbeen
+els:ACTmodelwithCartesianvelocityandACTmodelwith generally considered to be the mainstream approach to
+polar velocity. The state vectors are [𝑥,𝑦,𝑥̇,𝑦,̇ 𝜔]󸀠 and maneuveringtargettracking.Itutilizesabankof𝑁Kalman
+[𝑥,𝑦,V,𝜙,𝜔]󸀠
+,respectively.Thetwoarebothnonlinearmod- filters,eachdesignedtomodeladifferentmaneuver[11].IMM
+els and have been compared in [2, 3] based on EKF. For algorithmisasuboptimalalgorithmbasedontheminimum
+unscentedKalmanfilter(UKF)isaveryefficienttoolfornon- meansquareerror(MMSE)criterion.UndertheMMSEcrite-
+linear estimation [4, 5], here the two models are compared rion,togettheoptimalestimationofthetargetstate,thecom-
+basedonUKF. putationalloadgrowsexponentiallywhenthemeasurements
+WhenthetargetwithCTmotionhasaconstantspeed,it areincreasing.Inrecentyears,trackingtargetbasedonmaxi-
+satisfiesakinematicconstraint:𝑉⋅𝐴=0,where𝑉isthetarget
+mum a posteriori (MAP) criterion has received a lot of
+
+--- Page 2 ---
+2 MathematicalProblemsinEngineering
+interest [12–17]. Expectation maximization (EM) algorithm Assumeonlypositioncouldbemeasured,where
+isthestateestimationapproachbasedonMAPcriterion.Us
+1 0 0 0
+ingEMalgorithm,thecomputationalloadgrowslinearlydur- 𝐻 =[ ]
+ingperiterationandtheoptimalestimationbasedonMAP CT 0 0 1 0
+(5)
+criterioncanbeachievedfinally.
+𝐸[𝑒 ]=0, 𝐸[𝑒 𝑒󸀠]=𝑅𝛿 .
+The existing EM algorithm to track maneuvering target 𝑘 𝑘 𝑙 𝑘𝑙
+can be classified into two categories: one formulates the
+Thismodelassumesthattheturnrateisknownorcould
+maneuver as the unknown input [12–14] and the other for-
+be estimated.Whentherangeratemeasurementsareavail-
+mulatesthemaneuverasthesystem’sprocessnoise[15].Aim-
+able,theturnratecouldbeestimatedbyusingrangeratemea-
+ingattheproblemtotrackatargetwithCTmaneuver,anEM
+surements[18,19].Thetrackingperformancewillbedeteri-
+algorithm is presented. The maneuver is formulated by the
+oratedwhentheassumedturnrateisfarawayfromthetrue
+turnrate.First,theturnratesequenceisestimatedusingthe
+one.Thismodelisusuallyusedasoneofthemodelsinamul-
+EMalgorithm.Then,withtheestimatedturnratesequence,
+tiplemodelsframework.
+thetargetstatesequenceisestimatedaccurately.
+The rest of this paper is organized as follows. Section2
+presentsalltheCTmodels’stateequationsandmeasurement 2.2. ACT Model with Cartesian Velocity. In this model, the
+equations.Thetrackingalgorithmsbasedonsinglemodelare statevectorischosentobe 𝑋=[𝑥,𝑦,𝑥̇,𝑦,̇ 𝜔]󸀠 ;thestatespace
+interpretedinSection3;thesimulationsarealsopresented.In equationcanbewrittenas
+Section4,thebatchandrecursiveEMalgorithmsarederived
+and compared with the IMM algorithm in simulation. 𝑋 𝑘+1 =𝑓 ACT1 (𝑋 𝑘 )+𝐺 ACT1 𝑤 𝑘 , (6)
+Section5providesthepaper’sconclusions.
+where
+𝑥̇ 𝑦̇
+2.DynamicModelsfor CTMotion
+[
+𝑥+
+𝜔
+sin(𝜔𝑇)−
+𝜔
+(1−cos(𝜔𝑇))
+]
+[ ]
+[ ]
+Amaneuveringtargetcanbemodeledby [ 𝑥̇ 𝑦̇ ]
+[𝑦+ (1−cos(𝜔𝑇))+ (sin(𝜔𝑇))]
+𝑋 𝑘+1 =𝑓 𝑘 (𝑋 𝑘 )+𝑤 𝑘 , (1) 𝑓 ACT1 (𝑋)= [ [ [ [ 𝜔 𝑥̇cos(𝜔𝑇)−𝑦̇sin 𝜔 (𝜔𝑇) ] ] ] ] , (7)
+𝑧 =ℎ (𝑋 )+𝑒 , [ ]
+𝑘 𝑘 𝑘 𝑘 [ ]
+[ ] where 𝑋 𝑘 and 𝑧 𝑘 are target state and observation, respec- [ [ 𝑥̇sin(𝜔𝑇)+𝑦̇cos(𝜔𝑇) ] ]
+t m iv e e a l s y u , r a e t m d e is n c t re n t o e is t e im s e eq 𝑡 u 𝑘; en 𝑤 c 𝑘 es a , n r d es 𝑒 p 𝑘 ec a t r i e ve p ly ro ; c 𝑓 e 𝑘 ss a n n o d is ℎ e 𝑘 a a n r d e [ 𝜔 ]
+vector-valuedfunctions. 𝑇2 󸀠
+0 𝑇 0 0
+[ [ 2 ] ]
+2.1.CTModelwithKnownTurnRate. Thecoordinatedturn 𝐺 =[ 𝑇2 ] , (8)
+motioncanbedescribedbythefollowingequation:
+ACT1 [ 0 0 𝑇 0]
+2
+[ 0 0 0 0 1]
+𝑋 𝑘+1 =𝐹(𝜔 𝑘 )𝑋 𝑘 +𝑤 𝑘 . (2)
+Themeasurementequationis: 𝑤=[𝑤 𝑥 𝑤 𝑦 𝑤 𝜔 ] 󸀠 , (9)
+𝑧 𝑘 =𝐻 CT 𝑋 𝑘 +𝑒 𝑘 . (3) 𝐸[𝑤 𝑘 ]=0, 𝐸[𝑤 𝑘 𝑤 𝑙 󸀠]=𝑄 ACT1 𝛿 𝑘𝑙 . (10)
+Thecomponentsofstateare𝑋=[𝑥 𝑥̇ 𝑦 𝑦]̇ 󸀠 . 𝜔 𝑘 stands Assume onlypositioncould be measured, the measure-
+fortheturnrateintime 𝑘. mentequationcanbewrittenas
+Where
+1
+sin(𝜔
+𝑘
+𝑇)
+0 −
+1−cos(𝜔
+𝑘
+𝑇) 𝑧 𝑘 =𝐻 ACT1 𝑋 𝑘 +𝑒 𝑘 , (11)
+[ ] [ [ 𝜔 𝑘 𝜔 𝑘 ] ] where
+𝐹(𝜔 )= [ [ [ [ 0 cos(𝜔 𝑘 𝑇) 0 −sin(𝜔 𝑘 𝑇) ] ] ] ] 𝐻 ACT1 =[ 1 0 0 1 0 0 0 0 0 0 ], (12)
+𝑘 [ [ [ [ [ 0 1−co 𝜔 s 𝑘 (𝜔 𝑘 𝑇) 1 sin( 𝜔 𝜔 𝑘 𝑘 𝑇) ] ] ] ] ] (4) 𝐸[𝑒 𝑘 ]=0, 𝐸[𝑒 𝑘 𝑒 𝑙 󸀠]=𝑅𝛿 𝑘𝑙 . (13)
+[
+0 sin(𝜔
+𝑘
+𝑇) 0 cos(𝜔
+𝑘
+𝑇)
+] 2.3.ACTModelwithPolarVelocity. Thismodel’sstatevector
+is𝑋=[𝑥,𝑦,V,𝜙,𝜔]󸀠
+,andthedynamicstateequationisgiven 𝑤=[𝑤 𝑤 ] 󸀠
+𝑥 𝑦 by
+𝐸[𝑤 𝑘 ]=0, 𝐸[𝑤 𝑘 𝑤 𝑙 󸀠]=𝑄 CT 𝛿 𝑘𝑙 . 𝑋 𝑘+1 =𝑓 ACT2 (𝑋 𝑘 )+𝐺 ACT2 𝑤 𝑘 , (14)
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See the
+Terms
+and Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules of
+use; OA
+articles are governed
+by
+the
+applicable
+Creative
+Commons
+License
+
+--- Page 3 ---
+MathematicalProblemsinEngineering 3
+where Thepseudomeasurementis
+2V 𝜔𝑇 𝜔𝑇
+[
+𝑥+(
+𝜔
+)sin(
+2
+)cos(𝜙+
+2
+)
+]
+𝑉
+𝑘|𝑘 ⋅𝐴 +𝜇 =0,
+[ ] 𝑆 𝑘 𝑘 (21)
+[ [ 2V 𝜔𝑇 𝜔𝑇 ] ] 𝑘|𝑘
+[𝑦+( )sin( )sin(𝜙+ )]
+𝑓 ACT2 (𝑋)=[ [
+[ [
+𝜔 2
+V
+2 ] ]
+] ]
+whe
+𝑆
+r
+𝑘
+e
+|𝑘
+𝑉
+i
+𝑘
+s
+|𝑘
+th
+=
+e
+[
+fi
+𝑥
+l
+𝑘 ̇
+te
+|𝑘
+red
+𝑦 𝑘 ̇
+s
+|𝑘
+p
+]
+e
+󸀠
+e
+a
+d
+n
+a
+d
+t
+𝐴
+tim
+𝑘 =
+e𝑘
+[𝑥
+:
+𝑘 ̈ 𝑦 𝑘 ̈ ]󸀠 .
+[ ]
+[ ]
+𝜙+𝜔𝑇
+𝑆 =√𝑥̇2 +𝑦2̇ , (22)
+[ 𝜔 ] 𝑘|𝑘 𝑘|𝑘 𝑘|𝑘
+(15)
+0 0 𝑇2 0 0 󸀠 𝜇 𝑘 ∼𝑁(0,𝑅 𝑘 𝜇), (23)
+𝐺
+ACT2
+=[
+0 0 0
+𝑇2
+𝑇2
+]
+𝑅𝜇 =𝑟 (𝛿)𝑘+𝑟 , 0≤𝛿<1, (24)
+[ 2 ] 𝑘 1 0
+𝑤=[𝑤 𝑤 ]󸀠 where𝑟 1ischosentobelargeforinitializationand𝑟 0ischosen
+V 𝜔 forsteady-stateconditions.
+𝐸[𝑤 ]=0, 𝐸[𝑤 𝑤󸀠]=𝑄 𝛿 .
+𝑘 𝑘 𝑙 ACT2 𝑘𝑙
+2.5.Maneuver-CenteredCTModel. Thismodel’sstatevector
+Howeverthemeasurementequationisthesameas(11)to(13). isgivenby𝑋=[𝑟 𝜃 𝜔]󸀠 .Theprocessstatespaceequationis
+2.4.KinematicConstraintModel. Foraconstantspeedtarget, 𝑋 𝑘+1 =Φ𝑋 𝑘 +Γ𝑤 𝑘 , (25)
+theaccelerationvectorisorthogonaltothevelocityvector:
+where
+𝐶(𝑋)=𝑉⋅𝐴=0, (16) 1 0 0
+where 𝑉isthetargetvelocityvectorand𝐴isthetargetaccel- Φ=[0 1 𝑇]
+erationvector. [ 0 0 1 ]
+This kinematic constraint can be used as a pseudom-
+easurement. The state vector is chosen to be 𝑋 = 1 0
+[𝑥 𝑥̇ 𝑥̈ 𝑦 𝑦̇ 𝑦]̈ 󸀠 . So the dynamic model is the constant Γ= [ [0 𝑇] ]
+(26) 2
+acceleration(CA)model,givenby
+[0 1]
+𝑋 𝑘+1 =𝐹𝑋 𝑘 +𝐺𝑤 𝑘 , (17)
+𝑤=[𝑤 𝑤 ]󸀠
+where 𝑟 𝜔
+[ 1 𝑇
+𝑇2
+0 0 0 ] 𝐸[𝑤 𝑘 ]=0, 𝐸[𝑤 𝑘 𝑤 𝑙 󸀠]=𝑄 𝑚 𝛿 𝑘𝑙 .
+[ 2 ]
+[ [
+[
+0
+0
+1
+0
+𝑇
+1
+0
+0
+0
+0
+0
+0
+] ]
+]
+AssumethecenteroftheCTmotionis(𝑥̂
+𝑐
+,𝑦̂
+𝑐
+).Thetrans-
+𝐹=[ ] formation between Cartesian coordinates and maneuver-
+[
+[
+𝑇2]
+] centeredcoordinatesisgivenby
+[0 0 0 1 𝑇 ]
+[ 2 ]
+[ ]
+0 0 0 0 1 𝑇 𝑟=√(𝑥−𝑥̂ )2+(𝑦−𝑦̂)2
+𝑐 𝑐
+[0 0 0 0 0 1 ]
+(27)
+(18) 𝑦−𝑦̂
+𝑇2 󸀠 𝜃=tan −1( 𝑥−𝑥̂ 𝑐).
+[ 𝑇 1 0 0 0] 𝑐
+𝐺=[ 2 ]
+[ 𝑇2 ] Sothemeasurementequationisgivenby
+0 0 0 𝑇 1
+[ 2 ] 𝑧 𝑘 =𝐻𝑚𝑋 𝑘 +𝑒 𝑘 , (28)
+𝑤=[𝑤 𝑤 ] 󸀠
+𝑥 𝑦 where
+𝐸[𝑤 ]=0, 𝐸[𝑤 𝑤󸀠]=𝑄 𝛿 . 1 0 0 𝑘 𝑘 𝑙 CA 𝑘𝑙 𝐻𝑚 =[ ]
+0 1 0
+Themeasurementequationisgivenby (29)
+𝑧 𝑘 =𝐻𝑥 𝑘 +𝑒 𝑘 , (19) 𝐸[𝑒 𝑘 𝑒 𝑙 󸀠]=𝑅𝑚 =𝐽 𝑟𝜃 𝑅𝐽 𝑟 󸀠 𝜃 .
+where 𝐽 𝑟𝜃istheJacobianmatrixbasedon(27),whichleadsto
+1 0 0 0 0 0
+𝐻=[ ]
+0 0 0 1 0 0 cos𝜃 sin𝜃
+𝐸[𝑒 ]=0, 𝐸[𝑒 𝑒󸀠]=𝑅𝛿 . (20) 𝐽 𝑟𝜃 =[ −sin 𝜃 cos 𝜃 ]. (30)
+𝑘 𝑘 𝑙 𝑘𝑙 [ 𝑟 𝑟]
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of
+Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on Wiley
+Online
+Library
+for
+rules
+of
+use;
+OA
+articles
+are
+governed
+by
+the
+applicable
+Creative
+Commons
+License
+
+--- Page 4 ---
+4 MathematicalProblemsinEngineering
+3.TrackingAlgorithms in =𝑃 𝐻󸀠𝑆−1𝑋̂
+𝑘|𝑘−1 𝑘 𝑘|𝑘
+aSingleModelFramework =𝑋̂ +𝐾 (𝑧 −𝑧 ) 𝑃
+𝑘|𝑘−1 𝑘 𝑘 𝑘|𝑘−1 𝑘|𝑘
+3.1. UKF Filter with ACT Models. If the turn rate is aug-
+=𝑃 −𝐾 𝑆 𝐾󸀠.
+mented to the state vector, it will become a nonlinear pro- 𝑘|𝑘−1 𝑘 𝑘 𝑘
+blem. The extended Kalman filter (EKF) has been used to (34)
+track this kind of motion. Since unscented Kalman filter
+(UKF)isverysuitablefornonlinearestimation[4,5],herethe
+Forthecaseswherethemeasurementequationisalsonon-
+UKFalgorithmisintroduced.
+linear, the measurement update can be referred to [10] for
+details.
+(i)CalculatetheWeightsofSigmaPoints
+𝜆 3.2.KinematicConstraintTrackingFilter. TheKalmanfilter- 𝑊𝑚 = 𝑊𝑐 0 (𝑛+𝜆) 0 ing equations for processing this kinematic constraint as a
+pseudomeasurementaregivenbelow,wherethefilteredstate
+𝜆 estimateanderrorcovarianceaftertheconstrainthavebeen
+= (𝑛+𝜆) +(1−𝛼2+𝛽)𝑊 𝑖 𝑚 (31) appliedaredenotedby𝑋 𝑘 𝐶 |𝑘 and𝑃 𝑘 𝐶 |𝑘 ,respectively[8].
+0.5
+=𝑊𝑐 = , 𝑖=1,2,...2𝑛, (i)TimeUpdate
+𝑖 (𝑛+𝜆)
+𝑋̂ =𝐹𝑋̂𝐶
+𝑘|𝑘−1 𝑘−1|𝑘−1
+where 𝑛 is the dimension of the state vector. 𝜆 = (35)
+𝛼2(𝑛 + 𝜅) − 𝑛 is a scaling parameter. 𝛼 determines 𝑃 𝑘|𝑘−1 =𝐹𝑃 𝑘 𝐶 −1|𝑘−1 𝐹󸀠+𝐺𝑄 𝑘−1 𝐺󸀠.
+the sigma points around 𝑥 and is usually set to a small
+positive value (e.g., 1𝑒 − 3). 𝜅 is a secondary scaling
+parameter which is usually set to 0, and 𝛽 = 2
+(ii) Measurement Update. The measurement update is the
+isoptimalforGaussdistributions.Wherethe (√(𝑛+𝜆)𝑃 𝑥 ) 𝑖 is sameas(34).
+the 𝑖throwofthematrixsquareroot.
+(iii)ConstraintUpdate
+(ii)CalculatetheSigmaPoints
+𝐾𝐶 =𝑃 𝐶𝑇[𝐶 𝑃 𝐶󸀠 +𝑅𝜇] −1 𝑋̂𝐶
+𝜉0 =𝑋̂ 𝑘 𝑘|𝑘 𝑘 𝑘 𝑘|𝑘 𝑘 𝑘 𝑘|𝑘
+𝑘−1|𝑘−1 𝑘−1|𝑘−1
+=[𝐼−𝐾𝐶𝐶 ]𝑋̂ 𝑃𝐶
+(36)
+𝜉(𝑖) =𝑋̂ +(√(𝑛+𝜆)𝑃 ) 𝑖=1,2,...,𝑛 𝑘 𝑘 𝑘|𝑘 𝑘|𝑘
+𝑘−1|𝑘−1 𝑘−1|𝑘−1 𝑥
+𝑖 (32) =[𝐼−𝐾 𝑘 𝐶𝐶 𝑘 ]𝑃 𝑘|𝑘 ,
+𝜉(𝑖) =𝑋̂ −(√(𝑛+𝜆)𝑃 )
+𝑘−1|𝑘−1 𝑘−1|𝑘−1 𝑥
+𝑖 where
+𝑖=𝑛+1, 𝑛+2,...,2𝑛.
+1
+𝐶 = [0 0 𝑥̂̇ 0 0 𝑦̂̇ ].
+𝑘 𝑆 𝑘|𝑘 𝑘|𝑘 (37)
+𝑘|𝑘
+(iii)TimeUpdate
+3.3.Maneuver-CenteredTrackingFilter
+𝜉(𝑖) =𝑓 (𝜉(𝑖) ), 𝑖=0,1,...2𝑛𝑋̂
+𝑘 𝑘 𝑘−1|𝑘−1 𝑘|𝑘−1
+(i)EstimatingCenterofManeuver.Thecenterofthemaneuver
+2𝑛 shouldbeestimatedfromthemeasurements.Itcanbeesti-
+=∑𝑊𝑚𝜉(𝑖)𝑃
+𝑖 𝑘 𝑘|𝑘−1 mated through least square method which requires an iter-
+(33)
+𝑖=0 ative search procedure. The following simple geometrically
+2𝑛 orientedprocedureofestimatingthecenterwasproposedin
+=∑𝑊𝑐(𝜉(𝑖)−𝑋̂ )(𝜉(𝑖)−𝑋̂ ) 󸀠 +𝐺𝑄 𝐺󸀠. [9].Themainideaisasfollows:iftwopointsareonacircle
+𝑖 𝑘 𝑘|𝑘−1 𝑘 𝑘|𝑘−1 𝑘−1
+𝑖=0 thentheperpendicularbisectorofthechordbetweenthose
+pointswillpassthroughthecenterofthecircle.Theslope (𝑚)
+(iv) Measurement Update. Because we assume the measure- and 𝑦intercept (𝑏) oftheperpendicularbisectorisgivenby
+mentequationislinear,thefollowingisjustthesameasthe
+traditionalKalmanfilter: (𝑥 −𝑥 ) 𝑚= 1 2
+(𝑦 −𝑦 )
+𝑧̂ =𝐻𝑋̂ 𝑆 2 1 (38)
+𝑘|𝑘−1 𝑘|𝑘−1 𝑘
+(𝑦 +𝑦 ) (𝑥 +𝑥 )
+=𝐻𝑃 𝐻󸀠+𝑅 𝐾 𝑏= 1 2 −𝑚 1 2 ,
+𝑘|𝑘−1 𝑘 𝑘 2 2
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by Harbin
+Institute
+Of
+Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules
+of
+use;
+OA
+articles
+are
+governed
+by the
+applicable
+Creative
+Commons
+License
+
+--- Page 5 ---
+MathematicalProblemsinEngineering 5
+where (𝑥 1 ,𝑦 1 ) and (𝑥 2 ,𝑦 2 ) are the coordinates of the two ×104
+points.Thecentercanbegivenby 6
+(𝑏 −𝑏 ) 5.5
+𝑥̂ = 1 2
+𝑐 (𝑚 −𝑚 )
+2 1 5
+(39)
+(𝑚 𝑏 −𝑚 𝑏 )
+𝑦̂ = 1 2 2 1 . 4.5
+𝑐 (𝑚 −𝑚 )
+1 2
+4 k=0
+(ii) Maneuver Detection. In the absence of a maneuver, the 3.5
+targetisassumedtobetravelinginastraightlineandmodeled
+3
+byaconstantvelocity(CV)motion.(CVmodelisverysimple
+andcommonlyused,whichwillnotbelistedhere.)Whenthe 2.5
+maneuver is detected, the filter switches to the maneuver-
+centerCTmodel.Whiletheendofamaneuverisdetected,the 2
+1 1.5 2 2.5 3 3.5 4 4.5 5 5.5 6
+filterwillthenswitchbacktoCVmodel. ×104
+Hereafadingmemoryaverageoftheinnovationsisused
+todetectifamaneuveroccurs.Theequationisgivenby
+𝑢 𝑘 =𝜌𝑢 𝑘−1 +𝑑 𝑘 (40)
+with
+𝑑 =]󸀠𝑆−1] , (41)
+𝑘 𝑘 𝑘 𝑘
+where0<𝜌<1,] 𝑘istheinnovationvector,and𝑆 𝑘isitscov-
+ariancematrix.
+𝑢 𝑘willhaveachi-squareddistributionwithdegrees
+1+𝜌
+𝑛 =𝑛 ,
+𝑢 𝑧1−𝜌 (42)
+where𝑛 𝑧isthedimensionofthemeasurementvector.When
+𝑢 𝑘exceedsathreshold(e.g.,95%or99%confidenceinterval),
+thenamaneuveronsetisdeclared.Theendtimeofamaneu-
+verwillbedeterminedinasimilarfashion.Theprocedurecan
+bereferredto[9]fordetails.
+3.4.SimulationResults
+(i)TheScenario.Thescenariosimulatedhereisverysimilarto
+thatdescribedin[20].Itincludesfewrectilinearstagesand
+few CT maneuvers. Four consecutive
+180∘
+turns with rates
+𝜔=1.87,−2.8,5.6,−4.68aresimulated,respectively,forscans
+[56,150], [182,245], [285,314], and [343,379]. The target
+trajectorycanbeseeninFigure1.
+Theinitialtargetpositionandvelocitiesare𝑋
+0
+= 60km,
+𝑌
+0
+= 40km,𝑋̇
+0
+= −172km,and𝑌
+0
+̇ = 246km.Itisassumed
+thatthesensormeasuresCartesiancoordinates𝑋and𝑌di-
+rectly.Itisalsoassumedthat𝜎 𝑋 =𝜎 𝑌 =100mandthesample
+rate𝑇=1.
+(ii) Algorithms’ Parameters. UKF controlled ACT model’s
+parameter:
+𝛼=10−3, 𝛽=2, 𝜅=0
+𝑄 ACT1 =diag{1 1 10−4} (43)
+𝑄
+ACT2
+=diag{1 10−4}.
+)m(Y
+X(m)
+Figure1:Thetesttrajectory.
+Kinematicconstraintmodel’sparameter:
+𝑄 =diag{1 1}
+CA
+(44)
+𝛿=0.92, 𝑟 =1, 𝑟 =200. 0 1
+Maneuvercenteredmodel’sparameter:
+𝑄
+𝑚
+=diag{106 10−4}
+(45)
+𝜌=0.8.
+(iii)Results.Thefourmodelsarelistedasfollows.
+Method1:ACTmodelwithCartesianvelocity.
+Method2:ACTmodelwithpolarvelocity.
+Method3:kinematicconstraintmodel.
+Method4:maneuver-centeredCTmodel.
+Rootmeansquarederrors(RMSE)areusedhereforcom-
+parison.TheRMEpositionerrorsaredefinedasfollows:
+1 𝑀
+RMS.P.E(𝑘)=√ ∑[(𝑥𝑖 −𝑥̂𝑖)2+(𝑦𝑖 −𝑦̂𝑖)2] , (46)
+𝑀 𝑘 𝑘 𝑘 𝑘
+𝑖=1
+where𝑀=200aretheMonte-Carlosimulationruns.𝑥𝑖
+and 𝑘 𝑦𝑖 standforthetrueposition,while𝑥̂𝑖 and𝑦̂𝑖 aretheposi-
+𝑘 𝑘|𝑘 𝑘
+tionestimates.
+TheRMSpositionerrorsofallbutthefirsttenareshown
+inFigure2.
+Table1 summarizes the average RMS of the position
+errors.
+Table2summarizestherelativecomputationalcomplex-
+ity,normalizedtomethod4.
+Itcanbeseenfromthefigureandtablesthatmethod2has
+thebestperformanceanditscomputationalloadisroughly
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules
+of use;
+OA
+articles
+are
+governed
+by
+the
+applicable
+Creative
+Commons
+License
+
+--- Page 6 ---
+6 MathematicalProblemsinEngineering
+350
+300
+250
+200
+150
+100
+50
+0 50 100 150 200 250 300 350 400
+Time (s)
+)m(
+srorre
+noitisop
+SMR
+Assumetheinitialprobability𝜏 𝑖andtheone-steptransi-
+tionmatrixareknown,asfollows:
+𝜏 =𝑝(𝜔 =𝜔(𝑖)), 𝑖=1,2,...,𝑟
+𝑖 0
+𝜋 =𝑝(𝜔 =𝜔(𝑗)|𝜔 =𝜔(𝑖)), 𝑖,𝑗=1,2,...,𝑟.
+𝑖,𝑗 𝑘+1 𝑘
+Method 4
+(48)
+The measurement sequence is defined by 𝑍 1:𝑁 =
+{𝑧 1 ,𝑧 2 ,...,𝑧 𝑁 }, state sequence is 𝑋 1:𝑁 = {𝑋 1 ,𝑋 2 ,...,𝑋 𝑁 },
+Method 1 Method 3 andmaneuversequenceisΩ 1:𝑁 ={𝜔 1 ,𝜔 2 ,...,𝜔 𝑁 }.
+4.1.BatchEMAlgorithm. Assumethemeasurementsequence
+Method 2 isknown,thisalgorithmfocusesonfindingthebestmaneu-
+versequencebasedonMAPcriterion.Thereisonebestman-
+euversequenceΩ(B) in𝑟𝑁
+possiblesequencesthatmakesthe
+1:𝑁
+conditional probability density function be the maximum.
+Figure2:RMSpositionerrorsofthefourmethods. WhenΩ( 1 B :𝑁 ) isachieved,thestatesequence𝑋 1:𝑁canbeestim-
+atedaccurately.
+AccordingtoEMalgorithm,𝑍 1:𝑁isconsideredtobethe
+incompletedata,𝑋 1:𝑁tobethe“lost”data,andΩ 1:𝑁tobethe
+Table1:AverageRMSofpositionerrors. datathatneedstobeestimated.EMalgorithmcarriesoutthe
+followingtwostepsiteratively.
+Method AverageRMSofpositionerrors(m)
+1 94.26 (1) ExpectationStep(Estep)
+2 81.57
+3 109.51 𝐽(Ω ,Ω(𝑗) )
+1:𝑁 1:𝑁
+4 183.46 (49)
+=𝐸
+X 1:𝑁
+{ln𝑝(𝑋
+1:𝑁
+,𝑍
+1:𝑁
+,Ω
+1:𝑁
+)|𝑍
+1:𝑁
+,Ω(
+1
+𝑗
+:𝑁
+) },
+Table2:Relativecomputationalload. where𝐽(Ω 1:𝑁 ,Ω( 1 𝑗 :𝑁 ) )isdefinedasthecostfunction,Ω( 1 𝑗 :𝑁 ) isthe
+maneuversequenceestimationafter𝑗timesiteration.
+Method Relativecomputationalload
+1 7.26 (2) Maximizationstep(Mstep)
+2 7.07
+3 1.42
+Ω(
+1
+𝑗
+:𝑁
++1) =argmax𝐽(Ω
+1:𝑁
+,Ω(
+1
+𝑗
+:𝑁
+) ).
+(50)
+Ω
+4 1 1:𝑁
+Iftheinitialvalueisgiven,theaboveEstepandMstepare
+carriedoutrepeatedly,untilconvergence.
+thesameasmethod1.SowecanconcludethatACTmodel (i)Estep.Theunionprobabilitydensityfunctioncanbede-
+withpolarvelocityisbetterthanACTmodelwithCartesian composedasfollows:
+velocity. Method 4 has the least computational load but its
+𝑝(𝑋 ,𝑍 ,Ω )
+performance is poor. Method 3 is slightly more complex 1:𝑁 1:𝑁 1:𝑁
+than method 4 but can decrease the error greatly. So if the
+𝑁 𝑁
+computationalloadisofgreatconcern,kinematicconstraint =∏𝑝(𝑧 |𝑋 )×∏𝑝(𝑋 |𝑋 ,𝜔 )×𝑝(𝑋 )
+𝑘 𝑘 𝑘 𝑘−1 𝑘−1 0
+modelisagoodchoice. 𝑘=1 𝑘=1 (51)
+𝑁
+×∏𝑝(𝜔𝜔 )×𝑝(𝜔 ).
+4.TheExpectationMaximization(EM) 𝑖 𝑖−1 0
+𝑖=1
+AlgorithmforTrackingCTMotionTarget
+𝑝(𝑋 𝑘 | 𝑋 𝑘−1 ,𝜔 𝑘−1 ) and 𝑝(𝜔 𝑖 | 𝜔 𝑖−1 ) rely on the maneuver
+Inth
+Th
+is
+e
+p
+t
+a
+u
+r
+r
+t
+n
+,t
+r
+h
+a
+e
+te
+m
+𝜔
+o
+𝑘
+d
+c
+e
+a
+l
+n
+in
+b
+S
+e
+e
+d
+c
+e
+ti
+s
+o
+c
+n
+rib
+2.
+e
+1
+d
+is
+b
+u
+y
+s
+a
+ed
+M
+.
+arkovchain[21,
+sequenceΩ 1:𝑁.ThestateequationisGaussiandistribution:
+22]andhas𝑟possiblevalues: 𝑝(𝑋 𝑘 |𝑋 𝑘−1 ,𝜔 𝑘−1 )=𝑁{𝑋 𝑘 −𝐹(𝜔 𝑘−1 )𝑋 𝑘−1 ,𝑄 𝑘 }, (52)
+where 𝑁{𝜇;Σ} is the Gaussian probability density function
+𝜔 𝑘 ∈𝑀 𝑟 ={𝜔(1),𝜔(2),...,𝜔(𝑟)}. (47) withmean𝜇andcovarianceΣ.
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of
+Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules
+of
+use;
+OA
+articles
+are
+governed
+by
+the applicable
+Creative
+Commons
+License
+
+--- Page 7 ---
+MathematicalProblemsinEngineering 7
+Fromtheaboveanalysis, k=1 k=2 k=3 k=4
+𝐽(Ω ,Ω(𝑗) ) 𝜔 1 𝜔 1 𝜔 1 𝜔 1
+1:𝑁 1:𝑁
+=𝐸
+𝑋 1:𝑁
+{ln𝑝(𝑋
+1:𝑁
+,𝑍
+1:𝑁
+,Ω
+1:𝑁
+)|𝑍
+1:𝑁
+,Ω(
+1
+𝑗
+:𝑁
+) }
+𝜔 2 𝜔 2 𝜔 2 𝜔 2
+= ∑ 𝑁 {ln𝑝(𝜔
+𝑘
+|𝜔
+𝑘−1
+)− 1
+2
+(𝑋̂
+𝑘|𝑁
+−𝐹(𝜔
+𝑘−1
+)𝑋̂
+𝑘−1|𝑁
+) 󸀠
+𝑘=1 𝜔 3 𝜔 3 𝜔 3 𝜔 3
+× 𝑄−1(𝑋̂ −𝐹(𝜔 )𝑋̂ )},
+𝑘 𝑘|𝑁 𝑘−1 𝑘−1|𝑁
+(53) 𝜔 4 𝜔 4 𝜔 4 𝜔 4
+where Figure3:Viterbialgorithmforpathfollowing.
+𝑋̂ =𝐸[𝑋 |𝑍 ,Ω(𝑗) ]. (54)
+𝑘|𝑁 𝑘 1:𝑁 1:𝑁
+where𝑝(Ω
+1:𝑘
+|𝑍
+1:𝑘
+)canbecalculatedonline.
+ThosetermswhichareindependentofΩ 1:𝑁areomitted 𝑝(Ω |𝑍 )= 𝑝(Ω |𝑧 ,𝑍 )
+1:𝑘 1:𝑘 1:𝑘 𝑘 1:𝑘−1
+here.
+In the E step, if
+Ω(
+1
+𝑗
+:𝑁
+)
+is given, the cost function can be = 𝑝(𝑧 𝑘 |Ω 𝑘 ,𝑍 1:𝑘−1 )𝑝(Ω 𝑘 |𝑍 1:𝑘−1 )
+achievedusingKalmansmoothingalgorithm.
+𝑝(𝑧 |Ω )
+𝑘 1:𝑘−1
+(ii)Mstep.Inthemaximizationstep,anewΩ 1:𝑁ischosenfor = 𝑝(𝑧 |Ω ,𝑍 )𝑝(𝜔 |Ω )
+𝑘 1:𝑘 1:𝑘−1 𝑘 1:𝑘−1
+ahigherconditionalprobability.Thenabetterparameteresti-
+mationisachievedcomparedtotheformeriteration.Thefol- ×𝑝(Ω |𝑍 )(𝑝(𝑧 |𝑍 ))−1. 1:𝑘−1 1:𝑘−1 𝑘 1:𝑘−1
+lowingViterbialgorithmcansolvethisproblemperfectly.
+(56)
+Viterbialgorithmisarecursivealgorithmlookingforthe
+bestpath.AsshowninFigure3,thepathconnectstheadjac- BecauseΩ 1:𝑘isMarkovchain,
+entpointswiththeweightstobethelogarithmfunctionofthe
+likelihood,namedcost.Thepath’stotalcostisthesumofits 𝑝(𝜔 𝑘 |Ω 1:𝑘−1 )=𝑝(𝜔 𝑘 |𝜔 𝑘−1 ). (57)
+eachpoint’scost.Thebestpathhasthemaximumcost.The
+detailedmethodtofindthebestpathcanbefoundin[12].
+Thepossiblemaneuversequencegrowsexponentiallyasthe
+timegrows.Forthecomputationtobefeasibility,itisassumed
+(iii)CalculatingAlgorithm
+that
+(1)Initialization:theinitialmaneuversequenceΩ(1) and 𝑝(𝑧 |Ω ,𝑍 )≈ 𝑝(𝑧 |𝜔 ,𝑍 )
+1:𝑁 𝑘 1:𝑘 1:𝑘−1 𝑘 𝑘 1:𝑘−1
+threshold𝜀shouldbegiven. (58)
+= 𝑁(𝜐 ,S ),
+𝑘 𝑘
+(2)Iteration: for each circle (𝑗 = 1,2,...), carry out
+the following steps: (1) E step, according to (53), where𝜐 𝑘istheKalmanfilter’sinnovationandS 𝑘isthecovari-
+calculatethecost between theadjacent point.(2)M anceoftheinnovation.
+step, according to Viterbi algorithm, find a better Thecostfunctionisdefinedas
+maneuversequence.
+(3)Stop:if‖Ω(
+1
+𝑗
+:𝑁
++1)−Ω(
+1
+𝑗
+:𝑁
+) ‖≤𝜀,thenstoptheiteration.The
+𝐽(𝜔
+𝑘
+(𝑖))=ln𝑝(Ω
+1:𝑘
+,𝜔
+𝑘
+(𝑖)𝑍
+1:𝑘
+), 𝑖=1,2,...,𝑟,
+(59)
+best maneuver sequence is Ω(B) = Ω(𝑗+1) ; then the
+1:𝑁 1:𝑁
+state estimation sequence is calculated according to
+whichstandsforthecosttomodel𝑖untiltime𝑘.
+Ω(B) . From(57)to(59),
+1:𝑁
+𝐽(𝜔
+𝑘
+(𝑗))= 𝐽(𝜔
+𝑘−1
+(𝑖))+ln𝜋
+𝑖𝑗
+4.2.RecursiveEMAlgorithm. Intargettrackingapplications,
+1
+thetarget’sstatealwaysneedsonlineestimation.Soarecur- − 𝜐󸀠 (𝑖,𝑗)S−1(𝑖,𝑗)𝜐 (𝑖,𝑗) 𝑖,𝑗=1,2,...,𝑟,
+siveEMalgorithmisneededforcalculating𝜔 𝑘. 2 𝑘 𝑘 𝑘
+(60)
+(i)RecursiveEquation.UndertheMAPcriterion,
+where 𝜐 𝑘 (𝑖,𝑗) stands for the innovation when model 𝑖 is
+Ω(
+1
+B
+:𝑘
+) =argm
+Ω
+ax{𝑝(Ω
+1:𝑘
+|𝑍
+1:𝑘
+)},
+(55)
+c
+th
+h
+e
+os
+c
+e
+o
+n
+rr
+i
+e
+n
+sp
+ti
+o
+m
+n
+e
+d
+𝑘
+in
+−
+g
+1
+c
+a
+o
+n
+v
+d
+ar
+m
+ia
+o
+n
+d
+ce
+e
+.
+l𝑗ischosenintime𝑘.S 𝑘 (𝑖,𝑗)is
+1:𝑘
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by Harbin
+Institute
+Of Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules
+of
+use;
+OA
+articles
+are
+governed
+by
+the
+applicable
+Creative
+Commons
+License
+
+--- Page 8 ---
+8 MathematicalProblemsinEngineering
+Becauseofusingtheassumption(58),theiterationalgo- 65
+rithmisnottheoptimalalgorithmunderMAPcriterion,but
+asuboptimalone. 60
+(ii) Calculating Algorithm. Only one-step iteration is listed 55
+here.
+50
+(1)E Step Calculation. Using (10), calculate each cost
+fromtime𝑘−1to𝑘;𝑟2
+costsareneeded. 45
+(2)M Step Calculation. According to Viterbi algorithm,
+findoutthemaximumcost𝐽
+max
+(𝜔
+𝑘
+(𝑖))relatedtoeach 40
+model. 𝐽 max (𝜔 𝑘 (𝑖)) is the initial value to be the next
+35
+iteration.
+(3)Filtering. According to the path which reaches each 30
+model, calculate each model’s state estimation 𝑋̂ 𝑘 (𝑖)
+andcovariance𝑃 𝑘|𝑘 (𝑖),𝑖=1,2,...,𝑟. 25
+20 25 30 35 40 45 50 55 60 (4)The Final Results. From 𝐽 max (𝜔 𝑘 (𝑖)), 𝑖 = 1,2,...,𝑟, x(km)
+choosethemaximumoneasthefinalfilteringresult:
+𝑗=argmax{𝐽
+max
+(𝜔
+𝑘
+(𝑖))}𝑟
+𝑖=1
+.
+(61) 𝑖
+𝑋̂ 𝑘 (B) =𝑋̂ 𝑘 (𝑗), 𝑃 𝑘 (B |𝑘 ) =𝑃 𝑘|𝑘 (𝑗). (62)
+4.3.SimulationResults
+(i) Simulation Scenario. Target initial state is 𝑋 0 = [60000m −172m/s 40000m 246m/s]󸀠 . The sample rate
+𝑇=1s.Thecovarianceofprocessnoise
+𝑇4 𝑇3
+[ ]
+𝑄 0 [ 3 2 ]
+𝑄=[ 0 𝑥 𝑄
+𝑦
+], 𝑄 𝑥 =𝑄 𝑦 =[ [ [𝑇3
+𝑇2
+] ]
+]
+. (63)
+2
+[ ]
+Assumeonlypositioncanbemeasured,themeasurement
+equationisthefollowing:
+1 0 0 0
+𝑧 𝑘 =[ 0 0 1 0 ]𝑋 𝑘 +V 𝑘 . (64)
+Thecovarianceofmeasurementnoise𝑅=2500I,whereI
+isthe2×2unitmatrix.
+Thesimulationlastsfor300s.Target’strueturnrateis
+{{ 0 0≤𝑘<103
+𝜔 𝑘 = {{ 0.033rad/s 104≤𝑘<198 (65)
+0 198≤𝑘<300.
+{
+Figure4givesthetarget’struetrajectory.
+Assume target’s maximum centripetal acceleration is
+2
+30m/s . Under the speed 300m/s, the corresponding turn
+rate is 0.1rad/s. Seven models are used for this simulation.
+From-0.1to0.1,thesevenmodelsaredistributedevenly.Their
+values are −0.1, −0.067, −0.033, 0, 0.033, 0.067, and 0.1. The
+initialprobabilitymatrixis
+1 1 1 1 1 1 1
+𝜏=[ ]. (66)
+7 7 7 7 7 7 7
+)mk(y
+Figure4:Targettrajectory.
+Themodeltransitionmatrixis
+0.7 𝑖=𝑗
+𝜋 ={
+𝑖,𝑗 0.05 𝑖≠𝑗
+(67)
+𝑖,𝑗=1,2,...,7.
+(ii) Simulation Results and Analysis. Batch EM algorithm,
+recursivealgorithm,andIMMalgorithmarecomparedinthis
+scenario.Rootmeansquarederrors(RMSE)areusedherefor
+comparison.TheRMEpositionerrorsaredefinedas(46)and
+velocityerroraredefinedasfollows:
+RMS.V.E(𝑘)=√ 1 ∑ 𝑀 [(𝑥̇𝑖 −𝑥̂̇ 𝑖 ) 2 +(𝑦𝑖̇ −𝑦̂̇ 𝑖 ) 2 ], (68)
+𝑀 𝑘 𝑘 𝑘 𝑘
+𝑖=1
+where𝑀 = 200areMonte-Carlosimulationrunsand𝑥̇𝑖 ,𝑦𝑖̇
+𝑘 𝑘 and𝑥̂̇ 𝑖 ,𝑦̂̇ 𝑖 standforthetrueandestimatedvelocityattime𝑘
+𝑘 𝑘
+inthe𝑖thsimulationruns,respectively.
+Figures 5 and 6 show the position and velocity perfor-
+mance comparison. It can be concluded that the batch EM
+algorithm has much less tracking errors compared to IMM
+algorithm. During maneuver onset time and termination
+time, the IMM algorithm is better than recursive EM algo-
+rithm. But on stable period, the recursive EM algorithm
+performsbetter.
+5.Conclusions
+AimingattheCTmotiontargettracking,severalmodelsand
+algorithmsareintroducedandsimulatedinthispaper.
+In single model framework, four CT models have been
+comparedfortrackingapplications:ACTmodelwithCarte-
+sianvelocity,ACTmodelwithpolarvelocity,kinematiccon-
+straint model, and maneuver-centered model. The Monte-
+Carlo simulations show that the ACT model with polar
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of
+Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See the Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on Wiley
+Online
+Library
+for rules
+of
+use;
+OA
+articles
+are
+governed
+by the
+applicable
+Creative
+Commons
+License
+
+--- Page 9 ---
+MathematicalProblemsinEngineering 9
+70
+60
+50
+40
+30
+20
+10
+0 50 100 150 200 250 300
+t(s)
+Batch EM
+Recursive EM
+IMM
+)m(
+E
+p
+Figure5:Positionperformancecomparison.
+70
+60
+50
+40
+30
+20
+10
+0
+0 50 100 150 200 250 300
+t(s)
+)m(
+E (cid:3)
+thecostfunction,arecursiveEMalgorithmispresented.The
+algorithm can track the target online. Compared with the
+IMMalgorithm,onthestableperiod,therecursiveEMalgo-
+rithmhasbettertrackingperformance.
+ConflictofInterests
+The authors declare that there is no conflict of interests
+regardingthepublicationofthispaper.
+Acknowledgments
+This research work was supported by the National Key
+Fundamental Research & Development Programs (973) of
+China(2013CB329405),FoundationforInnovativeResearch
+GroupsoftheNationalNaturalScienceFoundationofChina
+(61221063),NaturalScienceFoundationofChina(61203221,
+61004087),Ph.D.ProgramsFoundationofMinistryofEduca-
+tionofChina(20100201120036),ChinaPostdoctoralScience
+Foundation(2011M501442,20100481338),andFundamental
+ResearchFundsfortheCentralUniversity.
+References
+[1] X.R.LiandV.P.Jilkov,“SurveyofmaneuveringTargetTrack-
+ing—partI:dynamicmodels,”IEEETransactionsonAerospace
+andElectronicSystems,vol.39,no.4,pp.1333–1364,2003.
+[2] F.GustafssonandA.J.Isaksson,“Bestchoiceofcoordinatesys-
+temfortrackingcoordinatedturns,”inProceedingsofthe35th
+IEEEConferenceonDecisionandControl,pp.3145–3150,Kobe,
+Japan,December1996.
+[3] A.J.IsakssonandF.Gustaffsson,“ComparisonofsomeKalman
+filterbasedonmethodsformaneuvertrackinganddetection,”
+inProceedingsofthe34thIEEEConferenceonDecisionandCon-
+trol,pp.1525–1530,NewOrleans,La,USA,December1995.
+Batch EM
+[4] S.Julier,J.Uhlmann,andH.F.Durrant-Whyte,“Anewmethod
+Recursive EM
+forthenonlineartransformationofmeansandcovariancesin
+IMM
+filtersandestimators,”IEEETransactionsonAutomaticControl,
+Figure6:Velocityperformancecomparison. vol.45,no.3,pp.477–482,2000.
+[5] S.J.JulierandJ.K.Uhlmann,“Unscentedfilteringandnonlin-
+earestimation,”ProceedingsoftheIEEE,vol.92,no.3,pp.401–
+422,2004.
+velocity has the best tracking performance but the compu-
+[6] M.TahkandJ.L.Speyer,“TargetTrackingproblemssubjectto
+tationalloadisabitheavier.Thekinematicconstraintmodel
+kinematic constraints,” IEEE Transactions on Automatic Con-
+hasamoderatetrackingperformance,butitscomputational trol,vol.35,no.3,pp.324–326,1990.
+load decreases greatly compared with UKF controlled ACT
+[7] A.T.AlouaniandW.D.Blair,“Useofakinematicconstraintin
+model. So if the computational load is of a great concern,
+trackingconstantspeed,maneuveringtargets,”inProceedingsof
+thekinematicconstraintmodelissuggested.Ifthetracking the 30th IEEE Conference on Decision and Control, pp. 1055–
+performanceisveryimportantandthecomputationalloadis 1058,Brighton,UK,December1991.
+notaproblem,theACTmodelwithpolarvelocityissuitable.
+[8] A.T.AlouaniandW.D.Blair,“Useofakinematicconstraintin
+Inmultiplemodelsframework,EMalgorithmisusedfor trackingconstantspeed,maneuveringtargets,”IEEETransac-
+tracking CT motion target. First a batch EM algorithm is tionsonAutomaticControl,vol.38,no.7,pp.1107–1111,1993.
+derived.Theturnrateisactedasthemaneuversequenceand
+[9] J.A.RoeckerandC.D.McGillem,“TargetTrackinginmaneu-
+estimatedbasedontheMAPcriterion.UndertheEstep,the ver-centeredcoordinates,”IEEETransactionsonAerospaceand
+costfunctioniscalculatedusingtheKalmansmoothingalgo- ElectronicSystems,vol.25,no.6,pp.836–843,1989.
+rithm.UndertheMstep,Viterbialgorithmisusedforpath
+[10] X. R. Li and V. P. J. ILkov, “A Survey of maneuvering Target
+followingtofindoutthepathwithmaximumcost.Simulation Tracking—partIII:measurementmodels,”inConferenceonSig-
+resultsshowthattheBatchEMalgorithmhasbettertracking nalandDataProcessingofSmallTargets,vol.4437ofProceeding
+performancethanIMMalgorithm.Throughmodificationof ofSPIE,pp.423–446,SanDiego,Calif,USA,2001.
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of
+Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules
+of
+use;
+OA
+articles
+are
+governed
+by
+the
+applicable
+Creative
+Commons
+License
+
+--- Page 10 ---
+10 MathematicalProblemsinEngineering
+[11] Y. Bar-Shalom, K. C. Chang, and H. A. P. Blom, “Tracking a
+maneuveringtargetusinginputestimationversustheinteract-
+ingmultiplemodelalgorithm,”IEEETransactionsonAerospace
+andElectronicSystems,vol.25,no.2,pp.296–300,1989.
+[12] A.Averbuch,S.Itzikowitz,andT.Kapon,“RadarTargetTrack-
+ing—viterbiversusIMM,”IEEETransactionsonAerospaceand
+ElectronicSystems,vol.27,no.3,pp.550–563,1991.
+[13] G. W. Pulford and B. F. La Scala, “MAP estimation of target
+manoeuvresequencewiththeexpectation-maximizationalgo-
+rithm,”IEEETransactionsonAerospaceandElectronicSystems,
+vol.38,no.2,pp.367–377,2002.
+[14] A.Logothetis,V.Krishnamurthy,andJ.Holst,“ABayesianEM
+algorithmforoptimaltrackingofamaneuveringtargetinclut-
+ter,”SignalProcessing,vol.82,no.3,pp.473–490,2002.
+[15] P.Willett,Y.Ruan,andR.Streit,“PMHT:problemsandsome
+solutions,”IEEETransactionsonAerospaceandElectronicSys-
+tems,vol.38,no.3,pp.738–754,2002.
+[16] Z.Li,S.Chen,H.Leung,andE´.Bosse´,“Jointdataassociation,
+registration, and fusion using EM-KF,” IEEE Transactions on
+Aerospace and Electronic Systems, vol. 46, no. 2, pp. 496–507,
+2010.
+[17] D.L.Huang,H.Leung,andE.Boose,“Apseudo-measurement
+approachtosimultaneousregistrationandtrackfusion,”IEEE
+TransactionsonAerospaceandElectronicSystems,vol.48,no.3,
+pp.2315–2331,2012.
+[18] X.Yuan,C.Han,Z.Duan,andM.Lei,“Adaptiveturnrateestim-
+ation using range rate measurements,” IEEE Transactions on
+AerospaceandElectronicSystems,vol.42,no.4,pp.1532–1540,
+2006.
+[19] V.B.FrenclandJ.B.R.doVal,“Trackingwithrangeratemea-
+surements:turnrateestimationandparticlefiltering,”inPro-
+ceedingsoftheIEEERadarConference,pp.287–292,Atlanta,Ga,
+USA,May2012.
+[20] E.Semerdjiev,L.Mihaylova,andX.R.Li,“Variable-andfixed-
+structureaugmentedIMMalgorithmsusingcoordinatedturn
+model,” in Proceedings of the 3rd International Conference on
+InformationFusion,pp.10–13,Paris,France,July2000.
+[21] Y. Bar-shalom, X. R. Li, and T. Kirubarajan, Estimation with
+ApplicationstoTrackingandNavigation:Theory,Algorithmsand
+Software,JohnWiley&Sons,NewYork,NY,USA,2001.
+[22] J.P.Iielferty,“Improvedtrackingofmaneuveringtargets:theuse
+of turn-rate distributions for acceleration modeling,” IEEE
+TransactionsonAerospaceandElectronicSystems,vol.32,no.4,
+pp.1355–1361,1996.
+2629,
+2014,
+1,
+Downloaded
+from
+https://onlinelibrary.wiley.com/doi/10.1155/2014/649276
+by
+Harbin
+Institute
+Of
+Technology,
+Wiley
+Online
+Library
+on
+[28/06/2026].
+See
+the
+Terms
+and
+Conditions
+(https://onlinelibrary.wiley.com/terms-and-conditions)
+on
+Wiley
+Online
+Library
+for
+rules
+of
+use;
+OA
+articles
+are
+governed
+by
+the
+applicable
+Creative
+Commons
+License

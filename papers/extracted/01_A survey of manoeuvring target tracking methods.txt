@@ -1,0 +1,2193 @@
+
+--- Page 1 ---
+5102
+raM
+6
+]YS.sc[
+1v82870.3051:viXra
+A Survey of Manoeuvring Target Tracking Methods 1
+Graham W. Pulford†
+†Department of Electrical and Electronic Engineering, University of Melbourne, Parkville 3052,
+Australia and the Cooperative Research Centre for Sensor Signal and Information Processing
+(CSSIP)
+March 1, 2022
+Contents
+1 Introduction 2
+2 Dynamical Models for Manoeuvring Targets 4
+2.1 Correlated Process Noise (Singer) Model . . . . . . . . . . . . . . . . . . . . . . . . 5
+2.2 Semi-Markov Correlated Process Noise Model . . . . . . . . . . . . . . . . . . . . . 7
+2.3 Poisson Processes and Renewal Models . . . . . . . . . . . . . . . . . . . . . . . . . 8
+3 Manoeuvre Detection 10
+4 Manoeuvring Target Tracking Techniques 11
+4.1 Optimal and Approximate Filters for Markov Noise. . . . . . . . . . . . . . . . . . 12
+4.2 Input Estimation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+4.3 Variable-Dimension Filter . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+4.4 Optimal and Approximate Filters for Jump-Linear Models . . . . . . . . . . . . . . 16
+4.5 Two-Stage Kalman Filter . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+4.6 IMM Algorithm for Fixed Interval Smoothing . . . . . . . . . . . . . . . . . . . . . 22
+4.7 Expectation-Maximisation Algorithm. . . . . . . . . . . . . . . . . . . . . . . . . . 23
+5 Manoeuvring Target Tracking in Clutter 23
+5.1 Optimal Bayesian Filter for Manoeuvring Target in Clutter . . . . . . . . . . . . . 24
+5.2 Single-Scan Pseudo-BayesianFilter . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+5.3 Joint Manoeuvre and Measurement Association . . . . . . . . . . . . . . . . . . . . 27
+5.4 Variable-Dimension PDA . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+5.5 IMM-PDA . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+5.6 Multi-hypothesis Techniques. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+5.7 Filters Using Amplitude Information . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+6 Discussion 30
+1Originalmanuscriptdated 23/12/1998. Submitted toIEEE Transactions onAerospace & Electronic Systems.
+Withdrawn followinga review process lasting3 years after itbecame clear that there was a conflict of interest on
+thepartoftheAssociateEditorhandlingthesubmission.
+1
+
+--- Page 2 ---
+Abstract
+A comprehensive review of the literature on manoeuvring target tracking for both uncluttered
+and cluttered measurements is presented. Various discrete-time dynamical models including non-
+randominput,random-inputandswitchingorhybridsystemmanoeuvremodelsarepresented. The
+problemofmanoeuvredetectionis covered. Classicalandcurrentfilteringmethods formanoeuvre
+tracking are presented including multi-level process noise, input estimation, variable dimension
+filtering,two-stageKalmanfilter,theinteractingmultiplemodelalgorithm,andgeneralisedpseudo-
+Bayesianalgorithms. Variousextensionsofthesealgorithmstothecaseofclutteredmeasurements
+are also described and these include: joint manoeuvre and measurement association, probabilistic
+data association and multi-hypothesis tracking. Smoothing schemes, including IMM smoothing
+and batch expectation-maximisation using the Viterbi algorithm, are also described. The use of
+amplitudeinformationfortargetmeasurementdiscriminationisdiscussed. Itisnotedthatalthough
+many manoeuvre tacking techniques exist, the literature contains surprisingly few performance
+comparisons to guide the design engineer although a performance benchmark has recently been
+introduced.
+1 Introduction
+The problem of tracking a manoeuvring target based on noisy sensor measurements has been ap-
+proachedbyagreatmanyresearchersinthelastfewdecades. Thecomprehensivetaxonomyofthe
+existing approaches presented in this article should convince the reader that this is a very active
+research area. Manoeuvres correspond to unknown acceleration terms in the target dynamics,
+increasing the number of quantities that must be estimated compared with the constant velocity
+case. The fundamental problems in manoeuvring targettrackingare (i) manoeuvre detection: the
+detection of the onset (and end) of a manoeuvre, and (ii) compensation: the correction of target
+state estimates to allow for the manoeuvre. A third problem of tracking a manoeuvring target
+in clutter is discussed subsequently. Classical techniques based on adjustments or slight modifi-
+cations to the discrete-time Kalman filter include increasing the process noise covariance during
+a manoeuvre, finite memory (sliding data window) and fading memory (exponential forgetting)
+filters [69]. All of these approaches increase the effective filter bandwidth so as to respond more
+rapidlytothe measurementdataduringamanoeuvre;but theyareriskyinthe presenceofclutter
+since they increase the size of the validation gate.
+Someofthe more recentapproachestomanoeuvringtargettrackinginclude: adaptiveKalman
+filters [61, 39], filters using correlated and semi-Markovprocess noise [120, 119, 60] usually imple-
+mentedusingmultiplemodel(partitioning)filtersandfilterbanks[131,58,95,114,125,141];filters
+based on Poisson and renewal process models of acceleration [86, 128]; input estimation [35, 36]
+and input and onset-time estimation [33, 38, 116]; variable dimension filters [13]; track splitting
+filters with a finite memory constraint [147]; the generalised pseudo-Bayesian (GPB) algorithm
+[68,1];andtheinteractingmultiple model(IMM)algorithm[31,28,96]. Asecond-orderextension
+of the IMM algorithm was developed in [26].
+Some researchers have developed approaches to avoid the two-stage nature of manoeuvre de-
+tection and compensation implied by methods like variable dimension filtering. These include
+concurrent input estimation (of acceleration and manoeuvre onset time) and variable-dimension
+filtering[103];andaninteractingmultiple modelfilterincludingabiasestimator[144,25,3]which
+treats the acceleration as a bias term to be estimated and used for compensation of the target
+state estimate. A filter developed in [2] uses a kinematic speed constraint in the measurement
+equation for tracking constant-speed manoeuvring targets (the acceleration should be orthogonal
+to the velocity).
+A brief overview of some of these techniques is contained in [54], while a detailed treatment of
+the filter bank approach using a semi-Markov process noise model may be found in [51]. A com-
+parison of input/onset-time estimation with the interacting multiple model algorithm appeared
+in [13] (with follow-up comments contained in [52] and [65]), demonstrating the comparable per-
+formance of the IMM algorithm at lower computational complexity. Several methods based on
+2
+
+--- Page 3 ---
+partitioning (multiple model) filters have been reviewed in the context of bearings-only tracking
+for non-manoeuvring and manoeuvring targets in [71], and their performance comparedwith that
+of a single Kalman filter technique.
+A technique for complexity reduction of existing manoeuvring target trackers based on the
+information form of the Kalman filter was presented in [115, 53]. Manoeuvres were modelled as
+continuous-time stochastic process with known prior density and a conditional mean estimator
+derived in [21]; the estimator is implementable when the input process has a finite number of
+discrete values with known prior probabilities.
+A comparison of Kalman and H filters for tracking constant-speed manoeuvring targets re-
+∞
+cently appeared in [137]. The conclusion reached was that an “untuned” H filter does not
+∞
+outperform an appropriately tuned Kalmanfilter, and that the H filter tends to be more robust
+∞
+tomistuning. TheissueoftuninginH filteringisimportantfirstlyinthatitrequirestheselection
+∞
+of an extra parameter γ, and secondly since the filter is not realisable if γ is made too small.
+Theliteratureonmanoeuvringtargettrackingisnotrestrictedtofilteringasevidencedbywork
+on fixed-interval smoothing using interacting multiple models [63]; and measurement concatena-
+tion (block processing) applied to variable dimension filtering [43, 41, 42]. As remarked in [54],
+the variable dimension filtering approach is in fact a smoothing technique, since it requires the
+accelerating target model to be initialised retrospectively, i.e., using measurements prior to the
+instant of manoeuvre detection.
+Therearealsooff-lineapproachestotheproblemofmanoeuvringtargettrackingwhichrequire
+a batch of measurement data for processing. The bearings-only tracking problem for a manoeu-
+vring target has been attempted via a batch method that uses simulated annealing to initialise
+an optimisation routine that determines maximum likelihood state estimates. The Expectation-
+Maximisation(EM) algorithm[19, 132, 129] has recently been applied by the author to determine
+the maximum a posteriori sequence of targetmanoeuvres in a multi-level white noise model [106].
+The EM algorithm is a multi-pass technique that requires a complete track estimate for initialisa-
+tion. A recursive,sub-optimalversionofthe preceding algorithmhas alsobeen developedand has
+been shown to be closely related to the Viterbi manoeuvre tracker in [8].
+Some less conventional approaches to manoeuvring target tracking include fuzzy systems and
+artificialneuralnetworks. Thefuzzylogicians[73,101]haveconcentratedonemulatingalpha-beta
+trackers, which are simplified Kalman filters using precomputed steady-state gains. Approaches
+based on artificial neural networks have considered estimation or modelling of the target acceler-
+ation using neural nets [4], or replacing the entire Kalman filter or PDA algorithm with a neural
+network [130, 153, 152]. The simulations reported in these articles are unconvincing or lack any
+comparisonwithacceptedtechniques. Itisalsounclearhowtheimportantissueoftuningor“learn-
+ing” should be dealt with, since algorithms based on neural networks often have many adjustable
+parameters.
+The considerably more difficult problem of tracking a manoeuvring target in a cluttered envi-
+ronment has also received much attention. As well as unknown acceleration terms with unknown
+onsettimes,thetrackermustsolvetheadditionalproblemofdataassociation,thatis,determining
+which of several possible measurements is to be associated with the target. In the absence of
+targetmanoeuvres,trackinginclutterisoftenachievableusingextensionsofKalmanfilteringsuch
+as the probabilistic data association (PDA) filter [12] or other, more computationally intensive
+techniques [9]. These algorithms must be modified to maintain track during target manoeuvres.
+It is clear that the objectives of manoeuvre detection and data association are somewhat in con-
+flict, since the appearance of a false measurement can easily lead to an incorrect assumption of a
+targetmanoeuvre. The classicalapproachofnearest-neighbourKalmanfilteringoftensuffersfrom
+filter divergence in cluttered environments. Recent PDA-type approaches which have been ap-
+plied to trackingmanoeuvringtargetsin clutter include: Bayesianadaptivefilters with multi-level
+white or coloured noise [57, 133, 134, 135]; joint measurement and manoeuvre association filters
+for a single target [82] and for multiple targets [117, 78]; variable dimension Kalman and PDA
+filters[23,121];interactivemultiple modelPDA[14,15]andIMMintegratedPDA[64];PDAwith
+“prediction-oriented” multiple models [98]; PDA filters using ranking information [100] or ampli-
+tude information [83, 84] to enhance the discrimination of targets from clutter. Limited-memory
+3
+
+--- Page 4 ---
+(N-scan-back) filters featuring multi-level white noise with Markov switching are developed in
+[72, 140].
+A good review of manoeuvring target tracking techniques, together with some comparative
+studies of algorithm performance is contained in [9, 10]. A MHT tracker using an adaptive re-
+initialisation procedure is described in [112]; this approach has been applied in target motion
+analysis of acoustic sources in clutter and performs better than the IMM at low SNR’s. A JPDA
+approachtomultiple,manoeuvringtargettrackingusinganinnovations-basedmanoeuvredetector
+and compensator was presented in [40]; however the simulations assumed an unrealistically low
+clutter density.
+TrackersbasedonhiddenMarkovmodels,usingtheViterbialgorithm[55]toperformanefficient
+searchoveradiscretisedstate space,havebeenusedtotracktargetswithlimited manoeuvrability
+in the presence of false alarms and other interference [89, 46]. In another paper [47] a HMM-
+based tracker is presented, but the emphasis is on the ability of the technique to handle non-
+linearmeasurementmodelsratherthanonmanoeuvringinclutter. Thediscretestate-spaceHMM
+trackers developed in [123, 150, 151] for single and multiple frequency line tracking, which work
+for time-varying tones, are known to be adaptable to the cluttered measurement case by suitable
+modification of the observation probability density, although this is not explicitly stated therein.
+Barniv’sdynamic programmingalgorithm[17, 18] for trackinglow SNR targets in infra-redimage
+sequences was extended in [6] to allow for cluttered measurements.
+The Viterbi algorithm can also be applied to tracking problems without discretisation of the
+state and measurement spaces. A first approach along these lines is contained in [111] in the
+context of sonar tracking. A subsequent study, reported in [107, 108, 79], extends the previous
+work to include automatic track maintenance and measurement gating. This technique, called
+Viterbi data association (VDA) has been applied successfully to the data association problem
+in over-the-horizon radar (OTHR) and more recently extended to allow for manoeuvring targets
+[80, 81] based on the two-stage Kalmanfilter. Modifications to the transition cost function of this
+dataassociationtechniquetoallowfortrackingofamanoeuvringtargetwerealsobrieflydescribed
+in [111] but have been found to be difficult to tune, at least in OTHR scenarios.
+The structure of the paper is now described. Section 2 introduces several classes of dynamical
+model for manoeuvring targets which have been used in radar and sonar. Section 3 deals with
+the problem of manoeuvre detection, that is, estimation of the onset time of a target manoeuvre
+based on noisy observations of the target state. In section 4 the main methods of manoeuvring
+target tracking are summarised. We cover the extension to the case of cluttered measurements in
+section5. Insection6 wesummariseourobservationsconcerningthe manoeuvringtargettracking
+problem based on the surveyed literature.
+2 Dynamical Models for Manoeuvring Targets
+In the following sections we review the literature on manoeuvring target tracking, focussing first
+on the case of zero false alarms and later on the cluttered measurement case. The starting point
+foroursurveyisadescriptionofdynamicalmodelsformanoeuvringtargets. Thesefallintoseveral
+broad categories depending on how the manoeuvre dynamics x(k) are modelled [9, 10]. We use
+y(k) to denote the target measurement at time k and Yk to denote the measurement set to time
+k. We assume familiarity with the discrete-time Kalman filter and smoother, and with Bayesian
+estimation theory (refer to, for example, [5, 10]).
+1. Systems of the form
+x(k+1) = F(k)x(k)+G(k)u(k)+v(k) (1)
+y(k) = H(k)x(k)+w(k)
+where the unknown input (acceleration) process u(k) is a random process and v(k) is the
+(small) filter process noise term, which controls the filter bandwidth. In this kind of model
+thetargetaccelerationu(k)ismodelledasanadditionalprocessnoiseterm. Usuallyafinite-
+state process is assumed to describe the possible types of target manoeuvre as is the case in
+4
+
+--- Page 5 ---
+theMarkovandsemi-Markovprocessnoisemodelsinwhichtheaccelerationswitchesbetween
+severalpossiblelevelsaccordingtogiventransitionprobabilitiesandwithgivendistributions
+governing the switching times for each level.
+2. Systems with unknown inputs:
+x(k+1) = F(k)x(k)+G(k)u(k)+v(k) (2)
+y(k) = H(k)x(k)+w(k)
+where the input u(k) is deterministic but unknown and must be estimated. Often u(k) is
+assumed to be piecewise constant, such as in the multi-level noise case
+F(k)x(k)+G(k)u (k)+v(k) for model 1
+1
+F(k)x(k)+G(k)u (k)+v(k) for model 2
+2
+x(k+1) =  . .
+ . . . .
+F(k)x(k)+G(k)u (k)+v(k) for model r
+r
+y(k) = H (k)x(k)+w(k) (3)
+where it is assumed that only one of the r possible target models in effect at any one time.
+3. Multiple dynamic models
+x(k+1) = F(k;M(k))x(k)+v(k;M(k)) (4)
+y(k) = H(k;M(k))x(k)+w(k;M(k))
+in which the model type M(k), also called the mode, is a finite-state Markov chain taking
+values in the set {M ,...,M }. The transitionprobabilities ofthe Markovchainare usually
+1 r
+assumed to be known and the modes are mutually exclusive.
+Systems (3) and (4) are called hybrid systems since they contain both continuous-valued states
+and discrete parameters (the model type or input level). In the control literature, system (3) is
+referredto asaswitchingcontrolsystem,andsystem(4)ajump-linearsystem. Intracking,unlike
+control theory, the input term u(k), whether deterministic or random, is unobservable and must
+be estimated or allowed for by switching to an appropriate model.
+The particular model structures can be chosen to reflect the expected target dynamics. This
+might include models such as constant velocity, constant acceleration, constant turn-rate and
+constant speed (co-ordinated turn), etc. The filter process noise v(k) is used to represent small
+variations in acceleration about the nominal target trajectory, while the manoeuvre input u(k),
+or mode M(k) in the multiple model case, is used to represent significant levels of acceleration.
+The interested reader is referred to [20, 146, 145, 2, 29] for further examples of target manoeuvre
+models.
+Itiswellknownthatoptimal(BayesianorMAP)state estimationforhybridsystemsgenerally
+requires filters with increasing memory requirements. This has led to severalsub-optimal filtering
+techniqueswithboundedcomplexitysuchasthe interactivemultiple-modelalgorithm[31]andthe
+classofgeneralisedpseudo-Bayesianalgorithms[1,37]. Readableaccountsofestimationtechniques
+forswitchingsystemsinclude[104],and[138],whichcoverspartitioningfilters,theGPBalgorithm
+and the random sampling algorithm. An IMM algorithm for semi-Markov switching systems was
+developed in [34]. We return to a discussion of filters for hybrid systems in section 4.
+2.1 Correlated Process Noise (Singer) Model
+Thearchetypalworkonmodellingamanoeuvringtargetwasdonein[120]. Targetmanoeuvresare
+characterised by large deviations from a constant-velocity trajectory corresponding to a random
+accelerationa(t). Thus, in one dimensionofmotion, if the componentsof the state vectorx(t) are
+x (t) - the target displacement and x (t) - the velocity, the target dynamics are described by
+1 2
+0 1 0
+x˙(t)= x(t)+ a(t).
+0 0 1
+(cid:20) (cid:21) (cid:20) (cid:21)
+5
+
+--- Page 6 ---
+Manoeuvres are parametrised by an acceleration variance σ2 and a time constant 1/α. During a
+m
+manoeuvre, the target acceleration is correlated with autocorrelation function
+r(τ)=E{a(t)a(t+τ)}=σ2 e−α|τ|.
+m
+The same autocorrelationresults from a linear system
+a˙(t)=−αa(t)+v(t)
+driven by white noise v(t) with autocorrelation function 2ασ2 δ(t) (δ(·) is the Kronecker delta
+m
+function). Augmenting the state with the target acceleration a(t), the dynamical model for the
+manoeuvring target becomes
+0 1 0 0
+x˙(t)= 0 0 1 x(t)+ 0 v(t) (5)
+   
+0 0 −α 1
+   
+where v(t) is white noise with variance 2ασ2 .
+m
+The continuous-time model can be discretised in the usual manner [7] by uniform sampling
+with period T. The resulting discrete-time model is (with a slight abuse of notation)
+target displacement at time kT
+x(k) = target velocity at time kT
+ 
+target acceleration at time kT
+x(k+1) = F (T)x(k)+u(k)  (6)
+α
+where the transition matrix F (T) may be shown to be
+α
+1 T (αT −1+e−αT)/α2
+F (T)= 0 1 (1−e−αT)/α (7)
+α
+ 
+0 0 e−αT
+ 
+and where u(k) is a zero-mean white noise sequence with covariance matrix Q(k) whose elements
+q are given by
+ij
+2
+q = σ2 [1−e−2αT +2αT + α3T3−2α2T2−4αTe−αT]/α4
+11 m 3
+q = σ2 [e−2αT +1−2e−αT +2αTe−αT −2αT +α2T2]/α3
+12 m
+q = σ2 [1−e−2αT −2αTe−αT]/α2
+13 m
+q = σ2 [4e−αT −3−e−2αT +2αT]/α2
+22 m
+q = σ2 [e−2αT +1−2e−αT]/α
+23 m
+q = σ2 [1−e−2αT]/α. (8)
+33 m
+The manoeuvre parameter α may be chosen to model various classes of target manoeuvre, e.g.,
+lazy turn, evasive manoeuvre, etc. If the sampling time is sufficiently small compared with the
+manoeuvre parameter, i.e., αT ≪ 1, the following asymptotic form of Q(k) may be used:
+2
+T5/20 T4/8 T3/6
+Q¯(k)=2ασ2 T4/8 T3/3 T2/2 . (9)
+m 
+T3/6 T2/2 T
+ 
+If noisy measurements of the target are available, viz.
+y(k)=H(k)x(k)+w(k), w(k)∼N{0,R(k)},
+where N{m,C} denotes a Gaussian density2 with mean m and covariance C, then it is straight-
+forward to derive a Kalman filter for minimum mean-square error estimation of the manoeuvring
+target’s state (see section 4).
+2WewillalsouseN{y;m,C}todenotethevalueaty oftheGaussiandensitywithmeanmandcovarianceC.
+6
+
+--- Page 7 ---
+TheSingermodelhasbeenextendedin[62]toreflectthetendencyoftargetstohaveaconstant
+forward speed with acceleration normal to their velocity. Under this model the turn rate is as-
+sumed to be uniformly distributed. A higher order “jerk model” of manoeuvring targets has been
+developedin[92]. This modelis obtainedby discretisingasystemsimilarto (5)the stateofwhich
+contains a third-order derivative of the position. It is claimed that this model more accurately
+reflects the behaviour of agile targets. The filter for this fourth-order model requires three-point
+initiation with the initial jerk estimate taken as zero.
+2.2 Semi-Markov Correlated Process Noise Model
+The correlated process noise model of Singer was built on in [95, 94, 58, 114]. By allowing the
+correlatedprocess noise to have a randomly switching mean value, rather than a zero mean value,
+amorerealisticmodelofamanoeuvringtargetswasobtained. Thismodelisalsomoreeconomical
+thanthe white Gaussianprocessnoise with randomlyswitching meansince it requiresfewer mean
+values for accurate modelling than the latter. The system model for a target with state x(k) and
+measurement process y(k) is in this case
+x(k+1) = F(k)x(k)+G(k)(u(k)+v(k)) (10)
+y(k) = H(k)x(k)+w(k)
+where u(k) is a random process taking values in a finite, discrete set {u ,...,u }; v(k) is the
+1 N
+correlatedGaussian(Singer) processnoise; andw(k) is a white Gaussianmeasurementnoise. The
+Singer process noise covariance and the measurement noise covariance are assumed to be known.
+Since physical targetmanoeuvres tend to be sustained for a certain “holding” time, the randomly
+switching mean is modelled as a semi-Markov process [67] (Vol. 2), and this is illustrated in Fig.
+1. In addition to the transition probabilities for a (time-invariant) Markov chain
+p =Pr{u(k+1)=u |u(k)=u },
+ij j i
+a further set of probabilities, the holding-time distributions, must also be specified:
+p (k)=Pr(transition from u |k successive time instants spent in u ).
+i i i
+p_22 p_2 (k)
+p_12 p_1 (k)
+u_2
+p_2N p_2 (k)
+u_1
+p_31 p_3 (k)
+u_N
+p_NN p_N (k)
+u_3
+p_N3 p_N (k)
+Figure 1: Finite-state, discrete-time semi-Markov model of manoeuvring target acceleration. The model
+parameters are the transition probabilities p ij and the holding-time distributions p i(k) which determine
+theprobability of switching as a function of thetime spent in thecurrent manoeuvre state.
+To simplify the characterisation of the semi-Markov process, the holding-time distribution is
+often assumed to be an monotonically increasing (e.g., exponential) function of time so that a
+transition from manoeuvre state u becomes more likely as the time spent in u increases. In
+i i
+7
+
+--- Page 8 ---
+practice, to reduce the number of free parameters in the model, it may be assumed that each
+possible manoeuvre state is held for a random holding-time, with the transition matrix of the
+Markov chain having diagonal elements near unity and equal off-diagonalelements [95].
+Minimum variance (conditional mean) state estimation of the manoeuvring target system (10)
+requiresafilter with exponentiallyincreasingmemory[1]. Approximateconditionalmeanfiltering
+isthereforenecessaryandthistaketheformofatruncated,weightedsumofKalmanfilterestimates
+matched to the possible manoeuvre sequences. By forcing the covariance update for each filter in
+the bank to be identical, it is possible to reduce the filter complexity to that of a Kalman filter
+with N state updates [51, 94] (see section 4.1).
+2.3 Poisson Processes and Renewal Models
+Targetmanoeuvreshavebeenmodelledasafinite-statejumpprocesswithMarkovtransitions[86].
+The theoryfor thesemodels is thatofdiscrete-state,continuous-timeMarkovprocesses[22]andis
+beyond the scope of this article. We will however summarise the main points of these alternative
+approaches to manoeuvre modelling and the different filter structures which arise.
+λ λ
+−1,0 0,1
+-n -1 0 1 n
+λ λ
+0,−1 1,0
+Figure 2: Discrete-state Poisson process manoeuvremodel.
+Consider the case of motion in one dimension represented by the discrete-time system
+x(k+1) = Fx(k)+G(u(k)+v(k)), v(k)∼N{0,Q}
+y(k) = Hx(k)+w(k), w(k)∼N{0,R}
+where u(k) is a scalar process corresponding to the jumps from one manoeuvre state to another,
+and the other symbols have their usual meanings. Let the possible manoeuvre states, shown in
+Fig. 2, be denoted {0,±1,±2,...,±n}, with state 0 corresponding to a constant-velocity target.
+Note that transitions are only allowed between adjacent manoeuvre states, and the transition
+rates λ (probability per unit time) between states i and j are assumed to be known constants.
+ij
+If p (k)=Pr{u(k)=i} denotes the probability that the target is in manoeuvre state i at time k,
+i
+then for i6=±n,
+p (k+∆)=λ ∆p (k)+(1−λ ∆−λ ∆)p (k)+λ ∆p (k)
+i i−1,i i−1 i,i+1 i+1,i i i+1,i i+1
+where ∆ is a small time increment. Similar recursions hold for the two states at the end of the
+chain i = ±n. A (constrained) linear, minimum variance filter for the state estimates is then
+derivedbasedonnoisyobservations. Thestateandcovarianceupdateforthefilterarethesameas
+those in the Kalman filter, but the prediction equations for the state and covariance are different.
+For example, the state prediction is
+xˆ(k+1|k)=Fxˆ(k|k)+Gb(k+1)
+wherethetermb(k+1)isthepredictedaccelerationfromthePoissonprocess,andmaybecomputed
+using the transition rates λ and posterior manoeuvre state probabilities Pr(u(k) = i|Yk). The
+ij
+probabilities Pr(u(k)=i|Yk) presumablysatisfy a recursion,althoughthis is not providedin [86].
+The covariance prediction is of the form
+P(k+1|k)=FP(k|k)F′+GQG′+GBG′
+where B is a diagonal matrix determined from the Pr{u(k)= i} and the Pr(u(k) = i|Yk) proba-
+bilities.
+8
+
+--- Page 9 ---
+No comparison with the classical manoeuvre modelling techniques is provided. More impor-
+tantly, it is unclear howrobustthe filter is whenthe transitionrates ofthe manoeuvreprocessare
+not precisely known.
+Finite-state renewal process models of target manoeuvres have been investigated in [128]. Re-
+newal processes [45] are generated by the differences between consecutive transition times (or
+sojourn times) of a point process. For example, if {t ,...,t ,...} is a Poisson process, then
+1 n
+{τ =t ,τ =t −t ,...,τ =t −t ,...} is a renewalprocess [102]. Renewalprocesses,which
+1 1 2 2 1 n n n−1
+are Markov processes, are characterised up to an initial distribution by a matrix of transition
+probabilities P between the manoeuvre states {u ,...,u }, and a set of sojourn-time distribu-
+1 N
+tions p (τ|u(k)=u ). Thus both the transitions between manoeuvre states and the time spent in
+i i
+each state following a transition are random.
+A general characteristic of Markov and semi-Markov manoeuvring target models is that the
+sojourn times (i.e., the time spent in each manoeuvre state) are exponentially distributed. Thus
+the sample paths from such processes can contain manoeuvring segments of very short duration,
+which may not be physically realistic.
+A model for an agile target that executes co-ordinated (constant turn rate at constant speed)
+turns at instants governed by a renewal process in developed in [128]. A dynamical model for
+constant-turn rate motion in the (x ,x ) plane is [10]
+1 2
+x¨ =−ωx˙ , x¨ =−ωx˙
+1 2 2 1
+where ω is the (constant) angular velocity. The state-space model for the manoeuvring target is
+then3
+x˙ (t) 0 0 1 0 x (t) 0 0
+1 1
+x˙ (t) 0 0 0 1 x (t) 0 0
+ 2 =  2 + v(t) (11)
+x¨(t) 0 0 0 −ω(t) x˙ (t) 1 0
+1 1
+ x¨ 2 (t)   0 0 ω(t) 0  x˙ 2 (t)   0 1 
+      
+      
+where v(t) is a white noise process and ω(t) a finite-state renewal process modelling the random
+rate and duration of the turns.
+The transition probabilities of the renewal process are assumed known. Each sojourn-time
+distribution is characterised by Gamma density with known parameters
+λ(λt)r−1
+exp(−λt) t>0
+p (t)= Γ(r)
+γ
+( 0 otherwise
+where r > 0 controls the shape of the density and λ > 0 governs the time scale. Notice that for
+r = 1, the Gamma density reduces to an exponential PDF, but for r > 0 the Gamma density
+function is zero at the origin, so that very short sojourns in the manoeuvre states are uncommon.
+The model (11) is not well suited to extended Kalman filtering since it is has non-Gaussian
+noise multiplying the state components. The dynamical process can be approximated by a Gaus-
+sian process with power spectral density (PSD) matched to that of the equilibrium PSD of the
+non-stationary process generated by (11). Analogously to the Singer case, a state-space system
+augmentedby the manoeuvreω(t)processis obtained. Asecondordermatchingto the PSDis re-
+quiredfora reasonableapproximationtothe originalsystem, anddepends onthe time constantof
+thematchingfilterandtheturn-ratevarianceE{ω2}. Thedimensionoftheequivalentcontinuous-
+time Gauss-Markovsystem is then six and this system is amenable to extended Kalman filtering.
+Results of simulations performed in [128] indicate that the performance improvement from this
+matched EKF method is not commensurate with its increased complexity for single-sensor sys-
+tems. However, the performance gain is significant for image-enhanced systems [127] such as a
+microwave radar teamed with an infra-red imaging sensor. It should be stressed that the renewal
+model of manoeuvres was developed for highly agile targets which are not well modelled by the
+conventional semi-Markov approach.
+3Strictlyspeaking,weshouldwritethisasastochasticdifferentialequationsincethederivativeoftheBrownian
+motiontermv isnotdefined.
+9
+
+--- Page 10 ---
+3 Manoeuvre Detection
+Manymanoeuvringtargettrackingtechniquesrequireamethodfordetectingthemanoeuvrebefore
+compensationof the state estimate can be accomplished. This is the case in approacheswhich use
+a “quiescent” constant-velocity model such as the variable-dimension filter [9, 13] which uses a
+low order Kalman filter to provide high accuracy tracking of nearly constant velocity targets, and
+switches to a higher orderfilter once the manoeuvre is detected. Manoeuvredetection is alsoused
+in an adaptive Kalman filter to switch to a higher level of process noise during a manoeuvre. The
+input estimation technique [35] also requires knowledge of the manoeuvre onset time. The IMM
+algorithm (section 4.4) and its variants do not require separate manoeuvre detection logic.
+Manoeuvre detection can be formulated as a hypothesis testing problem and implemented by
+likelihood ratio test (LRT) based on the Kalman filter innovations. The central idea is that the
+sequenceofKalmanfilterinnovationsarewhiteGaussianrandomvariablesforacorrectlymodelled
+system. The probability of the measurement sequence is then expressible solely in terms of the
+innovations and their covariances. The statistics of the Kalman filter innovations can therefore be
+checked to see if they are consistent with the hypothesised model of the target dynamics.
+Likelihoodratiotestsandotherformsofhypothesistestingaredescribedindetailin[139]. The
+likelihood ratio test (LRT) arises from the Neyman-Pearsoncriterion and uses (i) a test statistic,
+and (ii) a threshold for the test. If the test statistic, which is a function of the measurement data,
+exceeds the threshold, a manoeuvre is declared; otherwise no manoeuvre is declared. Assuming
+that the probability distribution (of the test statistic) under the manoeuvre and non-manoeuvre
+hypothesesareknown,fixingavaluefortheprobabilityoffalsealarmP determinesthethresh-
+MFA
+oldforthe test. TheprobabilityofmanoeuvredetectionP [131]andcanthenbe calculatedfor
+MD
+the chosen threshold. There is clearly a compromise since we cannot make P arbitrarily large
+MD
+without also raising P .
+MFA
+The following description of an innovations-based manoeuvre detector is from [9]. If ν(k)
+denotes the Kalmanfilter innovation, i.e., the difference between the measurementand its predic-
+tion, and S(k) is the corresponding innovations covariance matrix, then the normalised squared
+innovation is defined as
+ǫ(k)=ν′(k)S−1(k)ν(k). (12)
+In a correctly tuned KF with Gaussian inputs, ǫ(k) is a χ2 random variable where n is the
+ny y
+number of measurement components. The modified likelihood function of the Kalman filter is
+given by
+k
+λ(k)= ǫ(k) (13)
+i=1
+X
+and forms the test statistic for manoeuvre detection. This function can be made responsive to re-
+centdatabyapplyingan“exponentialforgettingfactor”[87]yieldingthefading-memorylikelihood
+function
+k
+ρ(k)= αk−iǫ(i) (14)
+i=1
+X
+which satisfies the recursion
+ρ(k)=αρ(k−1)+ǫ(k). (15)
+The forgetting factor α (not the same as in the Singer model) is between 0 and 1, and yields
+an effective memory length of 1/(1−α). Equivalently, the modified likelihood function can be
+implemented as a sliding window sum. The mean value of ρ(k) can be shown to be n /(1−α)
+y
+[9]. The detection test compares ρ(k) to a threshold to determine whether or not a manoeuvre
+has occurred. Similarly, a hypothesis test on the significance of the accelerationestimate from the
+manoeuvring Kalman filter is used to determine when the manoeuvre has terminated.
+It is important to detect manoeuvres as soon as they occur, but there is a trade-off between
+the detection delay and the probability of falsely declaring that a manoeuvre has occurred. In
+10
+
+--- Page 11 ---
+[142] a method was proposed to minimise the delay in manoeuvre detection. Their technique uses
+a sliding window over which the Kalman filter residuals are summed:
+k
+D (k)= ν(i).
+L
+i=k−L+1
+X
+The random variable D (k) is normally distributed with zero mean for a constant-velocity target
+L
+but has a non-zeromean if the targetis accelerating (the mean canbe calculatedfromthe system
+matricesandthetargetaccelerationoverthewindow). ForagivenfalsealarmprobabilityP itis
+FA
+possibletocomputetheaveragemanoeuvredetectiondelay,whichdependsonthesystemmatrices,
+the target acceleration, P and window length L. With all parameters except L fixed, it is then
+FA
+possible to determine numerically the optimum window length that minimises the manoeuvre
+detection delay.
+In tracking and other practical scenarios, the probability densities for hypothesis testing may
+not be precisely known, rendering it difficult to determine a test statistic and threshold for the
+likelihood ratio test. Moreover,incorrect modelling of the required probability densities decreases
+the power of the test, i.e., its ability to detect a manoeuvre when one has occurred.
+The same remarks apply to generalised likelihood ratio tests (GLRT’s) where the probability
+densities in question depend on an unknown parameter (e.g., the acceleration) or composite hy-
+pothesis. In a GLRT, maximum likelihood estimates of the parameter are used in a LRT to make
+a decision on which hypothesis is true. An example of an application of a GLRT in manoeuvre
+detection may be found in [91, 77] and is summarised in [51].
+If it is desiredto estimate both the onsettime of the manoeuvre andthe targetaccelerationat
+this time, the following hypothesis test on the Kalman filter innovation sequence can be set up
+H : ν(k)=ν (k)+Gu(τ)
+1 0
+H : ν(k)=ν (k)
+0 0
+where the accelerationu(τ) is zero for k <τ and constant thereafter, and ν (k) is the residual for
+0
+a constant-velocity target. A sufficient statistic for the test is
+p(ν(k)|Yk,H )
+1
+L=
+p(ν(k)|Yk,H )
+0
+whichisimplementedbydiscretisingthepossibleaccelerationsandonsettimesuandτ andpassing
+the filter innovation through a bank of low-pass filters matched to the possible combinations of
+u and τ. The optimum estimate of u and τ corresponds to the filter with the largest magnitude
+output. Althoughthistechniqueestimatesboththeaccelerationandonsettimeofthemanoeuvre,
+the detection is delayedby the memory of the low-passfilter, and the complexity of the algorithm
+is substantial.
+Severaltechniquesexistintheliteraturefordesigningmorerobustdetectiontests,theseinclude
+the marginalised likelihood ratio test (MLRT) [59] and a robust LRT reported in [148]. It seems
+that these techniques have so far not been applied in manoeuvring target tracking. The MLRT is
+designedforsystemsundergoingsuddenchangeswhentheonsettimeandmagnitudeofthechange
+are unknown. It uses marginalisation to remove the dependence of the probability densities on
+the parameters and also does not require a threshold. Despite this advantage, the MLRT has a
+high complexity and also requires data smoothing. The robust LRT in [148] focusses mainly on
+developingahypothesistestfornonlineardynamicalsystemsinlowsignal-to-noiseratioconditions.
+4 Manoeuvring Target Tracking Techniques
+In this section we review the existing techniques for tracking a manoeuvring target in the absence
+of clutter. The literature on this subject is replete with claims of superior performance; however,
+many simulation studies are unconvincing or fail to take account of existing approaches in their
+11
+
+--- Page 12 ---
+performance comparisons. The general absence of accepted tests for manoeuvring and multi-
+target tracking has been noted in [27]. Recently a benchmark problem for manoeuvring target
+tracking with a phased-array microwave radar was established [27]. This benchmark problem
+requires the tracker to initiate and maintain track on manoeuvring targets within a minimum
+numberofscans(onaverage),subjecttoamaximumtracklossprobabilityof4%. Testtargetsare
+subject to position and manoeuvrability constraints while fading, missed detections, beam shape
+and resolution are taken into account.
+The Kalman filter is the optimal (MMSE) state estimator for linear observations of a target
+with known dynamics and white Gaussian process and measurement noise. However, as soon as
+a target changes its dynamics, e.g., by executing a manoeuvre, the Kalman filter estimates may
+diverge causing track loss. This divergence is due to incorrect modelling of the target dynamics,
+ratherthanfinitenumericalprecision,andisthechiefdifficultyinmanoeuvringtargettracking. As
+summarisedin [51], the approachesto manoeuvring targettracking using Kalmanfilters generally
+fall into 5 classes:
+1. re-initialisation of the Kalman gain (to reduce the effect of past measurements);
+2. increasing the process noise covariance;
+3. increasing the state estimation covariance;
+4. augmenting the filter state with acceleration terms (variable-dimension filter);
+5. switching to or applying heavier weighting to another filter in a bank of Kalman filters
+(multiple-model approaches).
+Once a manoeuvre is detected, it becomes necessary to take one of the actions above in order
+to correct the state estimate and its covariance. Approaches 1–3 above all involve changing the
+parameters of the Kalman filter. For a given application, the adjustment required will depend
+on the type of manoeuvre, the sampling time, the measurement noise, etc. Usually, trial-and-
+error methods must be used to tune the Kalman filter for manoeuvre tracking. Approaches 4 and
+5 involve changing or adapting the filter structure, and we describe these later in some detail.
+The following sections cover the major filtering techniques and structures for manoeuvring target
+tracking, including: optimal Bayesian filters for multi-level (Markov) process noise and multiple
+models; single-scanandmultiple-scanapproximatefilters including the interactingmultiple-model
+(IMM)algorithmandthegeneralisedpseudo-Bayesian(GPB)filter; inputestimation;thevariable
+dimension filter; the two-stage Kalman filter (which treats the acceleration as a bias term); the
+IMMsmoother;andanexpectation-maximisationapproach. The multi-hypothesis tracker(MHT)
+[113]isalsoofimportanceinmanoeuvringtargettracking,andwecommentonthis insection5.6.
+4.1 Optimal and Approximate Filters for Markov Noise
+The optimal (Bayesian) filter can be derived for tracking a manoeuvring target whose accelera-
+tion u(k) is represented by a finite-state Markov chain with state space {u ,...,u } and known
+1 N
+transition probabilities p . The system model is, as in equation (3),
+ij
+x(k+1) = Fx(k)+Gu(k)+Gv(k), v(k)∼N{0,Q(k)}
+y(k) = Hx(k)+w(k), w(k)∼N{0,R(k)}
+where the state x(k) contains position, velocity and acceleration terms with corresponding F
+matrix (7) and v(k) is the zero-mean Singer noise component with covariance Q given by (8). In
+this derivation we will not use the semi-Markovnature of the manoeuvre process u(k). As in [51],
+we denote the jth sequence of possible target manoeuvres by
+Ωk ={u ,...,u }.
+j j1 jk
+12
+
+--- Page 13 ---
+From Bayes’ rule, the conditional mean estimate of x(k) based on the measurements contained in
+Yk is expressible as
+Nk
+xˆ(k|k)= Pr(Ωk|Yk)xˆ (k|k) (16)
+i i
+i=1
+X
+with conditional estimates defined as xˆ (k|k) = E{x(k)|Ωk,Yk}. Alternatively, we could take the
+i i
+MAP estimate, i.e., the xˆ (k|k) for which Pr(Ωk|Yk) is maximum. In either case, the optimal
+i i
+estimate is seen to require the evaluation of Nk terms which implies that the optimal tracker has
+exponentially increasing computational requirements, as illustrated in Fig. 3.
+TIME
+0 1 2
+M 1 X_11(2)
+X_1(1)
+M 1
+M 2 X_12(2)
+X(0)
+M 1 X_21(2)
+M 2
+X_2(1)
+M 2 X_22(2)
+Σ Σ
+ESTIMATE X_i (1) X_i j (2)
+Figure 3: Idea behind branching filters (e.g., MHT) and optimal Bayesian algorithms with two possible
+manoeuvre models M1 or M2 at each time instant. The MAP estimate is obtained by taking the most
+probable manoeuvre sequence at time k, while the MMSE estimate corresponds to a weighted sum of all
+conditionalstateestimatesatagiventime. Sub-optimalapproximationsareobtainedbymergingcommon
+path histories and deleting unlikely branches.
+AnaturalwayofreducingthecomplexityofthefilteristoapproximatetheNk−1-termmixture
+PDF of the state at time k−1 by a single Gaussian density, thus obtaining a filter with O(N)
+complexity [95]:
+N
+xˆ(k|k) ≈ c (k)xˆ (k|k)
+i i
+i=1
+X
+c (k) = Pr(u(k)=u |Yk)
+i i
+where xˆ (k|k) = E{x(k)|u(k) = u ,Yk}, which is generally not the same as E{x(k)|Ωk,Yk}. The
+i i i
+conditional state estimates are obtained by Kalman filtering in the usual manner:
+xˆ (k|k) = xˆ (k|k−1)+W(k)[y(k)−yˆ(k|k−1)
+i i i
+xˆ (k|k−1) = Fxˆ (k−1|k−1)+Gu
+i i i
+yˆ(k|k−1) = Hxˆ (k|k−1)
+i i
+W(k) = P(k|k−1)H′S−1(k)
+S(k) = HP(k|k−1)H′+R(k)
+P(k|k−1) = FP(k−1|k−1)F′+GQ(k)G′
+P (k|k) = (I −W(k)H)P(k|k−1)
+i
+13
+
+--- Page 14 ---
+where P (k|k) is the error covariance associated with xˆ (k|k). The net covariance of the state
+i i
+estimate is obtained using a standard formula for Gaussian mixtures [10]
+N
+P(k|k) = c (k){P (k|k)+xˆ (k|k)xˆ (k|k)′}−xˆ(k|k)xˆ(k|k)′
+i i i i
+i=1
+X
+= (I −W(k)H)P(k|k−1)− c (k)c (k)xˆ (k|k)xˆ (k|k)′
+i j i j
+i6=j
+X
+where we have used the fact that the c (k) sum to unity, and the assumption that the noise
+i
+covariancesQandRareidenticalacrossallmanoeuvremodes. Toevaluatetheposteriormanoeuvre
+probabilities c (k), a recursion can be derived using Bayes’ rule:
+i
+c (k) = Pr(u(k)=u |y(k),Yk−1)
+i i
+= ∆−1p(y(k)|u(k)=u ,Yk−1)Pr(u(k)=u |Yk−1),
+i i
+writing the normalising constant as ∆−1. Furthermore the above terms are by assumption
+p(y(k)|u(k)=u ,Yk−1)=N{yˆ(k|k−1),S(k)}
+i i
+and
+N
+Pr(u(k)=u |Yk−1)= Pr(u(k)=u |u(k−1)=u ,Yk−1)Pr(u(k−1)=u |Yk−1)
+i i j j
+j=1
+X
+so that the desired recursion is
+N
+c (k)=∆−1N{yˆ(k|k−1),S(k)) p c (k−1).
+i i ji j
+j=1
+X
+Finally the state estimate update can be written
+N
+xˆ(k|k) = c (k)xˆ (k|k)
+i i
+i=1
+X
+N N
+= c (k)xˆ (k|k−1)+ c (k)Gu
+i i i i
+i=1 i=1
+X X
+= (I −W(k)H)(Fxˆ(k−1|k−1)+Guˆ(k))+W(k)y(k)
+where uˆ(k)= N c (k)u is the estimated targetaccelerationattime k. Notice that the Kalman
+i=1 i i
+gain and covariances for the conditional state estimate are identical, which greatly simplifies the
+P
+filter update.
+4.2 Input Estimation
+The input estimationtechnique treats the targetaccelerationasdeterministic bu unknownvector.
+The ensuing description of the technique is from [9] and is based on [35]. Assume a system model
+of the form
+x(k+1) = Fx(k)+Gu(k)+v(k), v(k)∼N{0,Q(k)} (17)
+y(k) = Hx(k)+w(k), w(k)∼N{0,R(k)}
+for known matrices F, G, H and noise covariances Q, R. The acceleration sequence {u(l)} is
+assumed to be zero for l <k, and non-zero for k ≤l<k+s. Denote the state estimates from the
+14
+
+--- Page 15 ---
+constant-velocityu(k)≡0 targetmodel as xˆ (k|k) and those for (17) as xˆ(k|k). The predictionof
+0
+these estimates is accomplished via
+xˆ (i+1|i)=F(I −W(i)H)xˆ (i|i−1)+FW(i)y(i). (18)
+0 0
+Denote the estimator transition matrix by Φ(i)=F(I −W(i)H) and the i-step transition matrix
+by
+i
+△
+Φ(k,i)= Φ(j)=Φ(i)Φ(i−1)···Φ(k)
+j=k
+Y
+Startingwithxˆ (k|k−1)=xˆ(k|k−1),andpropagatingthedifferenceequation(18)[70]weobtain
+0
+the constant-velocity predictions for i=k,...,k+s−1 as
+i
+xˆ (i+1|i)=Φ(k,i)xˆ(k|k−1)+ Φ(k,j−1)FW(j)y(j), (19)
+0
+j=k
+X
+whereas the correct predictions are in fact
+i
+xˆ(i+1|i)=Φ(k,i)xˆ(k|k−1)+ Φ(k,j−1)(FW(j)y(j)+Gu(j))
+j=k
+X
+with innovations ν(i+1)=y(i+1)−Hxˆ(i+1|i). The innovationsare white, zero-meanand have
+covariance S(i+1) (the innovations covariance in the Kalman filter for (17)). The innovations
+sequence of the mistuned (zero-velocity) filter is
+ν (i+1)=y(i+1)−Hxˆ (i+1|i).
+0 0
+By assuming that the accelerations u(j)=u are constant over the interval [k,k+s−1], we have
+that
+i
+ν (i+1)=Ψ(i+1)u+ν(i+1), Ψ(i)=H Φ(k,j−1)G
+0
+j=k
+X
+which results in a standardleast-squaresproblemfor the unknown input vector u. Now write this
+as
+ν =Ψu+ν, ν ∼N{0,S}
+0
+where ν =[ν(k+1),...,ν(k+s)]′, S = blockdiag(S(i)), etc. The least-squares estimate for u is
+then
+uˆ=(Ψ′S−1Ψ)−1Ψ′S−1ν
+0
+and has mean-square error P = (Ψ′S−1Ψ)−1. The same solution can of course be obtained by
+u
+recursive least-squares. The acceleration estimate uˆ can be employed to test the manoeuvring
+hypothesis, with a manoeuvre declared if
+d(uˆ)=uˆ′P−1uˆ≥c
+u
+forsomethresholdcchosenfromaχ2 tableforagivenfalse-alarmprobability(n isthedimension
+nu u
+of the input vector).
+When a manoeuvre is declared, the constant-velocity state estimate and its covariance are
+corrected according to
+xˆ(k+s+1|k+s) = xˆ (k+s+1|k+s)+Muˆ
+0
+P(k+s+1|k+s) = P(k+s+1|k+s)+MP M′
+u
+i
+where M = Φ(k,j−1)G. The manoeuvre is declared finished when the correction becomes
+j=k
+insignificant. The key parameter in the algorithm is the window length s, the choice of which
+P
+depends on the sampling interval.
+15
+
+--- Page 16 ---
+Variousmodifications ofthe input estimation technique haveappeared[53, 33,103]. The tech-
+nique does not require retrospective corrections to the estimate, and reportedly yields reasonable
+performance [54], but at a relatively high complexity. Input estimation was compared with the
+IMM filter in [16, 52, 65]. The assumption of known manoeuvre onset time is addressed in [33]
+where a bank of filters was used to estimate the onset time of the manoeuvre— increasing the
+complexity of the technique by at least an order of magnitude. It is claimed [53] that enhanced
+performancecanbeobtainedatsignificantlyreducedcomplexityusingthe informationformofthe
+Kalmanfilter [5]. In [33] it is suggestedthat the technique is well-suited to implementation in the
+framework of a multi-hypothesis tracker (see section 5).
+4.3 Variable-Dimension Filter
+The idea behind variable-dimension filtering was already mentioned in section 3. A constant-
+velocity model for the target is adopted during quiescent (non-manoeuvring) tracking periods.
+Manoeuvre detection is accomplished by monitoring a fading-memory average of the normalised
+residuals from the Kalman filter. Once a manoeuvre is detected, the constant-velocity model is
+abandoned and the algorithm “switches” to an augmented model such as the one-dimensional,
+mean-jerk acceleration (Wiener process noise) model:
+x(k+1)=Fx(k)+Gv(k), v(k)∼N{0,Q(k)}
+1 T T2/2 T5/20 T4/8 T3/6
+F = 0 1 T , Q= T4/8 T3/3 T2/2 q (20)
+   
+0 0 1 T3/6 T2/2 T
+   
+where the quantity (qT)models the changeinaccelerationoverthe samplinginterval[9]. Alter-
+natively the Singer model in section 2.1 could be used. For a manoeuvre detector with (effective)
+p
+window length s declaring a manoeuvre at time k, the augmented model must be initialised at
+time k−s, that is, retrospectively. In [54] it is pointed out that, strictly speaking, the variable-
+dimension filter is not a filter due to the latter requirement. A Monte Carlo comparison of the
+variable-dimension and input estimation approaches appears in [9]: the variable-dimension filter
+performed better on average than input estimation, despite the latter being considerably more
+complex;atwo-levelwhitenoisemodel,thesimplestalgorithmofthethree,performedbetterthan
+the input estimation technique and only slightly worse than the variable-dimension filter.
+4.4 Optimal and Approximate Filters for Jump-Linear Models
+In contrast to the multiple model approaches based on multi-level noise or Markov inputs, the
+focus of this section is on variable structure systems of the type (4), repeated here:
+x(k+1) = F(k;M(k))x(k)+v(k;M(k)), v(k)∼N{0,Q(M(k))} (21)
+y(k) = H(k;M(k))x(k)+w(k;M(k)), w(k)∼N{0,R(M(k))}.
+The“modeprocess”M(k)isafinite-stateMarkovchaintakingvaluesin{M ,...,M }withknown
+1 r
+transition probabilities p . The notation M (k) signifies that model M(k)=M is assumed to be
+ij i i
+in effect during the time interval [k−1,k). We also denote by Mk the lth mode history, in other
+l
+words
+Mk ={M (1),...,M (k)}={Mk−1,M (k)}.
+l l1 lk s l
+There are a total of rk possible mode histories at time k. We can derive the optimal Bayesian
+(MMSE) state estimator for (21) by decomposing the posterior PDF of the state as follows:
+rk
+p(x(k)|Yk)= µ (k)p(x(k)|Mk,Yk) (22)
+l l
+l=1
+X
+16
+
+--- Page 17 ---
+where µ (k) = Pr(Mk|Yk) are the mode probabilities. A recursion on the mode probabilities is
+l l
+obtained in a similar manner to section 4.1 as
+µ (k) = δ−1p(y(k)|Mk,Yk−1)Pr(Mk|Yk−1)
+l l l
+= δ−1p(y(k)|Mk,Yk−1)Pr(M (k)|Mk−1,Yk−1)Pr(Mk−1|Yk−1)
+l l s s
+= δ−1p(y(k)|Mk,Yk−1)p µ (k−1).
+l ij s
+Notethateachtermp(y(k)|Mk,Yk−1)involvesrunningaKalmanfilterontheentiremodehistory
+l
+up to time k.
+Computation of (22) is clearly infeasible since it involves a sum with an exponentially growing
+number ofterms. It is therefore necessaryto considersub-optimal “N-scan-back”approachesthat
+“combine” mode histories prior to time k−N [10]. This amounts to approximating the mixture
+PDF of the state (or measurement) by a single Gaussian, i.e.
+p(x(k−N)|Yk−N)∼N{xˆ,P}.
+The resulting algorithm is called a generalised pseudo-Bayesian filter of order N, GPB(N), and
+requires only rN parallel Kalman filter computations at each time, rather than rk. In particular,
+for N =1 weobtainthe GPB(1)filter whichsummarisesthe mixture PDF(22)to time k−1 by a
+single Gaussiandensity andcalculates r KFestimates attime k, collapsingthis r-termmixture to
+a single Gaussian PDF. The probabilistic data association filter is analogous to the GPB(1) filter
+with the replacement of mode hypotheses by target/clutter associations.
+The GPB(2) filter would consider the r2 possible Kalman filter estimates based on the last
+two manoeuvre modes {M(k−1),M(k)} starting with a prior Gaussian density at time k−2.
+It then recondenses the resulting mixture of r2 terms to a single Gaussian density at time k. In
+other words, the GPB(2) filter carries the state estimate and covariance at time k −2 and the
+r mode-conditioned state estimates and their covariances at time k −1, running each of the r
+conditionalestimatesthroughr mode-matchedKalmanfiltersattimek. Obviouslythisprocedure
+quickly becomes unworkable, although it is generally accepted that near-optimal performance is
+obtained, at least in good SNR conditions, with GPB(2).
+Instead of combining the r2 mode-conditioned estimates at the end of the filter cycle, as in
+GPB(2),itispossibletorunonlyr Kalmanfiltersinparallel,eachwithanappropriatelyweighted
+combinationofstateestimatesasa“mixedinitialcondition. Thisreducestheamountofprocessing
+almost to that of the GPB(1) approach while obtaining performance near that of the GPB(2)
+approach. Thisideaisthebasisoftheinteractingmultiple-model(IMM)algorithm[31]. Returning
+to the mixture density (22), we have
+r
+p(x(k)|Yk)= µ (k)p(x(k)|M (k),y(k),Yk−1).
+j j
+j=1
+X
+Now, by definition
+p(y(k)|M (k),x(k))
+p(x(k)|M (k),y(k),Yk−1)= j p(x(k)|M (k),Yk−1).
+j p(y(k)|M (k),Yk−1) j
+j
+Conditioning on M (k−1), it follows that
+i
+r
+p(x(k)|M (k),Yk−1) = Pr(M (k−1)|M (k),Yk−1)p(x(k)|M (k),M (k−1),Yk−1) (23)
+j i j j i
+i=1
+X
+r
+≈ µ (k−1|k−1)p(x(k)|M (k),M (k−1),xˆ (k−1|k−1),P (k−1|k−1))
+i|j j i i i
+i=1
+X
+where µ (k−1|k−1) = △ Pr(M (k−1)|M (k),Yk−1) and the approximation rests on taking the
+i|j i j
+mode-conditionedKalmanfilterestimates{xˆ (k−1|k−1),P (k−1|k−1)}l=1,...,r assufficient
+i i
+17
+
+--- Page 18 ---
+statisticsforthedataYk−1. ThemixturePDFin(23)isthenapproximatedbyaGaussianmixture
+r
+p(x(k)|M (k),Yk−1)= µ (k−1|k−1)N{x(k);xˆj(k−1|k−1),Pj(k−1|k−1)} (24)
+j i|j i i
+i=1
+X
+where
+xˆj(k−1|k−1) = E{x(k)|M (k),xˆ (k−1|k−1),P (k−1|k−1)}
+i j i i
+Pj(k−1|k−1) = Cov{x(k)|M (k),xˆ (k−1|k−1),P (k−1|k−1)}
+i j i i
+are the r2 Kalman filter estimates calculated in the GPB(2) approach (we will see that these are
+not required in the IMM algorithm). The mean of the Gaussian mixture in (24) is
+r
+xˆ0(k−1|k−1) = µ (k−1|k−1)E{x(k)|M (k),xˆ (k−1|k−1),P (k−1|k−1)}
+j i|j j i i
+i=1
+X
+r r
+= E{x(k)|M (k), µ xˆ , cov{ µ xˆ }}
+j i|j i i|j i
+i=1 i=1
+X X
+r
+= µ (k−1|k−1)xˆ (k−1|k−1)
+i|j i
+i=1
+X
+bylinearityoftheKalmanfilter(i.e., summingmanyKFestimatesisthesameasapplyingasingle
+KF to a sum of estimates). The covariance of (24) is
+r
+P0(k−1|k−1) = µ (k−1|k−1){P (k−1|k−1)+xˆ (k−1|k−1)xˆ (k−1|k−1)′}
+j i|j i i i
+i=1
+X
+−xˆ0(k−1|k−1)xˆ0(k−1|k−1)′
+j j
+Only the first two moments xˆ0(k−1|k−1) and P0(k−1|k−1), j =1,...,r, of the mixture (24)
+j j
+are retained in the IMM.
+Themeanandcovarianceofthedensityin(22)canthenbecomputedbyr Kalmanfilterseach
+tuned to a different mixed initial condition. Each KF in the bank of r produces its estimates via
+{xˆ0(k−1|k−1), P0(k−1|k−1)}→ Kalman Filter →{xˆ (k|k), P (k|k)}.
+j j j j
+The conditional state estimates are combined in the usual way to give the overall state estimate
+and covariance
+r
+xˆ(k|k) = µ (k)xˆ (k|k)
+j j
+i=1
+X
+r
+P(k|k) = µ (k){P (k|k)+xˆ (k|k)xˆ (k|k)′}−xˆ(k|k)xˆ(k|k)′.
+j j j j
+i=1
+X
+Note that the r estimates and covariances xˆ (k|k) and P (k|k) must be stored as they are needed
+j j
+inthe nextiterationofthe algorithm. To completethe descriptionofthe IMMalgorithm,weneed
+to developa recursionfor the mixing probabilitiesandevaluate the mode probabilities µ (k). The
+j
+mixing probabilities are computed with an application of Bayes’rule as
+µ (k−1|k−1)=c−1p µ (k−1), i,j =1,...,r
+i|j j ij i
+where c is a normalisation constant given by
+j
+r
+c = p µ (k−1).
+j ij i
+i=1
+X
+18
+
+--- Page 19 ---
+The mode probabilities are computed as in section 4.1
+r
+µ (k)=c−1Λ (k) p µ (k−1), j =1,...,r,
+j j ij i
+i=1
+X
+in which the likelihood function for mode j is evaluated as
+Λ (k)=p(y(k)|M (k),Yk−1)=N{y(k);yˆj(k|k−1),Sj(k)}
+j j
+where the predictions for mode j are based on mixed initial conditions, i.e.,
+yˆj(k|k−1) = HFxˆ0(k−1|k−1)
+j
+Sj(k) = HPj(k|k−1)H′+R
+Pj(k|k−1) = FP0(k−1|k−1)F′+Q.
+j
+The mode probabilities µ (k) must also be stored during the processing. An attractive property
+j
+of the IMM algorithm for manoeuvring target tracking is that it does not require an explicit
+manoeuvre detector since a range of possible manoeuvres are built into the model and these are
+selected by a probabilistic weighting.
+In [16, 10] a two-model and a three-model IMM filter are compared with the standard input
+estimation method and the variable-dimension filter for tracking a target executing a 90 degree
+turn. The models were taken to be: M constant-velocity, M Wiener process acceleration model
+1 2
+(20) with acceleration increment q = 0.001, M constant acceleration model with zero process
+3
+noise. A Monte Carlo simulation showed a substantial reduction in position error for both IMM
+filtersduringtheturn,withafactoroftwodecreaseinRMSpositionerrorduringconstant-velocity
+periods. Thecomplexityoftheinputestimationfilterwasaround10timesthatofthethree-model
+IMM filter. It is claimed that the results are not very sensitive to the choice of Markov transition
+probabilitiesp aslong asthe matrix remainsdiagonallydominant. Adjustment ofthe (diagonal)
+ij
+transitionprobabilitiesmerelytradesoffthepeak errorduringthe manoeuvrewiththeRMSerror
+forconstant-velocitytracking. Howeverin[50]itisshownthatperformanceofthe IMMalgorithm
+may depend strongly on the choice of transition probabilities for discrimination of the correct
+target manoeuvring regime. It is also indicated that careful selection of the different manoeuvre
+models is required.
+ItisclearthatthechoiceofmodelsintheIMMisanimportantimplementationalconsideration.
+In particular the “dynamic range” of the set of models should be sufficient to give an adequate
+description of the anticipated target dynamics. In [85], a method for implementing IMM filters
+withvariablestructurewasproposed. ThealgorithmadaptsthemodelsusedinanIMMfilterover
+adiscreteset. Thisavoidsover-parametrisingthedynamics(whichcanbeasbadashavingtoofew
+models) while retaining sufficient coverage for good tracking. The case of a continuum of models
+was treated in [90, 118]. In [57] the need for selecting the best model set was also mentioned,
+although the solution presented there was iterative rather than adaptive.
+A comparison of the IMM algorithm and a Viterbi algorithm (VA) (applied to solve the ma-
+noeuvre association problem) for a system with multi-level white process noise was coveredin [8].
+Their conclusions were: 1) the performance of both the IMM and the VA depends monotonically
+on the (maximal) difference between the discrete accelerations u and on the sampling time, and
+i
+inversely on the measurement noise; 2) the VA is generally outperforms the IMM algorithm for
+high sampling rates, low measurement noise and a large number of discrete accelerations; but 3)
+the IMM provides better state estimation immediately following the onset of the manoeuvre.
+4.5 Two-Stage Kalman Filter
+A well-knownapplication of Kalman filtering is the simultaneous estimation of a dynamic process
+with a constant, or slowly-varyingunknown bias that is correlatedwith the state. The dynamical
+stateisaugmentedbytheconstantandtheestimationisperformedintheusualway. Thistechnique
+has been applied to estimate the acceleration of a manoeuvring target by treating the target
+acceleration as a bias term on a constant-velocity model [3]. We now summarise the approach.
+19
+
+--- Page 20 ---
+Consider the following system description
+x(k+1) = Fx(k)+Gu(k)+v(k) (25)
+u(k+1) = u(k)+n(k) (26)
+y(k) = Hx(k)+w(k) (27)
+where v(k), n(k), w(k) are zero-mean, white Gaussian noise sequences with covariance Q , Q
+v n
+and R respectively, v(k) and w(k) are uncorrelated, and v(k) and n(k) are jointly Gaussian with
+covariance E{v(k)n′(k)}=Q . Another way of writing (25) is
+vn
+x(k+1) F G x(k) v(k)
+= + (28)
+u(k+1) 0 I u(k) n(k)
+(cid:20) (cid:21) (cid:20) (cid:21)(cid:20) (cid:21) (cid:20) (cid:21)
+x(k)
+y(k) = H 0 +w(k)
+u(k)
+(cid:20) (cid:21)
+(cid:2) (cid:3)
+Undercertainobservability/controllabilityconditionsonthesystemmatrices[5],thesystem(28)is
+stable in the sense that the covarianceof the Kalman filter convergesto a unique positive-definite
+solution. From a practical standpoint, it may be undesirable to increase the dimension of the
+Kalman filter. However, it is also possible to write the recursions implied in (28) as a two-stage
+system: the first stage is a Kalman filter for the system (25) assuming zero bias (u(k) ≡ 0), the
+second stage is a filter based only on the bias term u(k). The outputs of the stages are combined
+to yield the same estimate sequence as that which would be obtained by an augmented filter for
+(28).
+The bias-free filter produces xˆ (k|k) according to the recursions below:
+0
+xˆ (k|k−1) = Fxˆ (k−1|k−1)
+0 0
+xˆ (k|k) = xˆ (k|k−1)+W (k)ν (k)
+0 0 0 0
+ν (k) = y(k)−Hxˆ (k|k−1)
+0 0
+P (k|k−1) = FP (k−1|k−1)F′+Q
+0 0 0
+P (k|k) = (I−W (k)H)P (k|k−1)
+0 0 0
+W (k) = P (k|k−1)H′S−1(k)
+0 0 0
+S (k) = HP (k|k−1)H′+R,
+0 0
+for some covariance Q yet to be defined. The bias filter computes its estimate via:
+0
+uˆ(k|k−1) = uˆ(k−1|k−1)
+uˆ(k|k) = uˆ(k|k−1)+W (k)ν (k)−C(k)uˆ(k|k−1)
+u 0
+P (k|k−1) = P (k−1|k−1)+Q
+u u u
+P (k|k) = (I −W (k)C(k))P (k|k−1)
+u u u
+W (k) = P (k|k−1)C(k)′S−1(k)
+u u u
+S (k) = C(k)P (k|k−1)C(k)′+HP (k|k−1)H′+R,
+u u 0
+where the bias gain is computed using
+C(k) = HU(k)
+U(k) = FV(k−1)+G=F(I−W (k−1)H)U(k−1)+G
+0
+V(k) = (I −W (k)H)U(k).
+0
+The two-stage Kalman filter estimate is formed using the bias-free state and bias estimates
+xˆ(k|k) = xˆ (k|k)+V(k)uˆ(k|k)
+0
+xˆ(k|k−1) = xˆ (k|k−1)+U(k)uˆ(k|k−1)
+0
+20
+
+--- Page 21 ---
+P (k|k) = P (k|k)+V(k)P (k|k)V(k)′
+11 0 u
+P (k|k) = V(k)P (k|k)
+12 u
+P (k|k−1) = U(k)P (k|k−1)
+12 u
+P (k|k) = P (k|k)
+22 u
+P (k|k−1) = P (k|k−1)
+22 u
+where P are the blocks of the covariance matrix for the augmented state (x′,u′)′. A theorem in
+ij
+[3] shows that the two-stage Kalman filter is equivalent to the augmented Kalman filter when
+Q = U(k+1)Q
+vn u
+Q = Q −U(k+1)Q U′(k+1)≥0. (29)
+0 v n
+The positive semi-definiteness of Q is required for stability of the filter.
+0
+Theoverallcomplexityofthebias-freeandbiasfiltersislessthanthatoftheaugmentedKalman
+filterinmostcasesofinterest. The operationofthe two-stagefilteris akintoavariable-dimension
+filter with a higher-order (acceleration) estimator that can be switched off in quiescent mode. A
+standard exponentially-weighted innovations manoeuvre detector (section 3) is used to detect the
+onset of the manoeuvre. If the effective window length is ∆, and a manoeuvre is detected at time
+k, the acceleration(bias) filter, but not the bias-free filter, must be initialised (retrospectively) at
+time k−∆ to correct the constant-velocity filter estimates. The covariance Q is also increased
+0
+during the manoeuvre. Termination of the manoeuvre is sensed by monitoring the innovations
+of the bias-free filter. In a simulation in [3] the two-stage Kalman filter was compared with the
+variable-dimension filter. The results indicated that the estimation errors were similar before and
+during a manoeuvre, but the two-stage filter detected the end of the manoeuvre more rapidly.
+Regarding initialisation of the two-stage Kalman filter, the initial bias estimate is taken to be
+uncorrelated with the initial bias-free state estimate
+P (0|0)=0 ⇒ V(0)=0, U(0)=0.
+12
+The bias-free process noise Q (29) sets the desired response of the constant-velocity filter; the
+0
+bias filter process noise Q determines the manoeuvre response.
+u
+The two-stage Kalman filter has been applied within the IMM framework by [97, 96] with the
+objectiveofmakingthe assumedtargetaccelerationavariableparameterintheIMM.Inthisway,
+onlytwofiltersperco-ordinate,ratherthanseveralfixed-accelerationmodels,arerequiredtocover
+the possible range of target motions. The results of this study indicate similar performance at
+lowercomplexitycomparedwiththe standardIMMapproach. Adifficultyisthe delayrequiredby
+the two-stage Kalman filter in estimating the manoeuvre acceleration, although this is somewhat
+alleviated by the subsequent matching of the IMM model to the target acceleration.
+In[25]aninteractingmultiplemodelalgorithmwithbiasestimationwasproposed,againbased
+onatwo-stageKalmanfilter. ByusingonlybiasfiltersintheIMMasopposedtoaugmented-state
+Kalman filters, a complexity reduction is achieved. A simulation was provided for an IMM with
+3 bias models corresponding to: zero bias (constant velocity), constant non-zero bias (constant
+acceleration), and constant bias with a constant-speed constraint. The performance obtained was
+similar to a 3-model IMM filter while requiring roughly 50% of the computation.
+Lastly an interacting accelerationcompensation (IAC) technique was put forwardin [144] as a
+means of obviating the requirement for manoeuvre detection of the two-stage Kalman filter. The
+IAC technique, illustrated in Fig. 4 (from [28]), assumes a two-stage estimator with a bias-free
+(constant-velocity)filterandtwoacceleration(bias)models: oneforaconstant-velocitytargetand
+oneforconstantacceleration. Sincethe IMMdoesnotemployaconventionalmanoeuvredetector,
+it can provide an acceleration estimate in real time with which to compensate the bias-free filter.
+The IAC algorithm operates at roughly half the computational cost of an IMM filter with two
+models, but provides similar performance.
+21
+
+--- Page 22 ---
+x(k-1|k-1) x(k-1|k-1)
+1 2
+MIXING µ(k-1)
+PSEUDO
+ACCELERATION Y(k)
+FILTER FILTER
+M1 M2
+MODEL
+PROBABILITIES
+WEIGHTED
+COMBINATION
+^ x(k|k) x(k|k) x (k|k) µ(k)
+1 2
+Figure 4: Block diagram of theinteracting multiple model algorithm with acceleration compensation.
+4.6 IMM Algorithm for Fixed Interval Smoothing
+A fixed-interval smoothing approach to manoeuvring target tracking has been derived in [63],
+following earlier work by [56, 32]. The forward-running and backward-running Kalman filters in
+the usual fixed-interval smoother are replaced by interacting multiple model filters, together with
+a technique for fusing the conditionalestimates fromthe two filters. The backward-runningfilters
+areobtainedbytime-reversalofthe correspondingforward-runningfilters. Althoughthe proposed
+algorithm is a batch algorithm with high complexity, its high performance makes it useful as an
+estimator for generating benchmark tracks in ground truthing or for sensor alignment in multi-
+sensor tracking systems.
+In the notation of section 4.4, assuming r models, suppose that at time k model M (k) is in
+i
+effect for the forward filter with the backward filter assuming model M (k+1). The conditional
+j
+state “predictions” and their covariances are computed as xˆF(k|k−1), PF(k|k−1), xˆB(k|k−1),
+i i i
+PB(k|k−1). AssumingafixedintervalofsizeN,thepredictionsareusedtoobtainr2 fusedinitial
+i
+estimates according to
+xˆ0(k|N) = P0(k|N)[(PF(k|k−1))−1xˆF(k|k−1)+(PB(k|k−1))−1xˆB(k|k−1)]
+ij ij i i j j
+P0(k|N) = (PF(k|k−1))−1+(PB(k|k−1))−1.
+ij i j
+These quantities are then mixed to yield prior state and covariances for the Kalman smoother
+matched to model M (k)
+j
+r
+x0(k|N) = µ (k+1|N)xˆ0 (k|N)
+i j|i ji
+j=1
+X
+r
+P0(k|N) = µ (k+1|N)[P0(k|N)+xˆ0 (k|N)xˆ0 (k|N)′]−x0(k|N)x0(k|N)′.
+i j|i ji ij ij i i
+j=1
+X
+Themodeprobabilitiesµ (k|N)areupdatedviathesmoothedmeasurementsyˆ (k|N)fromsmoother
+j j
+22
+
+--- Page 23 ---
+M (k). Finally the conditional estimates are combined to give
+j
+r
+xˆ(k|N)= µ (k|N)xˆ (k|N)
+j j
+j=1
+X
+TheIMMsmootherwascomparedundersimulationin[63]withasinglemodel(constant-velocity)
+smoother and yielded similar performance, although the former method seemed to produce larger
+spikes at the manoeuvre onset times.
+4.7 Expectation-Maximisation Algorithm
+This technique, from[106], utilises multi-levelprocess noise ofthe form(3) to model the unknown
+target accelerations. A zero acceleration level is included for a constant-velocity target. We give
+only a brief description of the technique here.
+AlengthK batchofunclutteredtargetmeasurementsis assumedavailableforprocessing. The
+expectation maximisation (EM) algorithm [48, 19, 93] is applied to the problem of estimating the
+MAP sequence of target accelerations UK:
+argmax p(XK,YK,UK) (30)
+UK
+where XK denotes the (unknown) state sequenceoflength K andYK the measurementsequence.
+Thisresultsinamulti-pass,batchestimatorofUK. Ateachpassanobjectivefunctionisevaluated
+(theEstep)andthenmaximised(theMstep). Theexpectationstepinvolvescomputationofstate
+estimates from a bank of Kalman smoothers tuned to the possible manoeuvre sequences. The
+maximisation step is efficiently implemented using forward dynamic programming.
+An on-line estimator is also derived using a modified EM-type cost function. To obtain a
+dynamic programming recursion, the target state is assumed to satisfy a Markov property with
+respect to the manoeuvre sequence. This results in a recursive but sub-optimal estimator im-
+plementable on a Viterbi trellis. The transition costs of the latter algorithm, which depend on
+filtered estimates of the state, are compared with the costs arising in a Viterbi-based manoeuvre
+estimator developed in [8]. It is shown that the two criteria differ only in the weighting matrix of
+the quadratic part of the cost function.
+Testing of the batch EM manoeuvre tracking algorithm (reported in [109]) has demonstrated
+superiortransienterrorperformanceduringmanoeuvrescomparedwiththerecursiveversion,which
+has errorsof similar magnitude to the approachin [8]. The false manoeuvre alarmperformanceof
+the latter algorithm was the best of the three techniques tested in [109].
+5 Manoeuvring Target Tracking in Clutter
+Trackingaconstant-velocitytargetinthepresenceoffalsemeasurementsorclutterinvolvessolving
+thedataassociationproblem. Thisistheproblemofdecidingwhich,ifany,ofanumberofcandidate
+detections is more likely to have arisen from the target of interest. The data association problem
+involves prediction of the measurement to the next scan followed by a process that correlates
+measurements with the prediction. In heavily cluttered environments it is well to apply gating to
+reduce the number of plausible target measurements to a reasonable number for processing. The
+process of gating or measurement validation is coveredin [51, 24, 9] and illustrated in Fig. 5.
+Since the optimal (Bayesian) solution [120] to the data association problem has combinatori-
+ally increasing computational requirements, there are many sub-optimal approaches of which the
+nearest neighbour Kalman filter, probabilistic data association (PDA) [12], the track-splitting fil-
+ter [122], and the multiple-hypothesis (MHT) filter [113] are among the more common. A block
+diagramofthePDAfilterisgiveninFig. 6,althoughthesamestructureappliestoanysingle-scan
+Bayesian algorithm for state estimation.
+As we mentioned in the Introduction, the problem of tracking a manoeuvring target is funda-
+mentally at odds with the data association problem. This is because any method that employs
+23
+
+--- Page 24 ---
+Y_2
+PREDICTED MEASUREMENT
+y ( k+1 | k )
+G A T E y_4 ( k )
+y_1 ( k )
+DETECTIONS
+Y_1
+Figure 5: Gatingisappliedtomeasurementstoreducetheprocessingrequiredfortrackinginacluttered
+environment. The gate is centred on thepredicted measurement.
+distance from a predicted measurement (i.e., the filter innovation) to determine the onset of a
+manoeuvremaybefalselytriggeredinthe presenceofnearbyclutterdetections. Inthis sectionwe
+review the optimal Bayesianapproachto tracking a manoeuvring target in clutter and its natural
+sub-optimal realisations. We also outline some adaptive PDA-based schemes (variable-dimension
+PDA and IMM-PDA). We also describe some approachesthat take advantage of signal amplitude
+distributions to improve the discrimination of target from clutter. These approaches can be in-
+tegrated at low cost into most existing tracking filters. The discrimination of false alarms from
+target measurements can also be aided by consistency testing of velocity and/or and acceleration
+estimates in addition to the filter innovation.
+5.1 Optimal Bayesian Filter for Manoeuvring Target in Clutter
+We present a derivation of the optimal Bayesian filter (OBF) [72] in this part. The manoeuvring
+target model (3) presented earlier is modified for the case of cluttered measurements as
+F(k)x(k)+G(k)u (k)+v(k) for model 1
+1
+F(k)x(k)+G(k)u (k)+v(k) for model 2
+2
+x(k+1) =  . .
+ . . . .
+F(k)x(k)+G(k)u (k)+v(k) for model r
+r
+y(k) =
+
+H(k)x(k)+w(k) for the target
+(31)
+clutter otherwise.
+(cid:26)
+The target accelerations u(k) are a finite-state Markov chain with known transition probabilities
+p , with u (k) denoting the event {u(k) = u }, i = 1,...,n. The usual notation for cluttered
+ij i i
+measurement sets is adopted: Y(k) = {y (k),...,y (k)} (at scan k), Yk = {Y(1),...,Y(k)}
+1 mk
+(measurementset up to time k). The association event θ (k) signifies the event that measurement
+i
+y (k) is due to the target (i=1,...,m ), or no measurement is from the target (i=0).
+i k
+Seekingtoevaluatetheprobabilityofaparticularjointmeasurementassociationandmanoeuvre
+sequence, we define the lth possible measurement history (recursively) as
+Θk ={Θk−1,θ (k)}, l =1,...,L
+l s il k
+where L =(1+m )(···)(1+m ), and the pth possible manoeuvre history as
+k 1 k
+Φk ={Φk−1,u (k)}, p=1,...,nk.
+p q ip
+24
+
+--- Page 25 ---
+Prior State and Covariance Estimate
+Target & Clutter Association Hypotheses
+Measurements
+Y ( k )
+State and Covariance
+Association Probabilities
+Conditional Updates
+Bayesian Combination
+Updated State and Covariance Estimate
+Figure 6: Block diagram of a probabilistic data association filter. The same processing applies to any
+algorithm that approximates themeasurement density bya single Gaussian at each scan.
+The set of joint measurement and manoeuvre association events is χk ={Θk,Φk} in which there
+lp l l
+are L nk elements!
+k
+Writing χk as {χk−1,χ (k)} where χ (k)={θ (k),u (k)}, we obtain the conditional mean
+lp sq lp lp il ip
+estimator for x(k) as
+nk Lk
+xˆ(k|k)= △ E{x(k)|Yk}= β (k)xˆ (k|k) (32)
+lp lp
+p=1p=1
+XX
+where the conditional state estimates are defined as xˆ (k|k) = E{x(k)|χk}. The association
+lp lp
+probabilities β (k)=Pr(χk|Yk) satisfy a recursion, namely
+lp lp
+β (k)=c−1p(Y(k)|χk−1,χ (k),Yk−1)Pr(χ (k)|χk−1,Yk−1)β (k−1).
+lp k sq lp lp sq sq
+in which c is a normalisationfactor. Furthermore the terms on the right hand side are evaluated
+k
+as
+V−mk i =0
+p(Y(k)|χk−1,χ (k),Yk−1)= G l
+sq lp V−mk+1P−1N{y (k);yˆ (k|k−1),S (k)} i >0,
+(cid:26) G G il sq sq l
+where yˆ (k|k − 1) = E{y(k)|χk−1,Yk−1} and its covariance S (k) are computed by Kalman
+sq sq sq
+filteringthe sthmeasurementsequenceassumingtheqthmanoeuvrehistory,andV isthevolume
+G
+of the validation gate at time k. The computation of the association probabilities is completed
+with
+Pr(χ (k)|χk−1,Yk−1)=Pr(u(k)=u |u(k−1)=u ) Pr(θ (k)|Yk−1)
+lp sq ip iq il
+and
+c−1 1 P P g (m −1) i =1,...,m
+Pr(θ il (k)|Yk−1)= c−1( m 1 k −P D P G ) c g (m k ) i l =0, k
+D G c k l
+(cid:26)
+whereP isthetargetdetectionprobability,P thegateprobabilityanditiscustomarytoassume
+D G
+that the number of clutter points in the gate is given by a Poissondistribution
+(λV )m
+G
+g (m)=exp(−λV ) , m=0,1,...
+c G
+m!
+25
+
+--- Page 26 ---
+The state error covariance is computed as
+nk Lk
+P(k|k)= β (k)xˆ (k|k)[P (k|k)+xˆ (k|k)xˆ (k|k)′]−xˆ(k|k)xˆ(k|k)′.
+lp lp lp lp lp
+p=1p=1
+XX
+The optimal Bayesian filter (32) is of course not realisable due to its increasing memory and
+computationalrequirements. Thereexist(N,M)scanapproximationstoitthatlumpmeasurement
+histories identical over the previous N scans and manoeuvre histories identical over the previous
+M scans(see[72]). ThesetechniquesamounttomatchingasingleGaussiandensitytothemixture
+(32) at the appropriate time. Note that the MAP state estimator would take only the estimate
+xˆ (k|k) corresponding to the maximum association probability β (k) at time k.
+lp lp
+5.2 Single-Scan Pseudo-Bayesian Filter
+In [57] a sub-optimal Bayesian adaptive filter for a manoeuvring target system of the following
+form is derived:
+x(k+1) = F(k)x(k)+v(k), v(k)∼N{0,Q(k)}
+H(k)x(k)+w(k) w(k)∼N{0,R(k)} for the target
+y(k) =
+clutter otherwise.
+(cid:26)
+In this formulation the process and measurement noise covariances are unknown and take values
+in a discrete set
+Q(k)∈{Q ,...,Q }, R(k)∈{R ,...,R }.
+1 p 1 l
+Let φ (k) denote the event that at time k {Q(k) = Q ,R(k) = R }, and define the association
+ij i j
+events θ (k) i=0,1,...,m as before. It follows that the conditional mean estimator of the state
+i k
+is expressible as
+p q mk
+xˆ(k|k) = Pr(φ (k)|Yk) E{x(k)|θ (k),φ (k),Yk}
+lj i lj
+j=1l=1 i=0
+XX X
+p q
+= Pr(φ (k)|Yk)xˆ (k|k)
+lj jl
+j=1l=1
+XX
+where, following the usual pattern,
+mk
+xˆ (k|k)= β (k)E{x(k)|θ (k),φ (k),Yk},
+jl ijl i lj
+i=0
+X
+and
+β (k)= △ Pr(θ (k),φ (k)|Yk).
+ijl i lj
+This multiple-model PDA technique is also described in [11].
+The filter is made practicable by summarising the prior state density based on Yk−1 by a
+single Gaussian with mean xˆ(k −1|k−1) and covariance P(k −1|k −1) (as in the GPB(1) or
+PDA approaches). Despite this single-scan approximation of the Gaussian mixture density, the
+computational requirements of this adaptive PDA filter remain high. In particular it is difficult
+in practice to determine a suitable grid size for discretisation of the covariance matrices. In a
+bearings-only tracking example for a ship travelling in a non-straight course with an average 10
+clutter measurements per look, [57] used p=6, q =6 cells, or a total of 36 PDA filters.
+26
+
+--- Page 27 ---
+5.3 Joint Manoeuvre and Measurement Association
+A similar approach to the preceding section was taken by [117, 78] for tracking multiple manoeu-
+vring targets in clutter, with [82] covering in the single-target case. A multi-level white noise
+accelerationmodelwasusedwiththe input afinite Markovchainu(k)∈{u ,...,u }withknown
+1 m
+transition probabilities p . Gating was applied to validate measurements for tracking. The filter
+ij
+derivation, again based on a single-scan Gaussian approximation,is briefly summarised below.
+Letθ (k)denotetheithassociationeventandu (k)thejthmanoeuvremodel. Theassociation
+i j
+probabilities are computed by invoking the independence of the measurement and manoeuvre
+associations, viz.
+β (k) = Pr(θ (k),u (k)|Yk)
+ij i j
+= c−1p(Y(k)|θ (k),u (k),Yk−1)Pr(θ (k),u (k)|Yk−1).
+i j i j
+The first term on the right is calculated as in standard PDA. The last term in the expression is
+Pr(θ (k),u (k)|Yk−1) = Pr(θ (k)|u (k),Yk−1)Pr(u (k)|Yk−1)
+i j i j i
+m
+= Pr(θ (k)|Yk−1) p Pr(u (k−1)|Yk−1)
+i lj l
+l=1
+X
+whencestandardPDA-typecalculationscanbeusedtocompletethederivation. Thestateestimate
+is given by
+mk m
+xˆ(k|k)= β (k)xˆ (k|k)
+ij ij
+i=0j=1
+XX
+Thesimulationresultsin[117]assumeahighprobabilityofdetectionP =0.95andaverylow
+D
+clutter density of 0.1–0.2 returns in the gate on average. For this low clutter case, the technique
+appears to be able to track multiple manoeuvring targets that overlap, although the estimation
+accuracyisdegradedduringmanoeuvres. Theresultsin[78],whichassumeP =1andP =0.1
+D FA
+and 6 possible target accelerations,are hard to interpret. It is also unclear how the probability of
+false alarm indicated in the simulations translates to the usual clutter density.
+5.4 Variable-Dimension PDA
+Variable dimension PDA [23] is a direct extension of the variable-dimension filtering approach
+describedinsections3and4.3tothecaseofclutteredmeasurements. Clutteristakenintoaccount
+by replacing the usual Kalman filters for constant-velocity and constant-acceleration targets with
+PDA filters, with the idea that the constant-velocity PDA filter is maintained until a manoeuvre
+is detected at which time a constant-acceleration model takes over. The difficulty in this type of
+approachisthereliabledetectionofamanoeuvreinthepresenceoffalsemeasurements. Aseriesof
+statistical tests based on the normalised filter innovations are needed to solve this problem. Since
+thereismorethanonemeasurementateachscan,therearemanydifferentsequencesofinnovations.
+The method is therefore to test all possible sequences of innovations {ρ (j)}, j =k−N +1,...,k
+i
+overawindowoflengthN andinitiateanewconstant-accelerationPDAfiltereachtimeasequence
+is found that satisfies the following tests.
+1. Gating: {ρ (j)} should be contained in a series of gates of increasing size.
+i
+2. Significance of the accelerations estimate: the innovations are white and zero-mean for a
+non-manoeuvring target, a target acceleration corresponds to correlation in this sequence.
+The presence of a non-zero acceleration is tested at a given significance level.
+3. Goodness of fit test for the acceleration model: the MMSE of the residuals is computed
+allowing for the estimated acceleration.
+4. If the previous tests are all satisfied, a measurement is expected at time k + 1 near the
+predictionbasedonthe accelerationestimate. This isusedtoinitiate ahigherorderKalman
+filter which is then continued after time k+2 using PDA to track the manoeuvre in clutter.
+27
+
+--- Page 28 ---
+Since an innovation sequence corresponding to false alarms may pass all the above tests, the
+constant-velocityPDA filter is continuedalongwith any manoeuvringPDAfilters. This decreases
+the risk of track loss in clutter.
+Trackmaintenancerulesareprovidedin[23]forterminatingandmergingtheextratracksthat
+are produced by this algorithm. The finish of the manoeuvre is detected by testing innovations in
+the gate of the PDA filter assuming a zero acceleration. Although the technique does not require
+retrospectiveinitialisation,manyPDAfiltersareneededtotrackamanoeuvringtargetinmoderate
+clutter.
+The performance of the variable-dimension PDA tracker is reported to be reasonable in mod-
+erate clutter densities (0.024clutter detections onaverageina 2σ ×2σ measurementnoise cell).
+x y
+In addition to the large number of filters that have to be maintained to minimise track loss, there
+are severalthresholds that need to be set for the statistical tests described above.
+5.5 IMM-PDA
+A natural extension of the IMM algorithm for tracking a manoeuvring target in a cluttered envi-
+ronment appears in [30, 66]. This technique, called interacting multiple-model probabilistic data
+association(IMM-PDA), replaces the standard Kalman filters in the IMM algorithm(section 4.4)
+with PDA filters. The target models can be taken as constant-velocity and constant-acceleration
+forthemanoeuvringtargetcase,orconstant-velocityand“notarget”(non-existenttarget)models
+forthealgorithmin[14,15]whichisdesignedforautomatictrackinitiationandtrackinginclutter.
+(The technique is clearly not restricted to just two models.) The transitions between the models
+are Markov with known transition probabilities. The major difference in the IMM computations
+is that the mode probabilities are formed using the PDA “likelihood” function
+Λ (k) = p(Y(k)|M (k),Yk−1)
+j j
+P
+= V−mk(1−P P )+V−mk+1 D N{y (k);yˆ (k|k−1),S (k)}
+G D G G m i j j
+k
+yˆ (k|k−1) = E{y(k)|M (k),Yk−1}
+j j
+where the symbols have usual meanings. The prediction yˆ (k|k −1) is obtained from the IMM
+j
+filterformodelM (k). TheothercomputationsareidenticaltothestandardIMMalgorithm. The
+j
+performance of the IMM-PDA filter appears to be good for its level of complexity.
+Afurthervariationonthisthemeisprovidedin[64]whichuses“integratedPDA”filtersinstead
+of PDA filters in the IMM-PDA algorithm, leading to the title IMM-IPDA. The integrated PDA
+filter [99] incorporates a target existence model and hence provides a track confidence measure.
+The target existence model is identical to the one in [44], although the association probability
+calculations are marginallydifferent, replacingthe usual m term in PDA by anexpected number
+k
+of measurements in the gate mˆ . The IMM-IPDA algorithm has essentially the same complexity
+k
+astheIMM-PDAalgorithmandthe trackconfidencemeasureassistsinautomatictrackformation
+andmaintenance. Simulationsevidencedin[64]pointtoacceptableperformanceagainstconstant-
+velocity, constant-speed turning and linearly accelerating targets in moderate clutter.
+In [143] the IMM-IPDA algorithm was put forward as a solution to the second benchmark
+problem for manoeuvring target tracking in the presence of clutter and counter-measures. The
+algorithmalsomonitorsthe predictedpositionerrorǫ andautomaticallyadjusts the radarrevisit
+x
+time to ensure that ǫ does not exceed a threshold.
+x
+AnadditionalmodificationoftheIMM-PDAideaappearedin[98]calledintegratedprobabilistic
+dataassociationwithprediction-orientedmultiple models(IPDA-PMM).The methoduses acom-
+mon prediction equation across all models to simplify the computations. Simulations for a slowly
+manoeuvringtargetinlowdensityclutter showmodestimprovementsoveraconstant-acceleration
+PDA filter.
+28
+
+--- Page 29 ---
+5.6 Multi-hypothesis Techniques
+Multi-hypothesis tracking (MHT) is a high performance, “measurement-oriented” multiple target
+trackingtechnique developedin[113]. Although notoriginallyconsideredinthe MHT framework,
+morerecentworkonMHThasfocussedontheincorporationofmanoeuvres. Adetaileddescription
+of MHT is contained in [24] and we need only mention its essential features. MHT is a Bayesian
+algorithm that computes state estimates for all measurement hypotheses and their corresponding
+posterior probabilities. The hypothesis set allows for a measurement to be due to: (i) an existing
+target; (ii) a false alarm; or (iii) a new target. The inclusion of the third hypothesis allows MHT
+to initiate new target tracks automatically.
+Due to the very high computational requirements of the MHT approach, efficient pruning of
+the decision tree is needed (see references in [76]). This is effected by clustering non-competing
+measurements and tracks, combining tracks with similar state estimates, deleting low-confidence
+tracks,pruningbasedonpriorinformation(manoeuvrabilityconstraints),andpreventinginitiation
+on measurements that have a high correlationto existing tracks.
+The inclusionof targetmanoeuvres inMHT has been approachedin[76] via a correlated-noise
+acceleration(Ornstein-Uhlenbeck)modelinthecontextofformationtracking. TheIMMandGPB
+algorithms have been applied within the MHT framework in [74] to represent the PDF sum over
+mode histories by finite Gaussian mixtures. A performance comparison is given for the IMM,
+GPB(1), GPB(2) and a MHT-IMM filter with truncation depth of 3 scans. It is concluded in [74]
+that the 3 scan-backapproximationis near-optimalforthe benchmark trackingproblem[27]. The
+sameauthoralsoappliedfixed-lagKalmansmoothingorretrodictiontoimprovethestateestimates
+obtainedbytheMHT-IMMalgorithmandthisisreportedin[75]. AnIMM-MHTalgorithmcalled
+“IM3HT” has also been reported in [136]. The IM3HT algorithm is a natural embedding of IMM
+in the MHT framework using multiple models to cover possible target accelerations and multiple
+hypotheses to allow for false alarms and multiple targets. Comparisons of IM3HT with a MHT
+algorithm incorporating manoeuvre detection logic are given for target accelerations of up to 5 g
+for detection probabilities of 0.8 and 1.0.
+5.7 Filters Using Amplitude Information
+In the same way that Doppler frequency is used to enhance tracking and track initiation perfor-
+mance over techniques employing only position information, several authors have investigated the
+possibility of using signal amplitude information (or power, SNR, etc.) to increase the ability
+of the tracking algorithm to discriminate target measurements from clutter. More generally, any
+non-dynamical “feature” information (for instance target orientation, etc.) could be used for this
+purpose,ifitisavailable. Thepaper[49]describesadistribution-freeprocedurefortargetdetection
+in track-while-scanand phased-arrayradars. The detection procedure is distribution-free because
+it uses only the “rank” (or ordering) of the received measurement to determine whether a target
+signal is present or absent. Thus if the rank of the measurement is Z in range bin i and beam
+ij
+position j (and at time k), a signal is declared present if Z ≥ T or absent otherwise where T is
+ij
+the detection threshold.
+Theprobabilityoffalsealarmforsuchaproceduredependsonlyonthenumberofreferencecells
+overwhichtherankingtakesplace,andnotonthesignalandnoisedistributionsPr(Z =R|S+N)
+ij
+and Pr(Z = R|N). The latter distributions are needed, however, for computing the detection
+ij
+probability.
+The use of “rank” information, as described in [49] was applied to enhance the performance
+of the PDA filter for tracking a manoeuvring target in clutter [100]. They also consider an ad
+hoc procedure for adapting the detection threshold to trade off computation (due to excessive
+clutter) and detection performance. The only algebraic difference is in the calculation of the
+associationprobabilitiesforPDA,whichinthiscasedependonalikelihoodratio(wewilldetailthis
+modification shortly). The signal plus noise amplitude distribution was assumed to be Rayleigh,
+correspondingtoaSwerlingtype-2target[126]. Insimulationsatprobabilitiesofdetectionbetween
+0.6and0.9,performanceoftheamplitude-aidedPDAfilterwascomparedwiththatofa(constant-
+acceleration) PDA filter for tracking a target executing a constant-speed turn. Apart from the
+29
+
+--- Page 30 ---
+obvious advantage of good quality signal amplitude information, it is claimed that the method
+in [100] can track a manoeuvring target in clutter densities as high as 10 points (average) in the
+validation gate.
+Similar work on the inclusion of amplitude information in PDA was carried out in [83], and
+we now outline the basic approach. The probability distributions p (·) and p (·) of the received
+1 0
+signal envelope a(k) under the signal present H and signal absent H hypotheses are assumed to
+1 0
+be known. The system model uses an augmented measurement vector y (k) defined by
+a
+y(k)
+y (k)= .
+a a(k)
+(cid:20) (cid:21)
+The state vector is not augmented, although this could be accomplished if filtering of the signal
+amplitude is required. The equations of the PDA filter are unchangedexcept for the computation
+oftheconditionalmeasurementdensity,whichnowmustallowforthedifferentprobabilitydensities
+of target and clutter measurements:
+P−1N{y (k);yˆ(k|k−1),S(k)}p (a(k)) i=1,...,m
+p(y (k)|θ (k),Yk)= G i 1 k
+i i V−1p (a(k)) i=0
+(cid:26) G 0
+This introduces a likelihood ratio into the calculation of the association probabilities (once they
+are normalised). Effectiveness of the technique relies on the accuracy with which the respective
+amplitude distributions are modelled.
+Signal amplitude information was also included in the IMM-PDA algorithm in [84]. This uses
+thelikelihoodratioarisingfromthesignal-plus-noiseandnoise-onlydistributionstoalterthePDA
+associationprobabilitiesasillustratedabove. Themodificationisusefulforenhancingtrackforma-
+tion and tracking of manoeuvring targets in clutter through more effective signal discrimination.
+In the same paper a track acceptance test that uses a two-dimensional threshold, depending on
+both the targetconfidence andthe probability distributionfor false trackduration, is describedin
+detail. The target confidence measure is obtained by including a “no target” model in the IMM
+filter and the distribution of false track lifetimes is obtained via Monte Carlo simulation. The
+IMM filter is implemented with three other models: constant-velocity, left-turn and right-turn.
+The performance is claimed to be superior to that of the IMM-PDA filter (section 5.5) especially
+for weak targets and in heavy clutter.
+Amplitude informationhas also been applied in the contextof multi-hypothesis sonartracking
+[112]. A feature of MHT algorithms is their ability to initiate tracks automatically in clutter,
+as well as allowing for multiple targets. The article [112] describes an adaptive re-initialisation
+procedure for MHT. The state variable includes SNR, bearing, frequency and their derivatives. A
+track confidence test (based onP andP ) is employedto detect track loss,for instance,due to
+D FA
+amanoeuvre. Thegateisthenenlargedforapredeterminednumberofscansinordertore-acquire
+the target.
+6 Discussion
+Wehavegivenanextensivereviewoftheexistingliteratureonmanoeuvringtargetmodels(section
+2), manoeuvre detection (section 3), tracking of manoeuvring targets (section 4), and tracking of
+manoeuvringtargetsinclutter (section5). Althoughthe numberofcompetingtechniquesis large,
+the number of comparative performance evaluations is small. A recent initiative [27] has been the
+definition of a benchmark manoeuvring target tracking problem for phased array radar.
+Conventional manoeuvring target models we have covered include random input models, un-
+knowndeterministic input models, switching systems and Singer’s correlatedprocess noise model.
+Several extensions to these models have been investigated that use different stochastic represen-
+tations or higher order approximations. Manoeuvre detection strategies are characterised by the
+selection of a test statistic based on the filter residuals using data windowing or exponential for-
+gettingtogetherwithalikelihoodratiotest. Severalgeneralisationsofthesetestsareavailablebut
+do notappearto havefound significantapplication. The use ofadditionalsensorssuchasimaging
+30
+
+--- Page 31 ---
+sensors is a promising means of enhancing the manoeuvre detection capabilities of short-range
+radar tracking systems.
+Iffalse alarmsareto be handledby anearest-neighbourapproachor othercorrelationtest, the
+acceptedtechniquesformanoeuvringtargettrackingcanbeclassedasmulti-levelprocessnoise,in-
+putestimation,variable-dimensionfiltering,two-stageKalmanfiltering,andsub-optimalBayesian
+filteringforswitchingsystemsincludingtheIMMandGPBalgorithms. The problemoftrackinga
+manoeuvring target in clutter has been formulated within the framework of Bayesian probability
+theory using (i) a finite state Markov chain manoeuvre input and (ii) a Markov chain switching
+model. The optimal Bayesianfilter for both these caseshas combinatoriallyincreasingcomplexity
+and therefore N-scan truncation is generally applied to simplify the filter implementation. The
+probabilistic data association filter, a single-scan Bayesian algorithm, can be employed to extend
+the variable dimension filter and IMM filter for tracking in clutter. The use of non-kinematic in-
+formationsuchasmeasurementSNR, whenthis is reliable,is apromisingavenueformeasurement
+discrimination in clutter.
+More recent approaches to the manoeuvring target tracking problem include the expectation
+maximisation algorithm and MHT framework and these deserve further comment. The EM tech-
+nique, which is a batch algorithm, does not seem to be practicable in the cluttered case without
+substantialmodificationtoavoidenumerationofjointmanoeuvreandmeasurementassociations. It
+ishoweverpossibletoapplyideasfromthe recentprobabilisticmulti-hypothesistracking(PMHT)
+algorithm[124]tosimplifythesecomputations,thusobtainingapracticablesub-optimalalgorithm;
+the approaches presented in [149] and [88] are examples of this. The key simplifying assumption
+in applying the EM algorithm in this case is the supposition that the target may be associated
+with all measurements in a scan simultaneously [105]. This is exploited via mixing probabilities
+to condense an N-dimensional sum over all measurement-to-target associations over N scans to
+a single sum. This assumption has no physical basis and also modifies the tracking problem in
+a fundamental manner by assuming away the combinatorial explosion of association hypotheses.
+Numerical simulations of PHMT-based EM algorithms in [149] indicate some improvement over
+the IMM-PDA algorithm (section 5.5) in heavy clutter, although no comparisons with high per-
+formance techniques such as MHT or GPB approaches appear to have been effected as yet. Such
+comparisons would need to allow for the advantage of smoothing over filtering, as well as the
+operational consequences of increasing the latency in displaying tracks to the operator.
+Acknowledgements
+ThisworkwasfundedjointlybytheCooperativeResearchCentreforSensorSignalandInformation
+Processing (CSSIP) and Defence Science and Technology Organisation Australia under DSTO
+contract number 476189 (Viterbi Data Association Tracker for Over-the-Horizon Radar) [110].
+The author is grateful to Dr Barbara La Scala for assisting in preparing the literature review for
+the section on manoeuvre detection.
+31
+
+--- Page 32 ---
+References
+[1] Ackerson, G. A., and Fu, K. S. “On State Estimation in Switching Environments”, IEEE Trans.
+AC, vol. AC-28, pp.10–17, Feb.1970.
+[2] Alouani, A.T., Blair, W.D. “Use of a kinematicconstraint in trackingconstant speed,maneuvering
+targets”, IEEE Transactions on Automatic Control, vol. 38, no. 7, pp.1107–11, July 1993.
+[3] Alouani, A.T., Xia, P., Rice, T.R., Blair, W.D. “Two-stage Kalman estimator for tracking maneu-
+veringtargets”,Conference Proceedings 1991 IEEEInternational Conference on Systems, Man, and
+Cybernetics. ’DecisionAidingforComplexSystems,pp.761–6vol.2,1991,Charlottesville,VA,USA.
+[4] Amoozegar, F., Sundareshan, M.K. “Target tracking by neural network maneuvermodeling”, 1994
+IEEE International Conference on Neural Networks, pp.3932–7 vol.6, 1994, Orlando, FL, USA.
+[5] Anderson, B. D. O., and Moore, J. B. Optimal Filtering, Prentice-Hall, NJ, 1979.
+[6] Arnold,J.,Shaw,S.,andPasternack,H. “Efficient Target TrackingUsingDynamicProgramming”,
+IEEE Trans. AES, vol. 29, pp. 44–56, Jan. 1993.
+[7] Astrom,K.J.,andWittenmark,B.ComputerControlledSystems: TheoryandDesign,Prentice-Hall,
+N.J., 1984.
+[8] Averbuch, A., Itzkowitz, S., and Kapon, T. “Radar Target Tracking—Viterbi versus IMM”, IEEE
+Trans. AES, vol. 27, no. 3, pp.550–563, 1991.
+[9] Bar-Shalom, Y., and Fortmann, T. E. Tracking and Data Association, Academic Press, 1988.
+[10] Bar-Shalom, Y., and Li, X.-R. Estimation and Tracking: Principles, Techniques, and Software,
+Artech House, MA, 1993. Reprintedby YBS Publishing 1998.
+[11] Bar-Shalom, Y., and Li, X.-R. Multitarget-Multisensor Tracking: Principles and Techniques, ISSN
+0895-9110, YBS Publishing, 1995.
+[12] Bar-Shalom, Y., and Tse, E. “Tracking in a Cluttered Environment With Probabilistic Data Asso-
+ciation”, Automatica, vol. 11, pp.451–460, 1975.
+[13] Bar-Shalom, Y., Birmiwal, K. “Variable Dimension filter for Manoeuvring Target Tracking”, IEEE
+Trans. AES, AES-18,Sept 1982, pp.621–629.
+[14] Bar-Shalom, Y., Chang, K. C., and Blom, H. A. P. “Automatic Track Formation in Clutter with
+a Recursive Algorithm”, in Multitarget-Multisensor Tracking: Advanced Applications, pp. 25–42,
+Artech House, MA., 1990. Reprinted byYBS Publishing 1998.
+[15] Bar-Shalom, Y., Chang, K. C., and Blom, H. A. P. “Automatic Track Formation in Clutter with a
+Recursive Algorithm”, Proc. 28th Conf. Dec. Control, Florida, pp. 1402–1408, Dec. 1989.
+[16] Bar-Shalom, Y., Chang, K. C., Blom, H. A. P. “Tracking a Manoeuvring Target Using Input
+Estimation Versus the Interacting Multiple Model Algorithm”, IEEE Trans. AES, AES-25, Mar
+1989, pp.296–300.
+[17] Barniv,Y.“DynamicProgrammingSolutionforDetectingDimMovingTargets”,IEEETrans.AES,
+vol. AES-21, no. 1, pp.144–156, Jan. 1985.
+[18] Barniv,Y.,andKella,O. “DynamicProgrammingSolutionforDetectingDimMovingTargetsPart
+II: Analysis”, IEEE Trans. AES, vol. 23, pp.776–788, Nov.1987.
+[19] Baum, L. E., Petrie, T., Soules, G., and Weiss, N. “A Maximization Technique Occurring in the
+Statistical Analysis Probabilistic Functions of Markov Chains”, Ann. Math. Statistics, vol. 41, pp.
+164–171, 1970.
+[20] Bauschlicher, J., Asher,R.,Dayton,D. “A comparison of Markov andconstant turnrate modelsin
+anadaptiveKalmanfiltertracker”,ProceedingsoftheIEEE1989NationalAerospaceandElectronics
+Conference NAECON 1989, pp. 116–23 vol. 1, Dayton,OH,USA,1989.
+[21] Benes, V.E., Helmes, K.L., Rishel, R.W. “Estimating the terminal state of a maneuvering target”,
+Proceedings of the 33rd IEEE Conference on Decision and Control, pp. 1663–5 vol.2, 1994, Lake
+Buena Vista, FL, USA.
+[22] Bharucha-Reid,A.T. ElementsoftheTheoryofMarkovProcessesandTheirApplications,McGraw-
+Hill, N.Y., 1960.
+[23] Birmiwal, K. Bar-Shalom, Y. “On Tracking a Maneuvering Target in Clutter”, IEEE Trans. AES,
+vol. AES-20, no. 5, Sept.1984, pp. 635–645.
+32
+
+--- Page 33 ---
+[24] Blackman, S. Multiple Target Tracking with Radar Applications, Artech House, MA,1986.
+[25] Blair, W.D., Watson, G.A. “Interacting multiple bias model algorithm with application to tracking
+maneuveringtargets”,Proceedingsofthe31stIEEEConferenceonDecisionandControl,pp.3790–5
+vol.4, 1992, Tucson, AZ,USA.
+[26] Blair, W.D., Watson, G.A., Hoffman, S.A. “Second order interacting multiple model algorithm
+for tracking maneuvering targets”, Proceedings of the SPIE: Signal and Data Processing of Small
+Targets, vol. 1954, pp.518–29, 1993, Orlando, FL, USA.
+[27] Blair,W.D.,Watson,G.A.,Hoffman,S.A. “Benchmarkproblemforbeampointingcontrolofphased
+arrayradaragainstmaneuveringtargets”,Proceedingsofthe1994AmericanControlConference,pp.
+2071–5 vol.2, 1994, Baltimore, MD, USA.
+[28] Blair, W.D., Watson, G.A., Rice, T.R. “Interacting multiple model filter for tracking maneuvering
+targets in spherical coordinates”, IEEE Proceedings of SOUTHEASTCON ’91, pp. 1055–9 vol.2,
+1991, Williamsburg, VA,USA.
+[29] Blair, W.D., Watson, G.A., Rice, T.R. “Tracking maneuvering targets with an interacting multiple
+modelfiltercontainingexponentially-correlatedaccelerationmodels”,Proceedings.TheTwenty-Third
+Southeastern Symposium on System Theory, pp.224–8, 1991, Columbia, SC, USA.
+[30] Blom, H. A. P. “A Sophisticated Tracking Algorithm for ATC surveillance Data” Proc. Int. Radar
+Conf., Paris, pp.393-398, May 1984.
+[31] Blom, H. P., and Bar-Shalom, Y. “The Interacting Multiple Model Algorithm for Systems with
+Markovian Switching Coefficients”, IEEE Proc. AC, vol. 33, no. 8, pp.780–783, Aug. 1988.
+[32] Blom, H. P., and Bar-Shalom, Y. “Time-Reversion of a Hybrid State Stochastic Difference System
+with a Jump-Linear Smoothing Application”, IEEE Trans. Info. Th., pp.836–847, 1990.
+[33] Bogler, P.L. “TrackingaManeuveringTarget UsingInputEstimation”, IEEE Trans. AES,vol.23,
+no. 3, pp.298–310, May 1987.
+[34] Campo, L., Mookerjee, P., and Bar-Shalom, Y. “Failure Detection Via Recursive Estimation for a
+Class of Semi-Markov Switching Systems”, Proc. 27th Conf. Decision and Control, pp. 1966–1971,
+Dec. 1988.
+[35] Chan, Y. T., Hu, A. G. C., Plant, J. B. “A Kalman Filter Based Tracking Scheme with Input
+Estimation”, IEEE Trans. AES, vol. AES-15, pp. 237–244, March, 1979.
+[36] Chan, Y.T., Couture, F. “Manoeuvre detection and track correction by input estimation”, IEE
+Proceedings F [Radar and Signal Processing], vol. 140, no. 1, pp.21–8, Feb.1993.
+[37] Chang, C.B.,andAthans,M. “StateEstimation forDiscreteSystemswith SwitchingParameters”,
+IEEE Trans. AES, vol. AES-14, pp.418–425, May 1978.
+[38] Chang, C. B., Whiting, R. H., and Athans, M. “On the State and Parameter Estimation for
+Maneuvering Reentry Vehicles”, IEEE Trans. AC, vol. AC-22, pp.99–105, Feb. 1977.
+[39] Chang,W.-T.,andLin,S.-A. “IncrementalManeuverEstimationModelforTargetTracking”,IEEE
+Trans. AES, vol. AES-28,no. 2, pp.439–451, Apr.1992.
+[40] Chung,Y.-N.,Gustafson, D.L., Emre,E. “Extendedsolution tomultiplemaneuveringtarget track-
+ing”, IEEE Transactions AES, vol. 26 Iss: 5 , pp.876–87, Sept.1990.
+[41] Cloutier,J.R.,Lin,C.-F.,Yang,C.“Maneuveringtargettrackingviasmoothingandfilteringthrough
+measurement concatenation”, Journal of Guidance, Control, and Dynamics, vol. 16, no. 2, pp.377–
+84, March 1993.
+[42] Cloutier, J.R., Lin, C.-F., Yang, C. “Enhanced variable dimension filter for maneuvering target
+tracking”, IEEE Transactions AES, vol. 29, no. 3, pp.786–97, July 1993.
+[43] Cloutier, J.R., Yang, C., Lin, C.-F. “Sequential smoothing and filtering for maneuvering target
+tracking”, Proceedings of the 1992 American Control Conference, pp. 3236–41 vol.4, 1992, Chicago,
+IL, USA.
+[44] Colegrove, S. B., Davis, A. W., and Ayliffe, J. K. “Track Initiation and Nearest Neighbours Incor-
+porated into Probabilistic Data Association”, J. Elec. and Electronic Eng., Australia, vol. 6, no. 3,
+pp. 191–198, Sept. 1986.
+[45] Cox, D.R. Renewal Theory, Menthuen,London, 1962.
+33
+
+--- Page 34 ---
+[46] Demirba¸s, K. “Manoeuvring-Target Tracking With the Viterbi Algorithm in the Presence of Inter-
+ference”, IEE Proc. F, vol. 136, pp.262–268, Dec. 1989.
+[47] Demirba¸s, K. “Manoeuvring Target Tracking WithHypothesisTesting” IEEE Trans. AES, vol.23,
+no. 6, pp.757–766, Nov.1987.
+[48] Dempster, A. P., Laird, N. M., and Rubin, D. B. “Maximum Likelihood from Incomplete Data via
+the EM Algorithm”, J. Royal Statistical Soc., vol. 39, no. 1, pp.1–38, 1977.
+[49] Dillard,G.M.,andAntoniak,C.E. “APracticalDistribution-FreeDetectionProcedureforMultiple
+Range-Bin Radars”, IEEE Trans. AES, vol. AES-6,no. 5, pp.629–635, Sept.1970.
+[50] Dufour, F., and Mariton, M. “Tracking a 3-D Maneuvring Target with Passive Sensors”, IEEE
+Trans. AES, vol. 27, no. 4, pp.725–739, Jul. 1991.
+[51] Farina, A., and Studer, F. A. Radar Data Processing, vol. I: Introduction and Tracking, J. Wiley,
+1985.
+[52] Farooq, M., Bruder, S. “Comments on ’Tracking a Manoeuvring Target Using Input Estimation”,
+IEEE Trans. AES, AES-25,Mar 1989, pp. 300–302.
+[53] Farooq,M.,Bruder,S. “Information typefiltersfortrackingamaneuveringtarget”,IEEETransac-
+tions AES, vol. 26, no. 3 , pp. 441–54, May 1990.
+[54] Farooq,M.,Bruder,S.,Quach,T.,Lim,S.S.“Adaptivefilteringtechniquesformanoeuvringtargets”,
+Proceedingsofthe34thMidwestSymposiumonCircuitsandSystems,pp.31–4,vol.1,1992,Monterey,
+CA, USA.
+[55] Forney Jr., G. D. “The ViterbiAlgorithm”, Proc. IEEE, vol. 61, no. 3, pp.268–278, Mar. 1973.
+[56] Fraser, D. C. and Potter, J. E. “The Optimal Linear Smoother as a Combination of Two Optimal
+Linear Filters”, IEEE Trans. AC, pp.387–390, 1969.
+[57] Gauvrit, M. “Bayesian Adaptive Filter for Tracking with Measurements of Uncertain Origin”, Au-
+tomatica, vol. 20, no. 2, pp.217–224, 1984.
+[58] Gholson, N. H., Moose, R. L. “Manoeuvring Target Tracking Using Adaptive State Estimation”,
+IEEE Trans. AES, AES-13,May 1977, pp.310–317.
+[59] Gustafson,F.“TheMarginalizedLikelihoodRatioTestforDetectingAbruptChanges”,IEEETrans.
+AC, vol. AC-41, pp.66–78, Jan. 1996.
+[60] Guu, J.-A., Wei, C.-H. “Tracking technique for manoeuvring target with correlated measurement
+noises and unknownparameters”, IEE Proceedings F [Radar and Signal Processing], vol. 138, no. 3,
+pp. 278–88, June1991.
+[61] Hampton, R. L. T., and Cooke, J. R. “Unsupervised Tracking of Maneuvering Vehicles”, IEEE
+Trans. AES, vol. AES-9,pp.197–207, March 1973.
+[62] Helferty, J.P. “Improved tracking of maneuvering targets: the use of turn-rate distributions for
+acceleration modeling”, IEEE International Conference on Multisensor Fusion and Integration for
+Intelligent Systems, pp.515–20 , 1994, Las Vegas, NV,USA.
+[63] Helmick, R.E., Blair, W.D., Hoffman, S.A. “Interacting multiple-model approach to fixed-interval
+smoothing”, Proceedings of the 32nd IEEE Conference on Decision and Control, pp. 3052–7 vol.4,
+1993, San Antonio, TX, USA.
+[64] Helmick,R.E.,Watson,G.A. “IMM-IPDAFfortrackformationonmaneuveringtargetsincluttered
+environments”,Proceedings of theSPIE:Signal andData Processing of SmallTargets,vol.2235, pp.
+460–71, 1994, Orlando, FL, USA.
+[65] HouMing. “Commentson’TrackingaManoeuvringTargetUsingInputEstimation’”,IEEETrans.
+AES, AES-25, Mar 1989, p280.
+[66] Houles, A., and Bar-Shalom, Y. “Multisensor Tracking of a Maneuvring Target in Clutter”, IEEE
+Trans. AES, vol. AES-25,no. 2, pp.176–189, Mar. 1989.
+[67] Howard, R.A. Dynamic Probabilistic Systems: Markov Models, John Wiley, N.Y.,1971.
+[68] Jaffer, A.G., and Gupta,S.C. “RecursiveBayesian Estimation with UncertainObsevation”, IEEE
+Trans. Info. Th.,vol. IT-17, pp.614–616, Sept.1971.
+[69] Jazwinski, A.H. Stochastic Processes and Filtering Theory, Academic Press, 1970.
+[70] Kailath, T. Linear Systems, Prentice-Hall, Englewood Cliffs, N.J., 1980.
+34
+
+--- Page 35 ---
+[71] Katsikas, S.K., Lainiotis, D.G. “Partitioning algorithms in underwater passive target tracking”,
+OCEANS ’93. Engineering in Harmony with Ocean Proceedings, pp. I463–8 vol.1, 1993, Victoria,
+BC, Canada.
+[72] Kenefic, R. “Optimum Tracking of Maneuvering Target in Clutter”, IEEE Trans. AC, vol. AC-26,
+pp. 750–753, June 1981.
+[73] Kim, K., Hansen, J. “Development of fuzzy algorithm for tracking of maneuvering targets”, 1992
+IEEE International Conference on Systems, Man and Cybernetics, pp. 803–8 vol.1, 1992, Chicago,
+IL, USA.
+[74] Koch, W. “On Bayesian IMM-Tracking for Phased Array Radar” Proc. Int. Radar Symposium,
+Munich, pp.715–723, Sept.1998.
+[75] Koch, W. “Retrodiction for Bayesian Multiple Hypothesis/Multiple Target Tracking in Densely
+Cluttered Environment”, Proc. SPIE,Orlando, vol. 2759, pp.429–440, Apr.1996.
+[76] Koch, W., and Van Keuk, G. “Multiple Hypothesis Track Maintenance with Possibly Unresolved
+Measurements”, IEEE Trans. AES, vol. 33, no. 3, pp.883–892, July 1997.
+[77] Korn, J., Gully, S. W., and Willsky, A. S. “Application of Generalized Likelihood Ratio Algorithm
+to Manoeuvre Detection and Estimation”, Proc. Amer. Control Conf.,pp.792–798, June 1982.
+[78] Kosuge,Y. “Multiplemaneuvermodeljointprobabilisticdataassociationformulti-targettracking”,
+ISNCR-89. Noise and Clutter Rejection in Radars and Imaging Sensors., pp. 602–7, 1990, Kyoto,
+Japan.
+[79] LaScala,B.F.andPulford,G.W.“ViterbiDataAssociationTrackingforOver-the-HorizonRadar”,
+Proc. International Radar Symposium, Vol. 3, pp.1155–1164, Munich,Sept. 1998.
+[80] LaScala,B.F.andPulford,G.W. “AnAnalysisofManoeuvringTargetDetectorsandTrackersfor
+Over-The-Horizon Radar”, CSSIPReport No.29/96 toHigh FrequencyRadarDivision, Nov.1996,
+http:// www.ee.mu.oz.au/ research/ cssip/ publications/ 9798/ vda-man1.pdf.
+[81] La Scala, B. F. and Pulford, G. W. “Implementation of a Viterbi Data Association Tracker for
+Manoeuvring Targets in Over-The-Horizon Radar”, CSSIP Report No. 12/97 to High Frequency
+Radar Division, May 1997, http:// www.ee.mu.oz.au/ research/ cssip/ publications/ 9798/
+vda-man2.pdf.
+[82] Lee Hsi-Jian, Chyan-Goei Chung, Ker-Chang Chang. “Manoeuvring target tracking in a cluttered
+environment from noisy images by an adaptive probabilistic data association filter”, International
+Journal of Systems Science, vol. 22, no. 1 , pp.133–49, Jan. 1991.
+[83] Lerro, D., and Bar-Shalom, Y. “Automated Tracking with Target Amplitude Information”, Proc.
+Amer. Contr. Conf.,pp.2875–2880, 1990.
+[84] Lerro, D., and Bar-Shalom, Y. “Interactive Multiple Model Tracking with Target Amplitude Fea-
+ture”, IEEE Trans. Aerosp & Electronic Sys., pp.494–509, Apr.1993.
+[85] Li, X. R. and Bar-Shalom, Y. “Multiple-Model Estimation with Variable Structure”, IEEE Trans.
+AC, vol. 41, pp.478–493, April 1996.
+[86] Lim, S.S.,Farooq, M. “Maneuvering target trackingusing jump processes”, Proceedings of the 30th
+IEEE Conference on Decision and Control, pp.2049–54 vol.2, 1991, Brighton, UK.
+[87] Ljung, L. System Identification: Theory for the User, Prentice Hall, N.J., 1987.
+[88] Logothetis,A.,Krishnamurthy,V.,Holst,J.,andIsaksson,A.“ModalStateEstimationofaManeu-
+veringTargetinClutter”,Proc.36thIEEEConf.onDecisionandControl,SanDiego,pp.5024–5029,
+Dec.1997.
+[89] Martinerie, F., and Forster, P. “Data Association and Tracking Using Hidden Markov Models and
+Dynamic Programming”, IEEE ICASSP, vol. II,pp.449–452, 1992.
+[90] Maybeck, P. S., and Hentz, K. P. “Investigation of Moving Bank Multiple Model Adaptive Algo-
+rithms”, AIAA J. Guidance, Control, Dynamics, vol. 10, pp. 90–96, Jan. 1987.
+[91] McAulay, R. J., Denlinger, E. “A Decision-Directed AdaptiveTracker”, IEEE Trans. AES, AES-9,
+Mar 1973, pp. 229–236.
+[92] Mehrotra, K., and Mahapatra, P. R. “A jerk Model for Tracking Highly Maneuvering Targets”,
+IEEE Trans. AES, vol. 33, no. 4, pp.1094–1105, Oct.1997.
+35
+
+--- Page 36 ---
+[93] Moon, T. K. “The Expectation-Maximisation Algorithm”, IEEE Signal Processing Magazine, pp.
+47–60, Nov. 1996.
+[94] Moose, R.L. “AnAdaptiveStateEstimation Solution totheManoeuvring Target Problem”, IEEE
+Trans. Auto Control, AC-20, June1975, pp.359–362.
+[95] Moose, R. L., Vanlandingham, H. F., McCabe, D. H. “Modeling and Estimation for Tracking
+Manoeuvring Targets”, IEEE Trans. AES, AES-13,May 1979, pp.448–456.
+[96] Munir, A., Atherton, D.P. “Adaptive interacting multiple model algorithm for tracking a manoeu-
+vring target”, IEE Proceedings - Radar, Sonar and Navigation, vol. 142, no. 1, pp. 11–17, Feb.
+1995.
+[97] Munir, A., Atherton, D.P. “Maneuvering target tracking using an adaptive interacting multiple
+model algorithm”, Proceedings of the 1994 American Control Conference, pp. 1324–8 vol.2, 1994,
+Baltimore, MD, USA.
+[98] Musicki, D., Evans, R. “IPDA-PMM algorithm for tracking maneuvering targets in clutter”, Pro-
+ceedings of the 33rd IEEE Conference on Decision and Control, pp.3308–9 vol.4, 1994, LakeBuena
+Vista, FL, USA.
+[99] Muˇsicki, D., Evans, R. J., and Stankovi´c, S. “Integrated Probabilistic Data Association”, IEEE
+Trans. Auto. Control, Vol. 39, no. 6, pp.1237–1241, June1994.
+[100] Nagarajan, V., Sharma, R. N., Chidambara, M. R. “An Algorithm for Tracking a Maneuvering
+Target in Clutter”, IEEE Trans. AES, vol. AES-20,pp. 560–573, Sept. 1984.
+[101] Ott, P., Chan, K.C.C., Leung, H. “A study on fuzzy tracking of maneuvering aircraft using real
+data”,ProceedingsoftheThirdIEEEConferenceonFuzzySystems,pp.1671–5vol.3,1994,Orlando,
+FL, USA.
+[102] Papoulis, A. Probability, Random Variables, and Stochastic Processes, Mc Graw-Hill, NY,1991.
+[103] Park Yong Hwan, Seo, J.H., Lee, J.G. “Tracking using the variable-dimension filter with input
+estimation”, IEEE Transactions AES, vol. 31, no. 1, pp.399–408, Jan. 1995.
+[104] Pattipati, K.R., and SandellJr., N. R. “A UnifiedView of StateEstimation in Switching Environ-
+ments”, Proc. Amer. Control Conf.,June, 1983.
+[105] Pulford, G. W. “Is the Probabilistic Multihypothesis Tracking Algorithm Optimal?”, University
+of Melbourne Technical Note, March 1998, http:// www.ee.mu.oz.au/ research/ cssip/ staff/
+gpulford/ pmht note.pdf.
+[106] Pulford, G. W. and B. F. La Scala. “Manoeuvring Target Tracking using the Expectation-
+Maximisation Algorithm”,Proc. 4th IntConf. on Control, Automation, Robotics and Vision,Singa-
+pore, pp.2340–2344, Dec. 1996.
+[107] Pulford,G.W.,andB.F.LaScala.“Over-The-HorizonRadarTrackingUsingTheViterbiAlgorithm
+- Second Report to High Frequency Radar Division”, CSSIP Report No. 16/95, Adelaide, August
+1995, http:// www.ee.mu.oz.au/ research/ cssip/ publications/ 9798/ vda-rep2.pdf.
+[108] Pulford,G.W.,andB.F.LaScala.“Over-The-HorizonRadarTrackingUsingTheViterbiAlgorithm
+- Third Report to High Frequency Radar Division”, CSSIP Report No. 27/95, Adelaide, December
+1995, http:// www.ee.mu.oz.au/ research/ cssip/ publications/ 9798/ vda-rep3.pdf.
+[109] Pulford, G. W., and La Scala, B. F. “MAP Estimation of Target Manoeuvre Sequence with the
+Expectation-Maximisation Algorithm”, Proc. 4th Int Conf. on Control, Automation, Robotics and
+Vision, Singapore, pp.2340–2344, Dec.1996.
+[110] Pulford, G. W., and La Scala, B. F. “A Survey of Manoeuvring Target Tracking Methods and
+their Applicability to Over-The-Horizon Radar”, CSSIP Report No. 14/96 to High Frequency
+Radar Division, July 1996, http:// www.ee.mu.oz.au/ research/ cssip/ publications/ 9798/
+manoeuvre survey.pdf.
+[111] Quach, T. and Farooq, M. “Maximum Likelihood Track Formation with the Viterbi Algorithm”,
+Proc. 33rd IEEE Conf. on Decision and Control, Orlando, FL, pp.271–276, Dec. 1994.
+[112] Quach,T.,Farooq,M. “ApplicationoftheMHTtotrackformationofasinglemaneuveringacoustic
+source in clutter”, Proceedings of the 36th Midwest Symposium on Circuits and Systems, pp. 684–7
+vol.1, 1993, Detroit, MI, USA.
+[113] Reid, D. B. “An Algorithm for Tracking Multiple Targets”, IEEE Trans. AC, pp. 843–854, Dec.
+1979.
+36
+
+--- Page 37 ---
+[114] Ricker,G.G.,Williams, J.R. “AdaptiveTrackingFilterManoeuvringTargets”, IEEETrans. AES,
+AES-14, Jan. 1978, pp.185–193.
+[115] Rouhi, A.,Farooq, M., Bruder,S. “Multiple structureadaptivetarget tracking”, Proceedings of the
+32nd Midwest Symposium on Circuits and Systems, pp.613–16 vol.1, 1990, Champaign, IL, USA.
+[116] Sastry, C.R., Slocumb, B.J., West, P.D., Kamen, E.W. “Tracking a maneuveringtarget using jump
+filters”, Proceedings of the 1994 American Control Conference, pp. 2081–7 vol.2, 1994, Baltimore,
+MD, USA.
+[117] Sengupta, D., Iltis, R.A. “Tracking of multiple maneuvering targets in clutterby joint probabilistic
+dataandmaneuverassociation”,Proceedingsofthe1989AmericanControlConference,pp.2696–701
+vol.3, 1989, Pittsburgh, PA,USA.
+[118] Sheldon, S. N., and Maybeck, P. S. “An Optimizing Design Strategy for Multiple Model Adaptive
+Estimation and Control”, IEEE Trans. AC, vol. AC-38, pp. 651–654, April 1993.
+[119] Singer,R.A. “Estimating OptimalTrackingFilterPerformanceforMannedManeuveringTargets”,
+IEEE Trans. AES, vol. 6, pp.473–483, July 1970.
+[120] Singer,R.A.,Sea,R.G.,andHousewright,K.B. “DerivationandEvaluationofImprovedTracking
+FiltersforUseinDenseMultitargetEnvironments”,IEEETrans. IT,vol.IT-20,no.4,pp.423–432,
+Jul. 1974.
+[121] Slocumb, B.J., West, P.D., Shirey, T.N., Kamen, E.W. “Tracking a maneuvering target in the
+presence of false returns and ECM using a variable state dimension Kalman filter”, Proceedings of
+the 1995 American Control Conference, pp.2611–15 vol.4, 1995, Seattle, WA, USA.
+[122] Smith, P. L., and Buechler, G. “A Branching Algorithm for Discriminating and Tracking Multiple
+Objects”, IEEE Trans. AC, vol. AC-20, pp.101–104, Feb.1975.
+[123] Streit, R. L., and Barrett, R. F. “Frequency Line Tracking Using Hidden Markov Models”, IEEE
+Trans. ASSP, pp.586–598, 1990.
+[124] Streit,R.L.,andLuginbuhl,T.E.“MaximumLikelihoodMethodforProbabilisticMulti-Hypothesis
+Tracking”, Proc. SPIE Symp. Signal & Data Proces. Small Targets, vol. 2335–24, April 1994.
+[125] Sun,H.M.,Chiang,S.M. “Manoeuvringtargettrackingalgorithmforaradarsystem”,International
+Journal of Systems Science, vol. 20, no. 10 , pp.1801–11, Oct. 1989.
+[126] Swerling,P. “ProbabilityofDetectionforFluctuatingTargets”,IRETrans. Info.Th.,vol.IT-6,pp.
+269–308, April 1960.
+[127] Sworder, D. D., Singer, P. F., Doria, D., and Hutchins, R. G. “Image-Enhanced Estimation Meth-
+ods”, Proc. IEEE, vol. 81, no. 6, pp.797–812, June1993.
+[128] Sworder, D.D., Kent, M., Vojak, R., Hutchins, R.G. “Renewal models for maneuvering targets”,
+IEEE Transactions AES, vol. 31, no. 1, pp. 138–50, Jan. 1995.
+[129] Tanner, M. A. Tools for Statistical Inference: Methods for Exploration of Posterior Distributions
+and Likelihood Functions, 2nd ed., Springer-Verlag, N.Y., 1993.
+[130] Tao Tao, Xiong Youleng, Yang Suzi. “Target grey tracking in a multitarget environment”, Journal
+of Grey Systems, vol. 4, no. 2 , pp.153–61, 1992.
+[131] Thorp,J.S. “OptimalTrackingofManoeuvringTargets”,IEEETrans. AES,AES-9,July1973,pp.
+512–519.
+[132] Titterington, D. M., Smith, A. F. M., and Makov, U. E. Statistical Analysis of Finite Mixture
+Distributions, John Wiley, NY,1985.
+[133] Tomasini, B., Gauvrit, M., and Siffredi, B. “Bayesian Adaptive Commands Filter for Maneuvring
+Target Tracking with Measurements of Uncertain Origin”, Proc. ISSPA’87, Brisbane, pp. 473–479,
+Aug. 1987.
+[134] Tomasini, B., Gauvrit, M., Siffredi, B. “Bayesian adaptive filters for multiple maneuvering tar-
+get tracking with measurements of uncertain origin”, Proceedings of the 28th IEEE Conference on
+Decision and Control, pp.1397–9 vol.2, 1989, Tampa, FL, USA.
+[135] Tomasini, B., Gauvrit, M., Siffredi, B. “Bayesian adaptative filter for multiple maneuvering target
+trackingwithmeasurementsofuncertainorigin”, Proceedings of the SPIE:Signal and Data Process-
+ing of Small Targets, vol. 1096 , pp.209–14, 1989, Orlando, FL, USA.
+37
+
+--- Page 38 ---
+[136] Torelli, R., Graziano, A., and Farina, A. “IM3HT Algorithm: A Joint Formulation of IMM and
+MHT for Multitarget Tracking”, Proc. Euro. Control Conf.,Bruxelles, 1997.
+[137] Tsaknakis, H., Athans, M. “Tracking maneuvering targets using H-infinity filters”, Proceedings of
+the 1994 American Control Conference, pp.1796–803 vol.2, 1994, Baltimore, MD, USA.
+[138] Tugnait, J. K. “Detection and Estimation for Abruptly Changing Systems”, Automatica, vol. 18,
+no. 5, pp.607–615, 1982.
+[139] Van Trees, H. L. Detection, Estimation, and Modulation Theory Part 1, John Wiley, New York,
+1968.
+[140] Walton, A.M. “Tracking manoeuvring targets with a low probability of detection in clutter”, IEE
+Proceedings F [Radar and Signal Processing], vol. 137, no. 3 ,pp. 183–6, June1990.
+[141] Wang, H.P., Kung, M.C., Lin, T.Y. “Multi-model adaptive Kalman filter design for manoeuvring
+target tracking”, International Journal of Systems Science, vol. 25, no. 11, pp.2039–46, Nov.1994.
+[142] Wang, T.C., Varshney, P.K. “A tracking algorithm for maneuvering targets”, IEEE Transactions
+AES, vol. 29, no. 3, pp.910–25, July 1993.
+[143] Watson,G.A.,andBlair,W.D.“SolutiontoSecondBenchmarkProblemsforTrackingManoeuvring
+Targets in thePresenceof FalseAlarms andECM”, Proc. SPIE,SanDiego, vol.2561, pp.263–274,
+July 1995.
+[144] Watson, G.A., and Blair, W.D. “Interacting acceleration compensation algorithm for tracking ma-
+neuveringtargets”,Recordofthe1993IEEENationalRadarConference,pp.281–5,1993,Lynnfield,
+MA, USA.
+[145] Watson,G.A.,andBlair,W.D. “IMMalgorithmfortrackingtargetsthatmaneuverthroughcoordi-
+nated turns”, Proceedings of the SPIE: Signal and Data Processing of Small Targets, vol. 1698, pp.
+236–47, 1992, Orlando, FL, USA.
+[146] Watson,G.D.,Blair,W.D. “Constantspeedpredictionformaneuveringtargetsusingathreedimen-
+sional turning rate”, Proceedings. The Twenty-Third Southeastern Symposium on System Theory,
+pp. 239–43, 1991, Columbia, SC, USA.
+[147] West, P, Haddad, A.H. “Switched-Markov filtering for tracking maneuvering targets”, Proceedings
+of the 1991 American Control Conference, pp.2299–300 vol.3, 1991, Boston, MA, USA.
+[148] White, L. B. “Robust ApproximateLikelihood Ratio Tests for Nonlinear DynamicSystems”, Proc.
+ICASSP, vol. 4, pp. 357–360, Adelaide, 1994.
+[149] Willett, P., Ruan, Y., and Streit, R. “The PMHT for Maneuvering Targets”, Proc SPIE, Orlando,
+vol. 3373, April1998.
+[150] Xie Xianya, and Evans, R. J. “Multiple Target Tracking and Multiple Frequency Line Tracking
+UsingHiddenMarkovModels”,IEEETrans. SignalProc.,vol.39,no.12,pp.2659–2676, Dec.1991.
+[151] Xie Xianya, and Evans, R. J. “Multiple Frequency Line Tracking with Hidden Markov Models -
+FurtherResults”, IEEE Trans. Signal Proc., vol. 41, no. 1, pp.334–343, 1993.
+[152] Zhongliang Jing, Zhang Guowei, Zhou Hongren. “A fast adaptiveneural network scheme for multi-
+maneuvering target tracking”, Proceedings of the 32nd IEEE Conference on Decision and Control,
+pp. 3253–8 vol.4, 1993, San Antonio, TX, USA.
+[153] Zhongliang Jing, Zhou Hongren, Wang Peide. “Tracking initiation and termination of multiple
+maneuveringtargetsinadensemulti-returnenvironment”,Proceedings ofthe29thIEEEConference
+on Decision and Control, pp.2270–5 vol.4, 1990, Honolulu, HI,USA.
+38

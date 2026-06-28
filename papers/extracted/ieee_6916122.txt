@@ -1,0 +1,819 @@
+
+--- Page 1 ---
+EKF/UKF Maneuvering Target Tracking using
+Coordinated Turn Models with Polar/Cartesian
+Velocity
+Michael Roth∗, Gustaf Hendeby∗†, and Fredrik Gustafsson∗
+∗Dept. Electrical Engineering, Linko¨ping University, SE-581 83 Linko¨ping, Sweden.
+Email: {roth, hendeby, fredrik}@isy.liu.se
+†Dept. of Sensor & EW Systems, Swedish Defence Research Agency (FOI), SE-581 11, Linko¨ping, Sweden.
+Email: gustaf.hendeby@foi.se
+Abstract—Nonlinear Kalman filter adaptations such as ex- significant role in target tracking applications [1] where it can
+tendedKalmanfilters(EKF)orunscentedKalmanfilters(UKF) alleviate observability issues [10].
+provide approximate solutions to state estimation problems in
+We build our work upon the previous study [11] and show
+nonlinearmodels.Thealgorithmsutilizemeanvaluesandcovari-
+how the choice of state coordinates and CT model variants
+ance matrices to represent the probability densities in the other-
+wise intractable Bayesian filtering equations. As a consequence, influences the tracking performance for target motion in the
+their estimation performance can show significant dependence horizontalplane.Inparticular,wecomparestatesthatcomprise
+on the choice of state coordinates. The here considered problem either polar or Cartesian velocity. It is shown how different
+of tracking maneuvering targets using coordinated turn (CT)
+assumptions on the process noise input during discretization
+models is one practically relevant example: The velocity in the
+oftheunderlyingCTdifferentialequationsyieldfurthermodel
+target state can either be formulated in Cartesian or polar
+coordinates. We extend a previous study to a broader range variants for each velocity parametrization and how these can
+of CT models that allow for changes in target speed and turn be used for filtering.
+rate, and investigate UKF as well as EKF variants in terms of In terms of algorithms, we investigate the UKF as well
+theirperformanceandsensitivitytonoiseparameters.Theresults
+as the EKF variants that were covered in [11]. We provide
+advocate for the use of polar CT models.
+performance results for a range of CT Kalman filters and
+analyze their sensitivity with respect to the noise parameters
+I. INTRODUCTION
+of the stochastic CT models. This is done via Monte Carlo
+We investigate tracking of maneuvering targets under the (MC) simulations on a set of benchmark trajectories taken
+assumption of coordinated turn (CT) target motion. The CT from[12],withemphasisonsegmentsthatcorrespondtotarget
+models that we consider describe horizontal motion at nearly maneuvers. All filters are operated with range and bearing
+constant speed along circle segments, as commonly encoun- measurements that are transformed to Cartesian positions and
+teredinaviation,andappearindifferentflavorsthroughoutthe use individually optimized process noise parameters so as to
+tracking and filtering literature [1–5]. Kalman filter variants facilitate a fair comparison of the model and filter choice.
+that are based on these models are important building blocks The outline of the paper is as follows. The employed CT
+of interacting multiple model (IMM) filters [2]. models are introduced in Section II. Kalman filter adaptations
+WithintheIMMframework,KalmanfilterswithCTmodels fornonlinearestimationproblemsaredescribedinSectionIII.
+are typically used to track the target during maneuvers [3, 6]. Theconductedexperimentandadiscussionofobtainedresults
+Our investigation concentrates on nonlinear CT variants that are given in Section IV. Conclusions are given in Section V.
+allow for varying turn rate as well as varying target speed, in
+contrast to their linear cousins with known turn rate [5]. This
+II. COORDINATEDTURNMODELS
+choice is backed by an analysis of real world aircraft data [7] The list of available motion models used for tracking is
+that advocates for the varying speed and turn rate assumption. long.Extensivesourcesincludethesurvey[5]orthededicated
+A potential benefit [3] of an IMM algorithm with these more chapters in [4]. In this section we describe the underlying
+flexible CT models is a reduced number of required modes. continuous-time dynamics before deriving discrete time mod-
+The nonlinear nature of the considered CT models requires els based on polar and Cartesian velocity representations.
+theuseofnonlinearKalmanfilteradaptationssuchasextended Finally, we discuss the noise inputs of stochastic CT models.
+Kalman filters [8] (EKF) or unscented Kalman filters [9]
+A. From Particle Motion to Discrete-time CT Models
+(UKF). One consequence of the inherent approximations in
+such algorithms is that the estimation performance depends Our focus is on coordinated turn models which have their
+on the choice of the state coordinates. This observation dates originincurvilinearparticlemotion[5].Figure1illustratesthe
+back to the early days of Kalman filtering [8] and plays a involved variables. The target position in the horizontal plane
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 2 ---
+x T
+2 where the indices denote sampling instants and w = a α
+v
+1 comprises the acceleration inputs. The sample tim(cid:2)e T e(cid:3)n-
+v
+(cid:20) 2(cid:21) h
+ters the expression implicitly. For simplicity we treat w as
+☛
+deterministic and introduce randomness once the discrete-
+time equations have been established. Schemes that discretize
+x
+1
+related models under the assumption of random inputs are
+shown in [13] and [14], where the latter considers ω not as
+Fig. 1. Illustration of state components. The target is depicted in the x 1–
+x 2–plane.Theattachedvelocityvectorhascomponentsv 1 andv 2 inx 1 and part of the state but as input.
+x 2direction,respectively.visthemagnitudeofthevelocityvectorandhthe
+headingangle.
+B. Coordinated Turn with Polar Velocity
+with respect to a fixed Cartesian coordinate frame is denoted
+by x 1 and x 2 [m]; the velocity vector has components v 1 and We begin with the discretization of (1) which is in general
+v 2 and magnitude v, all [m/s]; h [rad] denotes the heading not trivial. For a=0 and α=0, however, a compact solution
+angle, given by the two argument arctangent atan2(v 2 ,v 1). to the differential equations is readily available and given by
+Furthermore, we define the turn rate ω = dh [rad/s] as the
+dt
+time derivative of the heading angle.
+We assume that the target is driven by linear and rotational
+x 1+ 2
+ω
+v sin(ω
+2
+T)cos(h+ ω
+2
+T)
+accelerationinputsa[m/s2]andα[rad/s2],respectively.Here,
+x 2+ 2
+ω
+v sin(ω
+2
+T)sin(h+ ω
+2
+T)
+f (x)= v . (4)
+aisalsoknownaslongitudinalaccelerationthatactstangential p  
+ h+ωT 
+to the target path, thus aligned with the Cartesian velocity  
+ ω 
+vector. While a accounts for speed changes, α influences the  
+turn rate. The coupled differential equations
+The index p stands for “polar” and, naturally, f (x) takes
+p
+x˙1 vcos(h)
+states with polar velocity as input argument. Equation (4)
+x˙2 vsin(h)
+is given in [11] but equivalent solutions can also be found
+v˙ = a (1)
+    elsewhere [15].
+h˙   ω 
+    If we assume non-zero a and α, the solutions to (1)
+ω˙   α 
+    become increasingly complicated, depending on the behavior
+form a continuous-time state equation for the target state x= of a and α between sampling instants. A discussion of
+x x v h ω T withvelocityinpolarcoordinates.The suchdiscretizationproblems,includingsuggestedsolutions,is
+1 2
+p(cid:2)osition entries in (1(cid:3)) depend nonlinearly on h, whereas the provided in [4]. Here, we settle for using (4) and concentrate
+acceleration inputs a and α enter linearly. on the input part of (3), which amounts to finding G(x).
+If we change to a state with Cartesian velocity, x = We investigate two schemes of which the first asserts that a
+T and α act as impulses just before each sampling instant.
+x x v v ω , the resulting differential equation
+1 2 1 2
+Consequently, each input acts only on the state components
+(cid:2) (cid:3)
+x˙1 v
+1
+that are directly influenced. The second approach assumes
+x˙2   v
+2
+ that a and α are constant between sampling instants, and is
+ v˙1 =  acos(h)−v 2 ω  (2) commonly known as zero-order-hold discretization. For the
+
+
+v˙2 
+
+
+
+asin(h)+v
+1
+ω
+
+linear part (v,h,ω) of (1) the solution for constant w is
+  ω˙     α   easily derived, but the solution for (x 1 ,x 2) becomes very
+complicated due to the time-varying h. Euler’s method, i.e.,
+exhibits bilinear relations v ω and v ω. Furthermore, the
+1 2 asserting a constant h between sampling instants, yields a
+assumption of mere longitudinal acceleration (apart from the
+simple approximate solution. The resulting G(x) of (3) are
+turning acceleration) now yields a nonlinear dependency on
+given by
+h = atan2(v 2 ,v 1) in the velocity. The coordinate change
+relating the two state vectors is obvious from the first two
+components in (1) and (2). 0 0
+T2
+cos(h) 0
+2
+The state differential equations (1) and (2) are both in the 0 0 T2 sin(h) 
+2
+f t t o o or a m ( p ap p x˙ p ly r = o d x ϕ i i s m ( c x r a e , t t e a e l , - y α t ) im ) s . e o H l fi v e i n l n t c e g e ri , n ( w 1 g ) e te n a c e n h e d n d i ( q t 2 o u ) e fi s f r o s l t r a d t t e i h s r e . cr T e s h t t a i i z t s e e a i a m n t o o t u r i d m n e t e s r G1 p =     T 0 0 T 0 0     , G2 p (h)=     T 0 0 T T 0 2 2      (5)
+instancek+1giventhestateattimek,aninitialvalueproblem.    
+The results we obtain turn out to be of the form
+fortheimpulseandconstantinterpretationsofw,respectively.
+x
+k+1
+=f(x
+k
+)+G(x
+k
+)w
+k
+, (3) Obviously, G1
+p
+is independent of the state.
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 3 ---
+C. Coordinated Turn with Cartesian Velocity III. EKFANDUKFFORNONLINEARFILTERING
+The discrete-time version of (2) follows from (4) by con- In this section, an overview of different Kalman filter vari-
+verting from polar to Cartesian velocity and is given by ants for nonlinear filtering is provided. For a more extensive
+x x 2 1 + + v v ω ω 1 1 s 1 in − (ω c T os ) ( − ωT v ω ) 2 (cid:0) 1 + − v ω 2 co s s in (ω (ω T T ) (cid:1)) t r r e e a a d t e m r e i n s t re o f f er fi re lt d er t i o ng [4 t ] h a e n o d ry th a e nd ref t e h r e en a c c e t s ua b l el a o l w go . rithms, the
+f c (x)=  v 1 (cid:0)cos(ωT)−v 2 (cid:1)sin(ωT)  . (6) A. Bayesian Filtering Theory
+
+
+v 1sin(ωT)+v 2cos(ωT) 
+ Filtering in nonlinear state-space models is a difficult prob-
+ ω 
+  lem. The widely accepted Bayesian filtering equations [4]
+Solving (2) under the assumption a = 0 and α = 0 yields
+equivalent results. Often, (6) is written as product of an p(x k |y 1:k )=
+p(y
+k
+|x
+k
+)p(x
+k
+|y 1:k−1)
+(8a)
+ω-dependent matrix with the Cartesian state vector which p(y 1:k )
+disclosesalinearmodelforknownω[2,5].Thecorresponding p(x k |y 1:k−1)= Z p(x k |x k−1)p(x k−1|y 1:k−1)dx k−1 (8b)
+input matrices in (3) follow from arguments similar to those
+in the polar case and are given by
+p(y 1:k )= Z p(y k |x k )p(x k |y 1:k−1)dx k (8c)
+0 0
+T2
+cos(h) 0
+ 0 0 T 2 2 sin(h) 0 are conceptually appealing but, due to the required marginal-
+G1 c (h)=  T cos(h) 0  , G2 c (h)=  T 2 cos(h) 0  (7a) i t z h a e ti s o i n mp a l n e d st c c o a n s d es it . io T n h in is g h o a p s e l r o a n ti g on b s e , e i n nt k ra n c o t w ab n le [1 f 6 o ] r . a H ll en b c u e t ,
+T sin(h) 0 T sin(h) 0
+    considerable effort has been put into the development of
+ 0 T  0 T
+    algorithms that approximate (8).
+with impulse and constant w, respectively. Since we assume The most famous special case for which (8) can be solved
+onlylongitudinalacceleration,G1(h)andG2(h)dependonh,
+comprises a linear state-space model with Gaussian noise
+c c
+whichisafunctionofv 1 andv 2 .Therefore,(7a)appearsmore and initial state. The solutions are given by a number of
+nonlinearthan(5).Alternatively,athirdvariantwithindividual recursive update equations that have become known as the
+Cartesian acceleration inputs a 1 and a 2 can be formulated. Kalman filter (KF) [4, 8]. Of course we should note that
+T
+With w = a 1 a 2 α we obtain the KF can be obtained from several different viewpoints
+(cid:2) (cid:3) that establish further notions of optimality for linear (not
+T2
+0 0
+2 necessarily Gaussian) problems [8].
+ 0 T2 0
+G3 c =  T 0 2 0  . (7b) B. Kalman Filter Adaptations for Nonlinear Filtering
+  0 T 0  It is a natural idea to adapt the Kalman filter to nonlinear
+ 0 0 T problems, and indeed this is where the algorithm made a first
+ 
+considerableimpact:TheKFwasemployedtosolvenonlinear
+Combining(6)and(7b)yieldsawidespreadCTmodelvariant
+[2, 5]. Obviously, G3 does not depend on the state and navigation problems in the Apollo mission [17].
+c
+The first nonlinear KF developed became known as the
+the resulting model allows acceleration in any direction, in
+extended Kalman filter (EKF), and is based on consecutive
+contrast to the longitudinal only acceleration that we assumed
+before. In this respect, G3 bears a close resemblance to the linearizationofthenonlineardynamicandmeasurementequa-
+c
+tions about current state estimates. The linearization is typi-
+input matrix of constant velocity models [4, 5].
+cally carried out via Taylor series expansion but interpolation
+D. Process Noise Assumptions
+schemes based on numerical differentiation also exist [18].
+Sofar,wehavediscusseddifferentdeterministicCTmodels Going beyond linearization, the second-order EKF (EKF2)
+that employ polar or Cartesian velocity. In order to obtain a retains the quadratic terms in the Taylor series. This attempt
+stochastic CT model, we formulate a probabilistic description to approximate the system equations more accurately comes
+of the input signals a and α. As indicated earlier, we pursue at the expense of a vastly increased computational complexity
+a direct discrete-time approach [2] rather than discretizing if implemented without further care [19, 20].
+randomprocesses,whichmeansthatwetreataandα(whether Alinearapproximationcannotfullycapturethebehaviorof
+impulseorconstantbetweensamplinginstants)asuncorrelated a nonlinear system. The unscented Kalman filter [9] (UKF) is
+random variables with zero mean and standard deviations an algorithm based on deterministic sampling that addresses
+σ [m/s2] and σ [rad/s2]. Furthermore, we treat the obtained this to some extent. Instead of approximating the state and
+a α
+noise sequences a and α as white. The zero-mean input measurement functions of a nonlinear state space model, few
+k k
+yields the typical nearly constant speed and nearly constant deterministic state realizations — called sigma points — are
+turn rate behavior that is widely used in motion models for generated and propagated through the involved nonlinearities.
+filtering. In fact, some authors prefer the name (nearly) con- The sample statistics of transformed sigma points are then
+stant turn models to make a distinction to the more complex used in the KF equations. The main ingredient of the UKF
+coordinated turns in aviation [5]. is a computation scheme for transforming mean values and
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 4 ---
+covariance matrices called unscented transformation (UT), Trajectory 1
+whichdependsonasetofscalarparameters.Itturnsoutthata
+simplechoiceofUTparametersyieldsanumericalintegration
+rule of degree 3, and gives rise to a UKF variant called the 20
+cubature Kalman filter [21] (CKF). The numerical integration
+10
+viewpointintheCKFderivationfacilitatesaccuracystatements
+thatareotherwisedifficulttoobtainfortheUKF.Adiscussion
+50 60 70
+of this can be found in [20]. The fact that UKF variants
+are sampling based and do not involve Jacobian and Hessian
+matrices, in contrast to EKF and EKF2, makes them simple
+to implement.
+RelationsbetweenUKFandEKF2havebeenestablishedin
+[22]. With the “Gaussian derivation” of the Kalman filter in
+mind, a common framework for all of the above adaptations
+can be formulated [20, 22]. After all, KF variants employ the
+same kind of measurement update equation that is linear in
+theresidualy −yˆ ,thedifferencebetweenpredictedand
+k k|k−1
+measured output. The algorithms differ in the methods that
+are used for computing mean values and covariance matrices
+of nonlinearly transformed random variables. An extensive
+survey of these moment computation schemes and their use
+in Kalman filtering is given in [20].
+C. The Role of the State Coordinate System
+Kalmanfiltervariantspropagatemeanvaluesandcovariance
+matrices of filtered and predicted states throughout time.
+Therefore, a widespread interpretation is that the densities
+in(8)areassumedtobeGaussian.Thisisaveryrestrictiveas-
+sumptionandcannotaccountforphenomenalikemultimodal-
+ity or skewness. As a consequence of the limited flexibility,
+thechoiceofstatecoordinatescanhaveasignificantinfluence
+on the estimation performance of any nonlinear Kalman filter
+variant.
+IV. EXPERIMENTANDDISCUSSION
+In this section different filter and CT model combinations
+are assessed on a maneuvering target tracking problem.
+A. Experiment Setup
+Monte Carlo simulations are used to evaluate the different
+filtersandstate-spacerepresentations.Forthispurpose,thesix
+benchmarktargettrajectoriesof[12]areusedwhichrepresent
+different maneuvering aircraft targets, ranging from a slow
+cargoaircraft,oversmallermaneuverableLearjet-typeaircraft,
+to very agile and fast aircraft. We illustrate the horizontal
+trajectories in Figure 2 and refer the reader to [12] for a
+more comprehensive description and further plots, including
+acceleration magnitude.
+The CT models evaluated here cover only two-dimensional
+CT motion and therefore only the target motion in the hor-
+izontal plane is considered. Motivation for such a problem
+separation is given in [3, 7]. Furthermore, all the trajectories
+contain considerable constant velocity segments for which the
+standard KF is known to work very well, whereas CT models
+are better suited to handle the turns. Several solutions exist to
+utilize this difference in behavior, the IMM is one. Therefore,
+]mk[
+x
+2
+Trajectory 2
+−30
+−40
+20 30 40
+Trajectory 3
+60
+50
+40
+30
+30 40 50 60
+]mk[
+x
+2
+Trajectory 4
+30
+20
+10
+0
+10 20 30 40
+Trajectory 5
+30
+20
+10
+50 60 70 80 90
+x [km]
+1
+]mk[
+x
+2
+Trajectory 6
+20
+10
+0
+30 40 50 60 70
+x [km]
+1
+Fig. 2. Trajectories and the segment in which the target is maneuvering
+(markedinboldred).
+to accentuate the behavior during turns, only segments of the
+trajectories with pronounced acceleration are included in the
+evaluation. These sections are marked in Figure 2.
+For each trajectory, range and bearing measurements are
+generatedbyanoisysensorintheorigin,withwhiteGaussian
+noise with standard deviation σ =0.1 [◦] and σ =100 [m]
+θ r
+for bearing and range, respectively. The measurements and
+their variances are then converted to Cartesian coordinates to
+yield position measurements with time-varying measurement
+covariance matrices. The transformation is performed using
+both the Gauss approximation and the UT. Both methods
+produce comparable results for the chosen σ and σ .
+θ r
+The tracking performance is evaluated by computing the
+root mean square error (RMSE) for the true target position
+compared to the predicted state position. We average first
+over MC realizations and second over time steps. Using the
+predicted state position instead of the filtered position ensures
+that we evaluate the full state and the model assumption, not
+only the position estimate which would be predominant using
+the filtered position. As mentioned above, only sections of
+the trajectories with acceleration are included in the RMSE
+computations. Hence the performance is only evaluated for
+the highlighted segments in Figure 2.
+The specific filters that are compared are EKF, EKF2, and
+UKF for all CT models of Section II. Per algorithm type
+this amounts to two polar and three Cartesian models that
+are tested. For each batch of measurement realizations, the
+filters are run with different noise settings. Picking the best
+parameters for all combinations facilitates a fair comparison.
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 5 ---
+Themagnitudeoftheprocessnoiseineachalgorithmisvaried
+200
+usingalogarithmicscalewithafewsamplesperdecade,with
+the actual measurement noise that was used to generate the
+measurements. These simulations also indicate how sensitive 150
+thefilter-modelcombinationistotheprocessnoiseparameters.
+The process noise covariance is computed according to
+100
+Q =G(x )diag(σ2,σ2)G(x )T (9)
+k k a α k
+for all of the filter-model combinations except for those that
+employG3of(7b).There,aslightlyalteredexpressionisused. 50
+c 0.5 1 1.5 2 2.5 3 3.5
+To set a baseline for the experiments, a linear Kalman
+filter with constant velocity (CV) model is applied along all
+nonlinear filters. Again, the position RMSE is computed for
+theseveralprocessnoisesettingssoastofindthebestpossible
+performance on the maneuver segments of the trajectories.
+B. Simulation Results and Discussion
+In order to give the reader some qualitative performance
+insights we illustrate selected results of the best algorithms
+in each category instead of showing results for all model and
+filter combinations. We begin by first assessing the linear KF
+with a CV model, then EKF and UKF with Cartesian CT
+models,andfinallyEKFandUKFwithpolarCTmodels.The
+presented RMSE values were computed from the predicted
+position estimates on 10 measurement realizations.
+The UKF variants showed almost no effect to different
+valuesoftheUTparameters.Therefore,themostbasicversion
+of a UKF with zero central weight has been used. This is in
+fact the CKF of [21].
+Figure 3 shows the prediction results that were obtained
+with the CV KF. Illustrated is the average position RMSE
+against the logarithm log(σ ) (base 10) of the acceleration
+a
+noise standard deviation σ that was employed in the KF.
+a
+The performance on Trajectory 4 is better than on the other
+trajectories, which can be explained by a longer segment
+with only minor maneuvering that is well suited to the CV
+assumption. Furthermore, we include the best RMSE value
+on each trajectory in the legend. A sensible more advanced
+algorithm must beat these numbers in order to be worth the
+extra effort.
+Next, we turn to CT models with Cartesian velocity. These
+require the user to select the two parameters σ and σ .
+a α
+Figure 4 serves as example for all upcoming illustrations and
+displaystheaveragepositionRMSEascontourplotoflog(σ )
+a
+and log(σ ). Dark red areas correspond to parameter choices
+α
+that produced an RMSE over 200m. The color scale is valid
+fortheotherplotsofthesamekind.Theshownresultsarefor
+an EKF2 using a CT model with state-dependent input matrix
+G2(h) of (7a) on Trajectory 1. The best RMSE in the plot
+c
+title shows that the algorithm clearly outperforms the CV KF.
+A cross marks the optimal parameter choices.
+We begin with an analysis of EKF and compare the three
+covariance matrices of (7a) and (7b). It turns out that G2(h)
+c
+of (7a) provides better results than G1(h) and G3. The
+c c
+corresponding RMSE plots are given in Figure 5. Apparently,
+we can do better than with a CV KF. One exception is
+]m[
+ESMR
+noitisop
+.gva
+1: 142.0
+2: 138.0
+3: 155.2
+4: 103.6
+5: 159.4
+6: 153.0
+log(σ )
+a
+Fig.3. AveragepositionRMSE[m]ofalinearKalmanfilterwithCVmodel
+for all trajectories. Only segments in which the target maneuvers are taken
+intoaccount.
+97.7
+log(σ )
+a
+)
+σ(gol
+α
+0 200
+−0.5
+−1 150
+−1.5
+−2 100
+−2.5
+−3 50
+−1 0 1 2
+Fig.4. RMSEasfunctionofnoisestandarddeviationlog(σa)andlog(σα)
+forEKF2withCartesianCTmodelonTrajectory1.Onlysegmentsinwhich
+thetargetmaneuversaretakenintoaccount.
+Trajectory5onwhichtheperformanceisequallybad.Acloser
+look at Trajectory 5 reveals that it contains both segments
+of very little maneuvering (constant low acceleration) and
+heavy maneuvering and is as such difficult to handle with
+a single filter. Changing from Cartesian EKF to EKF2 does
+not yield significantly different performance but has another
+interesting effect. The obtained RMSE values become less
+sensitive to variations in σ . This can be seen by comparing a
+Figures 4 and 5 that were obtained with the same model.
+A similar observation has been made in [6] where EKF2
+is said to improve robustness of a Cartesian velocity CT
+EKF. Apart from this desirable effect, EKF2 significantly
+increases the computation time. Owing to the sparsity of the
+required Hessian matrices; however, the computations could
+be significantly reduced by utilizing the problem structure.
+A comparison of Cartesian UKF variants yields the results
+of Figure 6 which are comparable to the EKF in Figure 5 on
+Trajectories 3–6 and slightly worse on Trajectories 1 and 2.
+Again, G2(h) of (7a) gives the best results, but also using the
+c
+simple G3 of (7b) performs well. Similar to EKF2, the UKF
+c
+seems to be less sensitive to changes in σ than the EKF.
+a
+We next turn to the CT models with polar velocity. The
+matrices G1 and G2(h) in (5) give rise to two variants. For
+p p
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 6 ---
+94.7
+)
+σ(gol
+α
+98.9
+0
+−1
+−2
+−3
+130.4
+)
+σ(gol
+α
+107.7
+0
+−1
+−2
+−3
+159.1
+log(σ )
+a
+)
+σ(gol
+α
+111.6
+134.0
+0
+−1
+−2
+−3
+−1 0 1 2 −1 0 1 2
+log(σ )
+a
+Fig.5. RMSEonalltrajectoriesforthebestEKFwithCartesianCTmodel.
+ColorbargiveninFigure4.ArrangementoftrajectoriessimilartoFigure2.
+EKF, the results show little preference for either of the two,
+so we present the results for G2(h) in Figure 7. These show p
+another improvement over the EKF with Cartesian CT model.
+The regions of low RMSE on Trajectories 1 and 2 appear
+larger than for all Cartesian CT filters. The filter is robust to
+deviations from the optimal σ and σ .
+a α
+Changing to EKF2 does not yield any significant improve-
+mentswhichmightbeexplainedbythefactthatthelowerpart
+of (4) is actually linear. The corresponding Hessian matrices
+are zero. A similar statement can be made for UKF, as shown
+in Figure 8 for G2(h).
+p
+C. Summary
+We made the following observations. For the considered
+trajectory segments, the use of nonlinear Kalman filters with
+coordinated turn models yields an improvement over a linear
+Kalman filter with constant velocity model.
+For Cartesian velocity UKF and EKF2 can reduce the
+sensitivity to the process noise parameters. Still EKF shows
+the best quantitative performance. In terms of the model, a
+state dependent input matrix G2(h) from (7a) appears best if
+c
+a Cartesian velocity representation is used.
+Using polar velocity representation instead can yield a
+furtherdecreaseinRMSE.Here,thechoiceofinputmatrix(5)
+islesssignificant.UKFandEKFprovidecomparableaccuracy.
+The RMSE contour plots in Figures 4 to 8 reveal that
+each individual algorithm can be run with the same parameter
+settings for all trajectories without much increase in RMSE.
+Theoptimalσ arecloseforalltrajectories,theoptimalσ are
+α a
+)
+σ(gol
+α
+106.3
+0
+−1
+−2
+−3
+132.2
+)
+σ(gol
+α
+114.5
+0
+−1
+−2
+−3
+154.4
+log(σ )
+a
+)
+σ(gol
+α
+134.2
+0
+−1
+−2
+−3
+−1 0 1 2 −1 0 1 2
+log(σ )
+a
+Fig.6. RMSEonalltrajectoriesforthebestUKFwithCartesianCTmodel.
+ColorbargiveninFigure4.ArrangementoftrajectoriessimilartoFigure2.
+close for Trajectories 3 to 6, and the RMSE is less sensitive
+to σ for Trajectories 1 and 2 (i.e., for the least agile targets). a
+V. CONCLUDINGREMARKS
+We have shown a range of coordinated turn (CT) models
+usingeitherCartesianorpolarvelocityandhowtousethemin
+aKalmanfilteringframeworkformaneuveringtargettracking.
+The results of the conducted simulation study are in favor
+of polar velocity. This confirms the results of the previous
+study [11] and extends it to the case of varying target speed.
+For polar CT models, the performance in terms of position
+RMSE of the predicted state appears to be comparable for
+EKFandUKF.AstheUKFdoesnotrequirethederivationand
+implementation of Jacobians it might be more straightforward
+to implement. The RMSE provided by the Cartesian velocity
+EKF and UKF turned out slightly worse. Interestingly, the
+sensitivity of the RMSE with respect to the noise parameters
+wasdecreasedbyusingEKF2andUKFintheCartesiancase.
+This, in addition to the simpler implementation and lower
+computational cost of UKF over EKF2 results in a recom-
+mendation for UKF if Cartesian CT models are preferred.
+Our results indicate that for each CT filter there is one
+set of noise parameters that yields good performance on all
+investigatedtrajectories,althoughthemaneuvercharacteristics
+are quite different from trajectory to trajectory. Furthermore,
+we have shown that the use of such flexible CT filters yields
+improved results (on maneuvering targets) when compared to
+a well tuned linear KF with constant velocity model. These
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 7 ---
+84.4
+)
+σ(gol
+α
+90.9
+0
+−1
+−2
+−3
+131.3
+)
+σ(gol
+α
+103.2
+0
+−1
+−2
+−3
+147.0
+log(σ )
+a
+)
+σ(gol
+α
+96.4
+125.6
+0
+−1
+−2
+−3
+−1 0 1 2 −1 0 1 2
+log(σ )
+a
+Fig. 7. RMSE on all trajectories for the best EKF with polar CT model.
+ColorbargiveninFigure4.ArrangementoftrajectoriessimilartoFigure2.
+insightsadvocateverymuchfortheuseoftheinvestigatedCT
+filters in IMM tracking algorithms.
+ACKNOWLEDGMENT
+The work was supported by the project Cooperative Local-
+ization(CoopLoc)fundedbySwedishFoundationforStrategic
+Research (SSF) and the Swedish strategic research center
+Security Link.
+REFERENCES
+[1] S. Blackman and R. Popoli, Design and Analysis of
+Modern Tracking Systems. Artech House, Aug. 1999.
+[2] Y. Bar-Shalom, X. R. Li, and T. Kirubarajan, Estimation
+with Applications to Tracking and Navigation. Wiley-
+Interscience, Jun. 2001.
+[3] Y. Bar-Shalom, P. K. Willett, and X. Tian, Tracking and
+Data Fusion: A Handbook of Algorithms. Storrs, CT:
+YBS Publishing, 2011.
+[4] F. Gustafsson, Statistical Sensor Fusion. Studentlitter-
+atur AB, Mar. 2010.
+[5] X. R. Li and V. Jilkov, “Survey of maneuvering target
+tracking. Part I. Dynamic models,” IEEE Trans. Aerosp.
+Electron. Syst., vol. 39, no. 4, pp. 1333 – 1364, Oct.
+2003.
+[6] P. Vacher, I. Barret, and M. Gauvrit, “Design on a
+tracking algorithm for an advanced ATC system,” in
+Multitarget-Multisensor Tracking: Applications and Ad-
+vances. Norwood,MA:ArtechHouse,1992,vol.2,pp.
+1–28.
+)
+σ(gol
+α
+94.2
+0
+−1
+−2
+−3
+129.3
+)
+σ(gol
+α
+112.9
+0
+−1
+−2
+−3
+146.3
+log(σ )
+a
+)
+σ(gol
+α
+129.7
+0
+−1
+−2
+−3
+−1 0 1 2 −1 0 1 2
+log(σ )
+a
+Fig. 8. RMSE on all trajectories for the best UKF with polar CT model.
+ColorbargiveninFigure4.ArrangementoftrajectoriessimilartoFigure2.
+[7] N. Nabaa and R. Bishop, “Validation and comparison of
+coordinatedturnaircraftmaneuvermodels,”IEEETrans.
+Aerosp.Electron.Syst.,vol.36,no.1,pp.250–259,2000.
+[8] B. D. Anderson and J. B. Moore, Optimal Filtering.
+Prentice Hall, Jun. 1979.
+[9] S. J. Julier and J. K. Uhlmann, “Unscented filtering and
+nonlinear estimation,” Proc. IEEE, vol. 92, no. 3, pp.
+401– 422, Mar. 2004.
+[10] M. Mallick, M. Morelande, L. Mihaylova, S. Arulam-
+palam, and Y. Yan, “Comparison of angle-only filtering
+algorithms in 3D using Cartesian and modified spherical
+coordinates,” in 2012 15th International Conference on
+Information Fusion (FUSION), Jul. 2012, pp. 1392 –
+1399.
+[11] F.GustafssonandA.Isaksson,“Bestchoiceofcoordinate
+system for tracking coordinated turns,” in Proceedings
+of the 35th IEEE Conference on Decision and Control,
+1996, vol. 3, Dec. 1996, pp. 3145 –3150.
+[12] W.Blair,G.Watson,T.Kirubarajan,andY.Bar-Shalom,
+“Benchmark for radar allocation and tracking in ECM,”
+IEEE Trans. Aerosp. Electron. Syst., vol. 34, no. 4, pp.
+1097–1114, Oct. 1998.
+[13] M. Morelande and N. Gordon, “Target tracking through
+a coordinated turn,” in IEEE International Conference
+on Acoustics, Speech, and Signal Processing, 2005. Pro-
+ceedings. (ICASSP ’05), 2005, pp. iv/21–iv/24.
+[14] P.-A. Kountouriotis and S. Maskell, “Maneuvering tar-
+get tracking using an unbiased nearly constant heading
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.
+
+--- Page 8 ---
+model,” in 2012 15th International Conference on Infor-
+mation Fusion (FUSION), Jul. 2012, pp. 2249–2255.
+[15] J. L. Gertz, “Multisensor surveillance for improved air-
+craft tracking,” MIT Lincoln Laboratory Journal, vol. 2,
+no. 3, pp. 381–396, 1989.
+[16] A. H. Jazwinski, Stochastic Processes and Filtering
+Theory. Academic Press, Mar. 1970.
+[17] M. Grewal and A. Andrews, “Applications of Kalman
+filteringinaerospace1960tothepresent,”IEEEControl
+Syst. Mag., vol. 30, no. 3, pp. 69–78, 2010.
+[18] M. Nørgaard, N. K. Poulsen, and O. Ravn, “New de-
+velopments in state estimation for nonlinear systems,”
+Automatica, vol. 36, no. 11, pp. 1627–1638, Nov. 2000.
+[19] M.RothandF.Gustafsson,“Anefficientimplementation
+of the second order extended Kalman filter,” in Proceed-
+ingsofthe14thInternationalConferenceonInformation
+Fusion (FUSION), Jul. 2011.
+[20] M. Roth, “Kalman filters for nonlinear systems and
+heavy-tailed noise,” Licentiate thesis, Linko¨ping Univer-
+sity, Linko¨ping, Sweden, Sep. 2013. [Online]. Available:
+http://urn.kb.se/resolve?urn=urn:nbn:se:liu:diva-97544
+[21] I.ArasaratnamandS.Haykin,“CubatureKalmanfilters,”
+IEEE Trans. Autom. Control, vol. 54, no. 6, pp. 1254–
+1269, Jun. 2009.
+[22] F. Gustafsson and G. Hendeby, “Some relations between
+Extended and unscented Kalman filters,” IEEE Trans.
+Signal Process., vol. 60, no. 2, pp. 545 –555, Feb. 2012.
+Authorized licensed use limited to: Harbin Institute of Technology. Downloaded on June 28,2026 at 10:53:44 UTC from IEEE Xplore. Restrictions apply.

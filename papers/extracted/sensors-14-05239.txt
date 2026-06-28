@@ -1,0 +1,728 @@
+
+--- Page 1 ---
+Sensors 2014, 14, 5239-5253; doi:10.3390/s140305239
+OPEN ACCESS
+sensors
+ISSN 1424-8220
+www.mdpi.com/journal/sensors
+Article
+A Constant Speed Changing Rate and Constant Turn Rate
+Model for Maneuvering Target Tracking
+Guan Zhai, Huadong Meng * and Xiqin Wang
+Department of Electronic Engineering, Tsinghua University, Beijing 100084, China;
+E-Mails: zhaiguan@gmail.com (G.Z.); wangxq_ee@tsinghua.edu.cn (X.W.)
+* Author to whom correspondence should be addressed; E-Mail: menghd@tsinghua.edu.cn;
+Tel./Fax: +86-10-62781378.
+Received: 13 January 2014; in revised form: 1 March 2014 / Accepted: 4 March 2014 /
+Published: 13 March 2014
+Abstract: This paper addresses the problem of modeling maneuvering target motion in
+tracking applications. A target trajectory can typically be divided into segments with
+different dynamic motion modes, such as a constant velocity motion, a constant acceleration
+motion or a constant turn rate motion. To integrate the different motion modes into a uniform
+model, a Constant Speed Changing Rate and Constant Turn Rate (CSCRCTR) model is
+proposed. A new state vector is defined, and the state transition function is derived. Based
+on the CSCRCTR model, we present a tracking algorithm using a particle filter. The
+performances of the CSCRCTR model, the uniform model (UM) and the interacting
+multiple model (IMM) for tracking a simulated maneuvering target are compared and show
+that the CSCRCTR model maintains a good consistency for different types of motions and
+achieves better accuracy than UM and IMM when maneuvers occur.
+Keywords: dynamic model; constant speed changing rate and constant turn rate
+(CSCRCTR) model; maneuvering target tracking
+1. Introduction
+In most tracking systems, the target motion is modeled as a system whose varying state makes a
+transition according to an underlying model or several switching models. More useful information
+about the target’s state can be extracted from observations by using a more appropriate model for the
+
+--- Page 2 ---
+Sensors 2014, 14 5240
+target’s motion. The selection of the proper model for applications of maneuvering target tracking is
+important and this topic has received much attention.
+Many specific dynamic models of target motion have been developed for maneuvering target
+tracking. The simplest models for a maneuvering target are the white-noise acceleration model [1],
+which assumes the acceleration to be an independent process, and the constant-acceleration model [1],
+which assumes the acceleration to be a process with independent increments. The Singer acceleration
+model [2] assumes the acceleration to be a time-correlated stochastic process and lays the foundation
+for several other effective maneuver models, such as the mean-adaptive acceleration model [3] and the
+asymmetrically distributed normal acceleration model [4]. These models, in which the filters are
+uncoupled across the coordinates show poor performance for several typical maneuvers, such as turns.
+The constant turn rate (CT or CTR) model [5,6] replaces the acceleration with the turn rate. The CT
+model has been incorporated and extended in many other models [7,8]. Many filters and algorithms for
+maneuvering targets [1,5,9–12] are developed based on these specific dynamic models. The details of
+these models and more other dynamic models are illustrated in [9,13].
+Each of the models described above performs well in specific scenarios, but there is no universally
+optimal model for all applications. The interacting multiple model (IMM) method [14–16] models the
+target motion as a hybrid system in which the state evolves according to a stochastic differential
+equation; the model jumps from one to another among a finite number of possible models according to
+a set of transition probabilities. The IMM algorithm constructed with a small number of models
+provides good estimations when the models cover the types of motion well. A bank of more models is
+required to cover various types of maneuvers, which reduces the effectiveness of the IMM due to the
+unnecessary competition between many non-matched models at any particular time [17].
+The segmenting track identifier (STI) [18], which is a non-Bayesian tracker was proposed as an
+alternative approach for maneuvering target tracking. This data-driven estimator partitions a target
+trajectory into a sequence of segments and estimates the state parameters for each segment. The STI
+operates well in tracking a highly maneuvering target with unknown behavior such as a free-swimming
+fish, but does not perform as well in sophisticated weapon delivery, air traffic control or satellite
+surveillance systems in which the target motion is easier to predict. A key component of STI is to
+approximate one segment as a circular arc or as a straight line, which can also be treated as an arc with
+an infinite radius. Based on this idea, this paper proposes a constant speed changing rate and constant
+turn rate (CSCRCTR) model in which the trajectory in each frame is approximated as an arc. In many
+practical systems, the tangential force which makes a speed change and the normal force which makes
+a heading change are independent. By introducing the distances travelled during the last two frames
+and the heading angles at the last two sampling times to the state vector, the speed and the heading
+angle evolve independently in the state transition function. The CSCRCTR model matches well with a
+coordinated turn and a motion with a constant speed changing rate, which are the most common
+typical maneuvers.
+This paper is organized as follows: the constant speed changing rate and constant turn rate
+(CSCRCTR) model for maneuvering target motion is proposed in Section 2. The tracking algorithm
+based on the CSCRCTR model, including the initialization and recursive filtering method, is described
+in Section 3. Section 4 presents a simulation of tracking a maneuvering target and compares the
+
+--- Page 3 ---
+Sensors 2014, 14 5241
+performances of the CSCRCTR model, the uniform motion (UM) model and the interacting multiple
+model (IMM). Section 5 summarizes concluding remarks.
+2. Constant Speed Changing Rate and Constant Turn Rate model
+In this study, we consider a target that is moving in a two-dimensional plane. In most traditional
+models, the state vector includes the position, the velocity, and the acceleration in both dimensions.
+The speed (magnitude of the velocity) and heading angle (direction of the velocity) are rarely included
+in the state. However, the direct result of a maneuver is a change of the speed or heading, which results
+in changes of the velocity and the acceleration. When the target starts to increase power, the resultant
+force in the movement direction causes the target to change speed; when the target starts to turn, the
+resultant force perpendicular to the movement direction makes the target change its heading angle.
+Equations (1) and (2) are in the integral forms of the target motion:
+tT
+v v  a d (1)
+tT t 
+t
+th
+  d (2)
+tT t 
+t
+where v and  are the speed and the heading angle of the target at time t, respectively, a and 
+t t  
+are the changing rate of the speed and the changing rate of the heading angle at time , respectively,
+T is the sampling interval. The parameters v , , a and  are all scalars, but not vectors. The
+t t  
+changing rate of the heading angle, , is the so-called turn rate.
+
+Since observations from the sensors are usually available only at discrete times, the model is often
+designed in a discrete-time form. A system with a fixed sampling interval, which is very common in
+many applications, is considered in this paper. We also make two assumptions here:
+(1) The speed changing rate is constant or nearly constant.
+(2) The turn rate is constant or nearly constant.
+The two assumptions are appropriate for both rectilinear motion with a uniform acceleration and a
+coordinated turn, which are two typical maneuvers. Obviously, the two assumptions both hold for a
+uniform motion. Based on these two assumptions, we have Equations (3) and (4):
+s s aT constant
+(3)
+c p 1
+  T constant
+(4)
+c p 2
+where s and  are the speed and heading angle at the current sampling time, respectively, s and
+c c p
+ are the speed and heading angle at the previous sampling time, respectively, a is the constant
+p
+speed changing rate, and  is the constant turn rate.
+As mentioned in Section 1, we approximate the trajectory between the previous sample and the
+current sample as an arc. The geometric relationship between the states at the two neighboring
+sampling times is shown in Figure 1.
+
+--- Page 4 ---
+Sensors 2014, 14 5242
+Figure 1. The geometric relationship between two neighboring samples.
+y (k)
+c (x(k),y(k))
+c c
+d(k)
+c
+(k)
+p
+(k)/2 (x (k),y (k))
+c p p
+(k)/2
+p
+x
+(x(k),y(k))
+o o
+For the kth frame, (x (k),y (k)) and (x (k),y (k)) represent the positions at the previous
+p p c c
+sampling time and the current sampling time in a Cartesian coordinate system, respectively ,
+(x (k),y (k)) represents the position of the center of the arc, and d (k) represents the distance (not
+o o c
+the displacement) during the current frame (the time between the previous sampling time and the
+current sampling time), which equals to the arc length. The geometric relationship between two
+neighboring samples can be written as Equations (5) and (6):
+x (k) x (k)r(k) sin(k)x (k)r(k) sin(k)
+(5)
+o c c p p
+y (k) y (k)r(k) cos(k) y (k)r(k) cos(k)
+(6)
+o c c p p
+where r(k) represents the radius of the arc and can be written as (7):
+d (k)
+r(k) c
+(7)
+(k)(k)
+c p
+For the explicitness of the model construction and the simplicity of implementing the filter, s ,
+c
+which is the speed at the current sampling time, and s , the speed at the previous sampling time, are
+p
+replaced by d , the distance during the current frame, and d , the distance during the previous frame.
+c p
+Equation (3) thus becomes (8):
+d d aT2 constant (8)
+c p 3
+Let X(k)[x(k),y(k),(k),(k),d (k),d (k)]T denote the state vector at the kth sampling time.
+c p c p
+By combining Equations (4)–(6) and (8), the transition function of the new proposed CSCRCTR
+model can be expressed as (9)–(14):
+(k)2(k1)(k1)u(k1)
+(9)
+c c p
+(k)(k1)
+(10)
+p c
+
+--- Page 5 ---
+Sensors 2014, 14 5243
+d (k)2d (k1)d (k1)v(k1)
+c c p (11)
+d (k)d (k1)
+(12)
+p c
+sin(k)sin(k)
+x(k) x(k1)d (k) c p (13)
+c (k)(k)
+c p
+cos(k)cos(k)
+y(k) y(k1)d (k) c p (14)
+c (k)(k)
+c p
+The terms u(k1) in (9) and v(k1) in (11) represent the process noises, which are assumed to be
+two independent zero-mean Gaussian variables with variances of 2(k1) and2(k1), respectively.
+ d
+3. Tracking Algorithm Based on the CSCRCTR Model
+The algorithm based on the CSCRCTR model is described in this section. As shown in (13)
+and (14), the transition function is nonlinear. By inserting (9)–(12) into (13) and (14), we find that the
+additive noises in (9) and (11) due to the modeling errors or variations in the speed changing rate and
+turn rate are not additive to the entire state vector. A particle filter is used to implement the algorithm.
+The sensor model we consider in this paper is shown in a simple form as (15) and (16), and only the
+position data are obtained:
+Z(k)H(k)X(k)W(k) (15)
+T
+1 0 0 0 0 0
+H(k) (16)
+ 
+0 1 0 0 0 0
+W(k) is a zero-mean Gaussian white noise with a covariance Q(k)diag(2,2). The first stage
+provides an initialization method and the second stage presents the filtering process.
+3.1. Initialization
+At least three samplings of sensor observations are needed to initialize a track. As shown in
+Figure 2, the trajectory from the first observation to the third is still approximated as an arc. According
+to Heron’s formula and the sine law, we can derive the initialization procedure using (17) to (27):
+ AB  (x x )2 (y y )2 (17)
+B A B A
+ AC  (x x )2 (y y )2 (18)
+C A C A
+ BC  (x x )2 (y y )2 (19)
+C B C B
+
+r  ,if 
+(20)
+
+   
+arcsin ,if
+  2r (21)
+1
+
+0, if
+
+--- Page 6 ---
+Sensors 2014, 14 5244
+ 
+arcsin
+ 
+,if
+  2r (22)
+2
+
+0, if
+2r, if
+d c (3) 1 (23)
+, if
+2r, if
+d p (3) 2 (24)
+, if
+  y  y 
+arctan C B , if x x 0
+x x C B
+  C B 
+
+  y  y 
+ arctan C B , if x x 0 (25)
+BC x x C B
+  
+C B
+
+/2, if x x 0, y  y 0
+ C B C B
+/2, if x x 0, y  y 0
+
+C B C B
+ ,if thedirectionisclockwise
+(3) BC 1 (26)
+c  ,others
+
+BC 1
+ ,if thedirectionisclockwise
+ (3) BC 1 (27)
+p  ,others
+
+BC 1
+Figure 2. The geometrical relationship between the initial three observations.
+ACB
+2 Z(2) (x , y )
+B B BAC
+ (3) B 1
+p d (3)
+d (3) p
+C c A
+(3)
+c Z(3) (x ,y ) Z(1)  (x , y )
+C C A A
+r
+O(x , y )
+o o
+
+--- Page 7 ---
+Sensors 2014, 14 5245
+The initial state estimation at the third sampling time is obtained by the derivation presented above.
+The results are shown in (23), (24) and (26)–(29):
+x(3) x (28)
+C
+y(3) y (29)
+C
+The initial covariance of the state estimation can be written as (30):
+ 82 42 
+ 0 0 0 0
+ 
+2 2
+ s c (3) s c (3) 
+ 
+42 82
+ 0 0 0 0 
+ 2 2 
+s (3) s (3)
+H(k) P(3|3)  c c  (30)
+ 0 0 42 22 0 0 
+ 
+0 0 22 42 0 0
+ 
+ 0 0 0 0 2 0 
+ 
+ 0 0 0 0 0 2 
+Table 1. Summary of the recursive filtering algorithm.
+Initialization Set of particles {X (3):i1,2, ,N}, each with a weight 1/N
+i
+Posterior distribution:
+N 1
+p(X(3)|Z(3)) (X(3)X (3))
+N i
+i1
+Set k 3
+for each cycle, k k1
+Prediction Generate N samples drawn from the distribution of u(k1), v(k1)
+{u (k1),v(k1):i1,2, ,N}
+i i
+for i1:N
+*(k)2 (k1) (k1)u (k1)
+ci ci pi i
+* (k) (k1)
+pi ci
+d*(k)2d (k1)d (k1)v(k1)
+ci ci pi i
+d* (k)d (k1)
+pi ci
+sin*(k)sin* (k)
+x*(k) x (k1)d*(k) ci pi
+i i ci *(k)* (k)
+ci pi
+cos*(k)cos* (k)
+x*(k) x (k1)d*(k) ci pi
+i i ci *(k)* (k)
+ci pi
+
+--- Page 8 ---
+Sensors 2014, 14 5246
+Table 1. Cont.
+Filtering Weight calculation:
+1  (Z (k)x*(k))2 (Z (k)y*(k))2 
+q (k) exp 1 i 2 i ,i1:N
+i 22
+
+22
+
+Weight normalization:
+q (k)
+q (k) i ,i1:N
+i N
+q (k)
+j
+j1
+State estimation:
+N
+X(k|k)q (k)X*(k)
+i i
+i1
+Covariance of the state estimation:
+N   T
+P(k|k)q (k) X*(k)X(k|k) X*(k)X(k|k)
+i i i
+i1
+Posterior distribution:
+N
+p(X(k)|Z(k))q (k)(X(k)X*(k))
+i i
+i1
+Updated particles Set of particles {X*(k):i1,2, ,N}, each with a weight q (k)
+i i
+Resampling Resample N times from the posterior distribution and obtain
+*
+{X (k):i1,2, ,N}, each with a weight 1/N
+i
+3.2. Recursive Filtering
+The particle filter [10] has been widely used in nonlinear/non-Gaussian Bayesian estimation
+problems. Based on the principle of the particle filter, a complete cycle of recursive filtering is given in
+Table 1. Once a tracker is initialized, N particles can be drawn from the PDF of the estimated state
+which is assumed to be a Gaussian vector with a mean of the initial estimation and a covariance given
+by (30). For a new cycle of filtering, each particle sample is predicted according to the transition
+function of the CSCRCTR model. In the prediction step, the distances and the heading angles should
+be predicted first, followed by the positions. When a new observation comes, the mean, covariance and
+even the PDF can be estimated by calculating the likelihood of each sample and obtaining a
+normalized weight. To avoid the degeneracy phenomenon, the particles are resampled in every cycle.
+4. Simulation Results
+A simulated maneuvering target is tracked using the proposed CSCRCTR model. The CSCRCTR
+model is compared to two uniform motion (UM) models with different levels of process noise
+and an IMM composed of a UM model, a constant acceleration (CA) model and four different turn
+rate models.
+
+--- Page 9 ---
+Sensors 2014, 14 5247
+4.1. The Scenario
+The maneuvering target goes through seven stages, including uniform motions and several
+maneuvers. In the 1st stage (1st–10th frame), 3rd stage (29th–45th frame), 5th stage (61st–80th) and
+7th stage (111th–120th frame), the target moves with a constant velocity. In the 2nd stage (11th–28th
+frame), it turns at a rate 5 /s. In the 4th stage (46th–60th frame), it increases power with a speed
+changing rate which increases from a0m/s2 to a10m/s2 (46th–48th frame), then remains at
+a10m/s2 (49th–57th frame) and decreases from a10m/s2 to a0m/s2 (58th–60th frame). In
+the 6th stage (81st–110th frame), it simultaneously turns with a rate 3 /s and decelerates at a
+speed changing rate a4m/s2. The trajectory and the indicators of the maneuvers, such as the speed
+changing rate and the turn rate, are shown in Figure 3.
+Figure 3. (a) Target trajectory (b) Speed changing rate of the target (c) Turn rate of
+the target.
+(a) the target trajectory
+10000 (b) speed changing rate
+10
+2]
+s 5
+5000 /m
+0
+[a
+k=0 -5
+]m 0 20 40 60 80 100 120
+[Y 0
+frame index
+(c) turn rate
+4
+-5000
+2
+]s
+0
+o
+
+[ /
+-
+-
+4
+2
+0.5 1 1.5 2 2.5 3 -6
+0 20 40 60 80 100 120
+X[m] 4
+x 10 frame index
+The initial position of the target is [4,000 m, 3,000 m], the speed is 200 m/s and the heading angle is
+53.13 . The sensor can only provide the Cartesian coordinates:
+Z [x,y]T W (31)
+where W is a zero-mean Gaussian white noise with a covariance Qdiag(2,2). The parameter 
+is assumed to be 40 m, so the coordinate-combined raw measurement error is approximately 57 m. The
+sampling interval T 1s.
+4.2. Parameters of the Different Models
+The UM model [1] is a constant velocity model. In a 2D tracking application, the state vector is
+defined as X [x,x,y,y], and it follows the simplest constant velocity model. The process noise,
+which is a design parameter, can be used to account for turbulence or an acceleration, etc. UM is a
+linear model and can be implemented using a Kalman filter. The process noise is a normally zero-mean
+Gaussian white noise with a covariance of Q in the form of (32).
+
+--- Page 10 ---
+Sensors 2014, 14 5248
+2T4 /4 2T3 /2 0 0 
+x x
+ 
+2T3 /2 2T2 0 0
+Q  x x  (32)
+ 0 0 2T4 2T3 /2
+ y y 
+ 0 0 
+y
+2T3 /2 
+y
+2T2 
+In this paper, a low level of Q with 2 2 150 and a high level of Q with 2 2 400 are
+x y x y
+selected to compare with the CSCRCTR model. The target is also tracked using an IMM algorithm,
+which includes a nearly constant velocity model (UM), a nearly constant acceleration (CA) model and
+four coordinated turn (CT) models with different turn rates. Since the turn rate is known in each model,
+the models are linear. The transition matrix is written as (33):
+ sinT 1cosT
+1 0
+ 
+ 
+ 
+0 cosT 0 sinT
+ 
+  (33)
+w  1cosT sinT 
+0 1 
+   
+ 0 sinT 0 cosT  
+The form of the process noise is similar to (32), and the process noise q is selected to be 5, which
+is of the same level as a noise 2 2 25 in (32). The turn rates of these four models are 6 /s,
+x y
+3 /s , 3 /s and 6 /s . The process noise in the UM model is assumed to be very small
+(2 2 1) to make an accurate estimation during the uniform motion. To track additional
+x y
+maneuvers, a CA model is added to the set of models. The process noise in the CA model is assumed
+to be 2 2 64 to track the maneuvers other than a coordinated turn. The basic idea of this IMM
+x y
+algorithm is based on [13], which provides additional details of this method. Although the performance
+of the IMM does not rely on the transition probability of the models, we provide the numbers used
+in (34) in the simulation:
+ 0.9 0.02 0.02 0.02 0.02 0.02
+ 
+0.06 0.9 0.01 0.01 0.01 0.01
+ 
+0.06 0.01 0.9 0.01 0.01 0.01
+p   (34)
+ij 0.06 0.01 0.01 0.9 0.01 0.01
+ 
+0.06 0.01 0.01 0.01 0.9 0.01
+ 
+0.06 0.01 0.01 0.01 0.01 0.9 
+4.3. Results
+The results are obtained based on 100 independent Monte Carlo simulations. The RMS position
+errors for the two UM models, the IMM and the CSCRCTR model are shown in Figure 4. The UM
+model I refers to the UM model with a high level of process noise and the UM model II refers to the
+model with a low level of process noise. Each model has its advantages and disadvantages. The UM
+model II works very well in the steady state, but it deteriorates sharply when a maneuver occurs.
+Although the UM model I has the flexibility to adapt to different physical behaviors of the target, it
+
+--- Page 11 ---
+Sensors 2014, 14 5249
+cannot obtain an accurate estimation for any type of motion. The RMS position errors of UM model I
+are greater than those of the proposed CSCRCTR model at almost all sampling times.
+Figure 4. RMS position errors.
+70 UM model Ⅰ
+UM model Ⅱ
+65
+IMM
+CSCRCTR model
+60
+55
+]m
+50
+[r
+o
+rr
+E 45
+40
+35
+30 S1 S2 S3 S4 S5 S6 S7
+25
+10 20 30 40 50 60 70 80 90 100 110 120
+frame index
+The CSCRCTR model can estimates the heading angle well and provide good position estimations
+during the coordinated turn between the 11th and 28th frames. The IMM performs slightly better
+because the turn is perfectly matched with one of the multiple models. For the rectilinear motion with a
+constant acceleration between the 49th and 57th frames, the CSCRCTR model performs much better
+than the IMM. Even when the speed changing rate is not a constant (Frames 46–49), the CSCRCTR
+model gives better estimations because it reacts faster to the accelerating tendency. For a compound
+maneuver in which the target decelerates and turns at the same time, the CSCRCTR model
+provides the most accurate estimation. However, when the target is in the uniform motion mode
+(Frame 81–110), there is a certain loss in the steady-state performance because we use an arc to
+approximate the trajectory, which is actually a straight line.
+When the target maneuvers in the 2nd, 4th and 6th stage, the CSCRCTR model reacts quickly and
+converges with a high rate. The IMM algorithm is considered to have rapid response to maneuvers, but
+the CSCRCTR model is more sensitive to changes of motion modes.
+If we transform the state estimated to Equation (35) based on the assumption of a constant speed
+changing rate, we can estimate the speed:
+3d (k)d (k)
+s (k) c p (35)
+c
+2T
+In the two UM models and the IMM, the speed and heading angle can also be calculated based on
+the estimation of [x,y]T. The RMS speed and heading angle errors are presented in Figure 5. The
+
+--- Page 12 ---
+Sensors 2014, 14 5250
+results also reveal that the CSCRCTR model has a good performance when the target maneuvers.
+Specifically, the CSCRCTR evaluates the speed well when the target accelerates and the heading angle
+well when the target turns.
+Figure 5. (a) RMS speed errors; (b) RMS heading angle errors.
+(a)
+UM model Ⅰ
+40
+UM model Ⅱ
+IMM
+30
+CSCRCTR model
+]
+s
+/m
+[r
+o 20
+rr
+E
+10
+0
+20 40 60 80 100 120
+frame index
+(b)
+15
+UM model Ⅰ
+UM model Ⅱ
+IMM
+10 CSCRCTR model
+o]
+[r
+o
+rr
+E
+5
+0
+20 40 60 80 100 120
+frame index
+The average tracking errors of each model for each maneuver are listed in Table 2. The highest
+errors for each segment of motion are marked in italics and the lowest errors are marked in bold.
+Table 2 gives a similar conclusion as the results shown in Figures 4 and 5 and provides more details.
+Every segment of motion is separated into the beginning stage (“B”), which includes the first five
+frames, and the stable stage (“S”), which includes the other frames. When the target begins a
+coordinated turn (Frames 11–28), the IMM and the CSCRCTR model both react quickly to the
+maneuver and provide good position estimations. During the turn, the CSCRCTR model estimates the
+heading angle well, while the IMM estimates the speed accurately. During a constant acceleration
+motion (Frames 49–57), the CSCRCTR model outperforms the other models in estimating the position
+and speed because the accelerating behavior matches the model (Equation (11)). When the target is in
+the uniform motion (Frames 61–80) and there are no speed and heading changes, the errors of the
+CSCRCTR model are slightly higher because it overestimates the change of distance or heading angle
+
+--- Page 13 ---
+Sensors 2014, 14 5251
+caused by measurement noise. For a compound maneuver in which the target decelerates and turns at
+the same time (Frames 81–110), the CSCRCTR model describes both behaviors well and provides the
+best estimations. The peak RMS position estimation errors for UM I, UM II, IMM and CSCRCTR are
+49.1 m, 54.4 m, 48.9 m and 41.8 m, respectively. The CSCRCTR model shows improvements of
+approximately 14% over IMM, 15% over UM I, and 23% over UM II. As shown in Table 2, the
+CSCRCTR model never achieves the highest position errors among the four models in any stage and
+shows great stability. Although it does not yield the lowest errors during the uniform motion,
+CSCRCTR shows good comprehensive performance for different types of motions, including typical
+and compound maneuvers.
+Table 2. Average tracking errors.
+Simultaneously
+Coordinated Uniform
+Motion type Acceleration Deceleration and
+Turn Motion
+Turn
+Stage of motion * B S B S B S B S
+Frame index 11–15 16–28 49–53 54–57 81–85 86–110 61–65 66–80
+Average UM I 46.9 49.1 42.3 44.0 47.9 47.0 46.1 43.7
+RMS UM II 44.9 54.4 39.7 42.9 46.5 49.3 41.5 38.2
+position IMM 42.5 37.7 48.9 47.3 44.7 43.4 44.1 36.4
+error[m] CSCRCTR 41.8 38.6 38.9 38.7 41.7 40.3 42.2 40.9
+UM I 14.7 12.9 18.1 18.9 13.9 15.6 13.5 13.6
+Average
+UM II 10.6 9.2 17.6 18.8 12.2 12.8 10.7 9.7
+RMS speed
+IMM 4.4 4.9 24.2 23.8 11.0 15.1 14.8 4.0
+error [m/s]
+CSCRCTR 12.5 10.2 13.1 10.3 10.7 10.5 14.4 10.2
+Average UM I 8.2 8.8 3.9 3.1 4.8 5.6 2.8 2.6
+heading UM II 9.6 11.2 2.6 2.2 5.8 6.9 2.0 1.8
+angle IMM 8.8 5.0 2.1 3.2 5.2 2.5 2.3 1.7
+error [°] CSCRCTR 6.4 4.4 3.0 2.8 3.6 3.8 2.3 2.4
+* Each period of motion is divided into the beginning stage (B) and the stable stage (S).
+5. Conclusions
+In most traditional models, the velocities and the accelerations in different dimensions are coupled
+according to the target motion. A new state vector, which includes the positions, the distances travelled
+in the current and previous frames, and the heading angles of the current and previous sampling times,
+is defined in this paper. We proposed the CSCRCTR model for tracking a maneuvering target based on
+the assumptions of constant speed changing rate and constant turn rate by approximating the trajectory
+between two adjacent samplings as an arc. The model can be adapted to different types of maneuvers
+as it treats the speed and the heading angle independently. Due to the obvious nonlinearity of the
+model, a particle filter is used to implement the tracking algorithm.
+Compared to the UM model and the IMM, the CSCRCTR model reacts faster to a maneuver and
+obtains more accurate estimations during the maneuvering period. The CSCRCTR model yields an
+improvement of approximately 14% in the peak RMS position estimation error for all types of motions
+over the IMM and more significant improvements over the UM models. It provides a more accurate
+
+--- Page 14 ---
+Sensors 2014, 14 5252
+speed estimation for an accelerating target and a more accurate heading angle estimation for a turning
+target. The CSCRCTR model is adaptable to different types of maneuvers and achieves a good balance
+between stability and maneuverability.
+Conflicts of Interest
+The authors declare no conflict of interest.
+References
+1. Bar-Shalom, Y.; Li, X.R.; Kirubarajan, T. Estimation with Applications to Tracking and
+Navigation: Theory, Algorithms, and Software; Wiley: New York, NY, USA, 2001.
+2. Singer, R.A. Estimating optimal tracking filter performance for manned maneuvering targets.
+IEEE T. Aerosp. Electron. Syst. 1970, 6, 473–483.
+3. Zhou, H.; Kumar, K.S.P. A “current” statistical model and adaptive algorithm for estimating
+maneuvering targets. AIAA J. Guid. 1984, 7, 596–602.
+4. Kendrick, J.D.; Maybeck, P.S.; Reid, J.G. Estimation of aircraft target motion using orientation
+measurements. IEEE T. Aerosp. Electron. Syst. 1981, 17, 254–260.
+5. Bar-Shalom, Y. Multitarget-Multisensor Tracking: Advanced Applications; Artech House:
+Norwood, MA, USA, 1990.
+6. Maybeck, P.S.; Worsley, W.H.; Flynn, P.M. Investigation of constant turn-rate dynamics models
+in filters for airborne vehicle tracking. Proc. NAECON 1982, 1982, 896–903.
+7. Roecker, J.A.; McGillem, C.D. Target tracking in maneuver-centered coordinates. IEEE T.
+Aerosp. Electron. Syst. 1989, 25, 836–843.
+8. Alouani, A.T.; Blair, W.D. Use of a kinematic constraint in tracking constant speed, maneuvering
+targets. IEEE Trans. Autom. Control 1993, 38, 1107–1111.
+9. Blackman, S.S.; Popoli, R.F. Design and Analysis of Modern Tracking Systems; Artech House:
+Boston, MA, USA, 1999.
+10. Gordon, N.J.; Salmond, D.J.; Smith, A.F. Novel approach to nonlinear/non-Gaussian Bayesian
+state estimation. IEEE Proc. F (Radar Signal Process.) 1993, 140, 107–113.
+11. Guo, X.; Ge, F.; Guo, L. Improved adaptive Kalman Filtering and its application in acoustic
+maneuvering target tracking. ACTA Acust. 2011, 36, 611–618.
+12. Li, X.R.; Jilkov, V.P. A survey of maneuvering target tracking-Part VIa: Density-based exact
+nonlinear filtering. SPIE Defense Secur. Sens. Int. Soc. Opt. Photon. 2010, 76981D:1–76981D:12.
+doi:10.1117/12.851393.
+13. Li, X.R.; Jilkov, V.P. Survey of maneuvering target tracking. Part I. Dynamic models. IEEE T.
+Aero. Elec. Sys. 2003, 39, 1333–1364.
+14. Blom, H.A.P.; Bar-Shalom, Y. The interacting multiple model algorithm for systems with
+Markovian switching coefficients. IEEE T. Autom. Control 1988, 33, 780–783.
+15. Li, X.R.; Bar-Shalom, Y. Design of an interacting multiple model algorithm for air traffic control
+tracking. IEEE T. Control Syst. Technol. 1993, 1, 186–194.
+
+--- Page 15 ---
+Sensors 2014, 14 5253
+16. Munir, A.; Atherton, D.P. Maneuvering target tracking using different turn rate models in the
+interacting multiple model algorithm. In Proceedings of the 34th IEEE Conference on Decision
+and Control, New Orleans, LA, USA, 13–15 December 1995; pp. 2747–2751.
+17. Mazor, E.; Averbuch, A.; Bar-Shalom, Y.; Dayan, J. Interacting multiple model methods in target
+tracking: A survey. IEEE T. Aerosp. Electron. Syst. 1998, 34, 103–123.
+18. Linder, S.P.; Schell, C. A non-Bayesian segmenting tracker for highly maneuvering targets.
+IEEE T. Aerosp. Electron. Syst. 2005, 41, 1168–1177.
+© 2014 by the authors; licensee MDPI, Basel, Switzerland. This article is an open access article
+distributed under the terms and conditions of the Creative Commons Attribution license
+(http://creativecommons.org/licenses/by/3.0/).

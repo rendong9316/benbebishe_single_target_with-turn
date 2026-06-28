@@ -67,6 +67,8 @@
 clear; close all; clc;
 % 将当前目录及所有子目录加入MATLAB搜索路径，确保所有模块函数可被调用
 addpath(genpath('.'));
+% 添加南阳航迹起始+验证模块路径
+addpath(genpath('nanyang'));
 
 %% ==================== Phase 0: 场景初始化（拐弯目标） ====================
 % 【与直线场景的区别】
@@ -580,18 +582,18 @@ ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, 
 % 返回值：
 %   trackSnapshots — cell数组(1×n_frames)，每帧的快照含trackList
 %   finalTrk — 最终航迹结构体(.type, .quality, .life)
-fprintf('--- 5.1 基础UKF (模糊自适应Q) ---\n');
-[trackSnapshots_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, params, n_frames);
-[trackSnapshots_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, params_r2, n_frames);
+fprintf('--- 5.1 基础UKF (南阳起始+验证, 模糊自适应Q) ---\n');
+[trackSnapshots_R1, finalTrk1] = single_track_runner_nanyang(detList_R1, ukf1_tpl, params, n_frames);
+[trackSnapshots_R2, finalTrk2] = single_track_runner_nanyang(detList_R2, ukf2_tpl, params_r2, n_frames);
 
 % 打印R1/R2基础UKF的航迹状态
 % type: 1=RELIABLE(稳定), 2=MAINTAIN(维持), 6=TEMPORARY(临时), 7=HISTORY
 % quality: 航迹质量评分（基于关联率和连续性）
 % life: 航迹存活帧数
-fprintf('R1基础UKF: type=%s quality=%d life=%d\n', ...
-    get_type_str(finalTrk1.type), finalTrk1.quality, finalTrk1.life);
-fprintf('R2基础UKF: type=%s quality=%d life=%d\n', ...
-    get_type_str(finalTrk2.type), finalTrk2.quality, finalTrk2.life);
+fprintf('R1基础UKF: type=%s life=%d\n', ...
+    get_type_str(finalTrk1.type), finalTrk1.life);
+fprintf('R2基础UKF: type=%s life=%d\n', ...
+    get_type_str(finalTrk2.type), finalTrk2.life);
 
 %% ---- 基础UKF滤波RMSE统计 ----
 fprintf('\n--- 基础UKF滤波RMSE ---\n');
@@ -629,7 +631,7 @@ fprintf('R2 基础UKF滤波         RMSE: %6.1f km (n=%d)\n', rms_km(errs), leng
 % ======================================================================
 % 第5.2节：机动自适应UKF跟踪（新息序列机动检测 + Q离散提升）
 % ======================================================================
-fprintf('\n--- 5.2 机动自适应UKF (新息序列机动检测+Q提升) ---\n');
+fprintf('\n--- 5.2 机动自适应UKF (南阳起始+验证, 新息序列机动检测+Q提升) ---\n');
 
 % ---- 复位随机种子 + 重建UKF模板 ----
 % 复位到与5.1节初始状态相同的随机种子
@@ -645,17 +647,17 @@ ukf2_tpl_ad = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_la
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
 % ---- 运行机动自适应UKF ----
-% single_track_runner_adaptive 与 single_track_runner 的区别：
+% single_track_runner_nanyang_adaptive 与 single_track_runner_nanyang 的区别：
 %   在ukf更新步骤中调用 ukf_zishiying('update') 而不是 ukf_jichu('update')
 %   ukf_zishiying 内部会额外执行机动检测和Q缩放
-% 其他流程（航迹起始、NN关联、PDA加权、航迹终止）完全相同
-[trackSnapshots_R1_ad, finalTrk1_ad] = single_track_runner_adaptive(detList_R1, ukf1_tpl_ad, params, n_frames);
-[trackSnapshots_R2_ad, finalTrk2_ad] = single_track_runner_adaptive(detList_R2, ukf2_tpl_ad, params_r2, n_frames);
+% 其他流程（南阳起始+验证、NN关联、PDA加权、质量管理）完全相同
+[trackSnapshots_R1_ad, finalTrk1_ad] = single_track_runner_nanyang_adaptive(detList_R1, ukf1_tpl_ad, params, n_frames);
+[trackSnapshots_R2_ad, finalTrk2_ad] = single_track_runner_nanyang_adaptive(detList_R2, ukf2_tpl_ad, params_r2, n_frames);
 
-fprintf('R1自适应UKF: type=%s quality=%d life=%d\n', ...
-    get_type_str(finalTrk1_ad.type), finalTrk1_ad.quality, finalTrk1_ad.life);
-fprintf('R2自适应UKF: type=%s quality=%d life=%d\n', ...
-    get_type_str(finalTrk2_ad.type), finalTrk2_ad.quality, finalTrk2_ad.life);
+fprintf('R1自适应UKF: type=%s life=%d\n', ...
+    get_type_str(finalTrk1_ad.type), finalTrk1_ad.life);
+fprintf('R2自适应UKF: type=%s life=%d\n', ...
+    get_type_str(finalTrk2_ad.type), finalTrk2_ad.life);
 
 % ======================================================================
 % 机动检测诊断统计

@@ -1,0 +1,1394 @@
+
+--- Page 1 ---
+sensors
+Article
+Adaptive Unscented Kalman Filter for Target Tracking
+with Unknown Time-Varying Noise Covariance
+BaoshuangGe1 ,HaiZhang1,2,*,LiuyangJiang1,ZhengLi1andMaazMohammedButt1
+1 SchoolofAutomationScienceandElectricalEngineering,BeihangUniversity,No.37XueyuanRoad,
+HaidianDistrict,Beijing100083,China;gebaoshuang@buaa.edu.cn(B.G.);j279795967@126.com(L.J.);
+lizheng@buaa.edu.cn(Z.L.);maazmb@gmail.com(M.M.B.)
+2 ScienceandTechnologyonAircraftControlLaboratory,BeihangUniversity,No.37XueyuanRoad,
+HaidianDistrict,Beijing100083,China
+* Correspondence:zhanghai@buaa.edu.cn;Tel.:+86-10-8233-9366
+(cid:1)(cid:2)(cid:3)(cid:1)(cid:4)(cid:5)(cid:6)(cid:7)(cid:8)(cid:1)
+(cid:1)(cid:2)(cid:3)(cid:4)(cid:5)(cid:6)(cid:7)
+Received:13February2019;Accepted:17March2019;Published:19March2019
+Abstract: The unscented Kalman filter (UKF) is widely used to address the nonlinear problems
+intargettracking. However,thisstandardUKFshowsunstableperformancewheneverthenoise
+covariancemismatches. Furthermore,inconsiderationofthedeficienciesofthecurrentadaptiveUKF
+algorithm,thispaperproposesanewadaptiveUKFschemeforthetime-varyingnoisecovariance
+problems. Firstofall,thecross-correlationbetweentheinnovationandresidualsequencesisgiven
+and proven. On this basis, a linear matrix equation deduced from the innovation and residual
+sequences is applied to resolve the process noise covariance in real time. Using the redundant
+measurements, animprovedmeasurement-basedadaptiveKalmanfilteringalgorithmisapplied
+to estimate the measurement noise covariance, which is entirely immune to the state estimation.
+Theresultsofthesimulationindicatethatundertheconditionoftime-varyingnoisecovariances,the
+proposedadaptiveUKFoutperformsthestandardUKFandthecurrentadaptiveUKFalgorithm,
+henceimprovingtrackingaccuracyandstability.
+Keywords:adaptivefiltering;datafusion;targettracking;non-linearfiltering;unknownnoisestatistics
+1. Introduction
+Themainmissionoftargettrackingistoestimatethedynamicparametersandshowthetrajectory
+ofamaneuveringtargetbyextractingtheusefulinformationfromsensorobservations[1]. Target
+tracking has a wide variety of both military and civilian applications in fields such as precision
+guidance,targetrecognition,andsurveillance[2–6]. Toimplementtargettrackingintheseresearch
+areas,filteringisbeingusedincreasinglyinmorerecenttrackingsystems. Therefore,asaresult,the
+trackingaccuracyistoalargeextentdeterminedbytheperformanceofthefilter[7]. Althoughthe
+statisticalproperties ofmeasurementnoisecanbe obtainedinadvancefromthe trackingsensor’s
+physical characteristics, these aren’t reliable, since they are affected by the external interference,
+especially in complicated environments. In addition, it is difficult to obtain the system noise
+with an accurate statistical covariance because of the random characteristics of acceleration and
+externalmanipulation[8]. Thetime-varyingnoisecovariancesinvolvedinthemaneuveringtarget
+trackingsystemmakethetraditionalnon-adaptivefilteringalgorithmsnolongersuitable. Therefore,
+anadaptiveandstablefilteringalgorithmwithhighperformanceisrequiredtodealwiththenoise
+covarianceuncertainty.
+The Kalman filter is one of the best-known algorithms for dealing with the problem of state
+estimation. Thisfilterisbasedonthecriterionofminimummeansquareerror,whichcanprovidethe
+optimalestimationofalinearsystembyusingknowledgeoftheexactstatisticsinformationofthe
+Sensors2019,19,1371;doi:10.3390/s19061371 www.mdpi.com/journal/sensors
+
+--- Page 2 ---
+Sensors2019,19,1371 2of19
+systemparametersandthemeasurements[9]. Nonetheless,thenonlinearityofthetrackingsystemand
+thetime-varyingnoisestatisticcharacteristicslimittheapplicationsoftheKalmanfilter. Theextended
+Kalmanfilter(EKF)linearizesthenon-linearmodelsusingTaylorseriesexpansionstomakethem
+suittheKalmanfilteralgorithm[10,11]. However,theunknownandtime-varyingnoisecovariance
+makesEKFlimitedinthefieldoftargettrackingapplications. Toachieveaccuratelocationestimation
+foramaneuveringtarget,adaptiveEKFalgorithmshavebeendeveloped[12,13]thatcanupdatethe
+noisecovarianceduringtheestimationprocess. DespitethecovarianceestimationbyadaptiveEKF,
+understrongnonlinearity,thebasicdrawbackofEKFstillexists,whereintheseriesapproximations
+oftenleadtopoorrepresentationoftheposteriordensitydistributionofthestate. Thegenericparticle
+filter(PF),alsoknownassequentialMonteCarloestimation,candealwithnonlinearitiesoftarget
+trackingproblembyevaluatingtheposteriordensitydistributionwithalargenumberofparticles;
+however, this requires high computation cost and also has a well-known problem with respect to
+sampleimpoverishment[14,15].
+Insteadoflinearization,theunscentedKalmanfilter(UKF)usesunscentedtransformtoevaluate
+thenonlinearpropagationofthestateerrorcovariancebyproducingaminimalspecialsetofsigma
+points[16,17]. Throughthecarefullychosensigmapoints,theaccuracyoftheposteriormeanand
+covariancecanbeachievedtothethirdorderforanyGaussianandnonlinearsystems[1]. Overall,
+for nonlinear problems, the filtering precision of UKF is higher than EKF, and the computation
+complexityofUKFislessthanthatofPF[18,19]. AlthoughUKFhassufficientadvantagesforthe
+filteringproblemofnonlinearsystems,itbecomesinaccurateanddivergentincaseswherethenoise
+characteristicsareunknownapriori. Theinteractingmultiplemodel(IMM)algorithmisawell-known
+approach to target tracking, and provides a state estimate by giving weights to a combination of
+differentmodelprobabilitiesandthemodelswitchingprobabilities. Therefore,thismethodcanadapt
+totheuncertainnoiseoftargetmotion-mode[20,21]. AlthoughtheintegrationofIMMalgorithmand
+UKF can meet the challenges of noise uncertainty and system nonlinearity in maneuvering target
+tracking,thecomputationalcostofthisintegrationneedstobeconsidered[22,23].
+To deal with adaptive estimation of the noise covariance, many researchers have resorted to
+adaptiveUKFalgorithms. ZhangintroducedtheSage-HusastatisticsestimatortoUKFincaseswhere
+thenoisecovariancesareunknown,henceimprovingtheaccuracyofstateestimation[24]. Sokenand
+Hajiyevconsideredthecovariancematchingtechniqueasafoundation,andputforwardanadaptive
+fadingUKFtoaccomplishthepicosatelliteattitudeestimationincaseswhereprocessnoisecovariance
+changes[25]. However,theseadaptationschemesmayfailwhentheprocessandmeasurementnoise
+covarianceschangeatthesametime. Furthermore,LiandMengetal. proposedanadaptiveUKFwith
+noisestatisticestimatorthatappliestheinnovationandresidualsequencestoestimatethecovarianceof
+theprocessandmeasurementnoise[26,27]. Althoughthesemethodsenhancedtheadaptivecapability
+ofthestandardUKF,oneoftheirmaindeficiencieswasthatthedeterminationoftheprocessnoise
+covariance was based on the orthogonality of innovation and residual sequences. Theoretically,
+the innovation and residual sequences extracted from the filter are correlative. Moreover, we can
+similarlyseefromthecommonlyusedestimationmethodsproposedin[28–30]thattheestimated
+method for measurement noise statistics is innovation-based and will be influenced by the state.
+Therefore,theestimationerrorwillresultinariskofdegradationinfilterperformanceduringthe
+calculationofthemeasurementnoisecovariance. Aimingforthisproblem,Zhangetal. developeda
+measurement-basedadaptiveKalmanfilteringalgorithm(MAKF)thatovercametheinstabilityissue
+ofimprovedSage-Husaadaptivefilterfortheintegratednavigationsystem[31,32]. Nonetheless,the
+MAKFisvalidonlyifoneofthemeasurementnoisecovariancesisrelativelysmallerthantheother,
+sothatitcanbeneglected. ToextendMAKFtoanyredundantmeasurementsystems,animproved
+MAKFnamedredundantmeasurementnoisecovarianceestimation(RMNCE)isproposedin[33,34],
+whichisnotonlyimmunetothesystemstateestimationerror,butcanalsoestimatethenoisevariance
+oftheredundantmeasurement.
+
+--- Page 3 ---
+Sensors2019,19,1371 3of19
+Inconsiderationofthedeficiencyofthealgorithmsmentionedabove,andtakingtheadvantagesof
+theRMNCEalgorithm,inthispaper,anewadaptiveUKFmethodisdevelopedfornonlineartracking
+systems with unknown time-varying noise covariance. The new algorithm avoids the interaction
+between the two types of noise and can estimate the covariance of the process and measurement
+noisesimultaneously. Intheproposedadaptivescheme,anewmethodofQ-estimationisdeduced
+based on the correct correlation of the innovation and residual sequences. For the R-estimation,
+measurement-basednoisecovarianceestimationisintroduced,whichavoidsthenegativeinfluenceof
+theinaccuratestateestimation. Finally,thesimulationresultsdemonstratethattheproposedscheme
+canincreasethetrackingprecisionprimarilybecausetheestimatednoisecovariancesareinaccord
+withthoseofthereal-timesituations.
+2. TheUKFAlgorithmforNonlinearStateEstimation
+Consideringageneralnonlineardiscrete-timedynamicsystem,theprocessandmeasurement
+modelscanbedescribedasfollows
+(cid:40)
+X =f(X )+Γ W
+k k−1 k−1 k−1 (1)
+Z =h(X )+V
+k k k
+where X ∈ Rn×1 is the state vector, Z ∈ Rm×1 denotes the measurement vector, f(·) and h(·)
+k k
+representtheknownnonlinearstatetransitionandmeasurementfunction,respectively. Γ k−1 isthe
+systemnoise-drivenmatrix. W k−1 andV k areuncorrelatedzero-meanGaussianwhitenoiseswhose
+covariancesareQ andR ,respectively.
+k−1 k
+2.1. StandardUKF
+The UKF algorithm is based on the notion that it should be easier to estimate a nonlinear
+distribution than to make an approximation of a nonlinear function [16]. In the standard UKF,
+the unscented transform is implemented to generate the sigma points to undergo the nonlinear
+transformationandcalculatethefirsttwomomentsofthetransformedset. Thegeneralstructureof
+thestandardUKFalgorithmcanbedescribedasfollows:
+Step1:Initialization.
+(cid:40)
+Xˆ =E{X }
+0 0
+P =E (cid:110)(cid:0) X −Xˆ (cid:1)(cid:0) X −Xˆ (cid:1)T (cid:111) (2)
+0 0 0 0 0
+whereXˆ istheinitialstateandP istheinitialestimationerrorcovariance.
+0 0
+Step2: Sigmapointscalculation.
+χ ( k 0 − ) 1 =Xˆ k−1
+χ ( k i − ) 1 =Xˆ k−1 + (cid:112) (n+λ)P k−1i ,i =1,2,··· ,n (3)
+χ ( k i − ) 1 =Xˆ k−1 − (cid:112) (n+λ)P k−1i ,i = n+1,n+2,··· ,2n
+wherenisthestatedimension,λ=α2(n+κ)−nisthecompositescalingfactor. αandκaretuning
+parameters. Theparameterαissetto0≤α≤1andagooddefaultsettingonκisκ=0[35].
+Step3: Stateprediction.
+(cid:16) (cid:17)
+χ
+(i)
+=f χ
+(i)
+,k−1 ,i =0,1,2,··· ,2n
+k/k−1 k−1
+Xˆ k/k−1 = 2 ∑ n ω i (m) χ ( k i / ) k−1
+i=0 (4)
+P XX = 2 ∑ n ω i (c) (cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)(cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)T
+i=0
+P =P +Γ Q ΓT
+k/k−1 XX k−1 k−1 k−1
+
+--- Page 4 ---
+Sensors2019,19,1371 4of19
+(m) (c)
+whereω andω areweights,whicharedefinedas
+i i
+ω (m) = λ
+0 n+λ
+ω (c) = λ + (cid:0) 1−α2+β (cid:1) (5)
+0 n+λ
+ω (m) = ω (c) = 1 ,i =1,2,··· ,2n
+i i 2(n+λ)
+where β ≥ 0isintroducedtoincorporatethehigherorderinformationofthedistribution,andthe
+optimalsettingisβ=2forGaussiandistribution[36].
+Step4: Measurementprediction.
+(cid:16) (cid:17)
+ζ
+(i)
+=h χ
+(i)
+,k ,i =0,1,2,··· ,2n
+k/k−1 k/k−1
+Zˆ k/k−1 = 2 ∑ n ω i (m) ζ ( k i / ) k−1 . (6)
+i=0
+Step5: KalmanGaincalculation.
+P XZ = 2 ∑ n ω i (c) (cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)(cid:16) ζ ( k i / ) k−1 −Zˆ k/k−1 (cid:17)T
+i=0
+P ZZ = 2 ∑ n ω i (c) (cid:16) ζ ( k i / ) k−1 −Zˆ k/k−1 (cid:17)(cid:16) ζ ( k i / ) k−1 −Zˆ k/k−1 (cid:17)T +R k (7)
+i=0
+K =P P −1.
+k XZ ZZ
+Step6: Filteringupdate.
+Xˆ =Xˆ +K (cid:0) Z −Zˆ (cid:1)
+k k/k−1 k k k/k−1 (8)
+P k =P k/k−1 −K k P ZZ KT k .
+Step7: Forthenextsampleimplementsteps2to6.
+2.2. ProblemDescriptionofUKFforTime-VaryingNoiseCovariance
+Ifthetime-varyingnoisecovarianceisnotcorrectlyestimatedintime,itwillmakethestandard
+UKFalgorithminaccurateordivergent.BasedonthestepsofthestandardUKFalgorithm,itcanbeseen
+fromEquation(4)thatthecalculationforthepredictioncovarianceP k/k−1 isinfluencedbythevarying
+processnoisecovarianceQ k−1 . OncethepredictioncovarianceP k/k−1 iscontaminated,itwillaffectthe
+estimationcovarianceP viaEquation(8)andthencontaminatethesigma-pointdistributionatthenext
+k
+epoch. Finally,theincorrectmeanandcovariancederivedfromthecontaminateddistributionreduces
+thefilteringaccuracy. Moreover,thevaryingmeasurementnoisecovarianceR directlyaffectsthe
+k
+calculationresultsofthefilteringgainthroughEquation(7),hencemakingthestandardUKFalgorithm
+unstable. AlthoughafewadaptiveUKFalgorithmswereproposedin[25,27],thesealgorithmshave
+flawsinestimatingtheprocessnoisecovariance. Hence,itisnecessarytodesignaneffectiveadaptive
+UKFalgorithmfortargettrackingsystemswithunknowntime-varyingnoisecovariance.
+3. AnInnovativeAdaptiveUKFScheme
+Inthissection,aninnovativeadaptiveUKFschemeisdeveloped,whichmakesoptimaluseofthe
+informationinthefilteringprocess. Theinnovationandresidualsequencesareappliedtoestimate
+theprocessnoisecovarianceQandtheredundantmeasurementdifferencesequencesareexploitedto
+estimatethemeasurementnoisecovarianceR.
+
+--- Page 5 ---
+Sensors2019,19,1371 5of19
+3.1. AdaptiveQEstimation
+InKalmanfilteringtheory,theinnovationε andtheresidualη aredefinedaccordingto[27,37]as
+k k
+η ε k = = Z Z k − − h h (cid:0) (cid:0) X X ˆ ˆ k/ (cid:1) k−1 (cid:1) (9)
+k k k
+Theorem.ForagivensystemasdescribedbyEquation(1),thecross-correlationbetweentheinnovation
+andtheresidualattimekis
+(cid:16) (cid:17) (cid:16) (cid:17)
+E ε k ηT k =H k/k−1 P k HT k +R k I−KT k HT k (10)
+(cid:12) (cid:12)
+whereH k/k−1 = δ δ X h(cid:12) (cid:12) Xˆ
+k/k−1
+andH k = δ δ X h(cid:12) (cid:12) Xˆ
+k
+areJacobianmatricesatXˆ k/k−1 andXˆ k ,respectively.
+Proof. SubstitutethefilteringupdateequationsinEquation(8)intoEquation(9)andevaluatethe
+partialderivativematrixatthepredictedstateXˆ k/k−1 ,thentheresidualcanberewrittenas
+η k =Z k −h (cid:0) Xˆ k/k−1 +K k ε k (cid:1)
+=Z k −h (cid:0) Xˆ k/k−1 (cid:1) −H k/k−1 K k ε k (11)
+= (I−H k/k−1 K k )ε k .
+AccordingtoEquation(11),itcanbeobtainedthattheresidualvectorisalinearcombinationofthe
+innovationvector. Thus,theyarenon-orthogonal.
+Consideringthepartialderivativesofthemeasurementfunction,substitutethemeasurement
+equationsinEquation(1)intoEquation(9). Theinnovationandresidualsequencescanbedescribedas
+ε k =h(X k )−h (cid:0) Xˆ k/k−1 (cid:1) +V k
+≈H (cid:0) X −Xˆ (cid:1) +V
+k/k−1 k k/k−1 k
+η
+=
+=
+H
+h( k X /k− ) 1 −
+X(cid:101)
+h k/ (cid:0) k X − ˆ 1 (cid:1)
++
++
+V
+V k (12)
+k k k k
+≈H (cid:0) X −Xˆ (cid:1) +V
+k k k k
+=H
+k
+X(cid:101)k +V
+k
+.
+whereX(cid:101)k/k−1 denotesthepredictionerrorandX(cid:101)k representstheestimationerror.
+AccordingtoEquation(12),thecross-correlationbetweentheinnovationandtheresidualattime
+kisexpressedas
+E (cid:0) ε k ηT k (cid:1) =E (cid:26)(cid:16) H k/k−1 X(cid:101)k/k−1 +V k (cid:17)(cid:16) H k X(cid:101)k +V k (cid:17)T (cid:27)
+(cid:110) (cid:111)
+=E H
+k/k−1
+X(cid:101)k/k−1 X(cid:101) T
+k
+HT
+k
++H
+k/k−1
+X(cid:101)k/k−1 VT
+k
++V
+k
+X(cid:101) T
+k
+HT
+k
++V
+k
+VT
+k
+(13)
+=H k/k−1 E (cid:110) X(cid:101)k/k−1 X(cid:101) T k (cid:111) HT k +H k/k−1 E (cid:110) X(cid:101)k/k−1 VT k (cid:111) +E (cid:110) V k X(cid:101) T k (cid:111) HT k +E (cid:8) V k VT k (cid:9) .
+Due to the assumption that the process and measurement noises are uncorrelated, we have
+(cid:110) (cid:111) (cid:110) (cid:111) (cid:110) (cid:111)
+E X(cid:101)k/k−1 VT
+k
+=0. Thecross-correlationE X(cid:101)k/k−1 X(cid:101) T
+k
+andE V
+k
+X(cid:101) T
+k
+canbewrittenasfollows
+(cid:110)
+T
+(cid:111) (cid:26) (cid:104) (cid:105)T (cid:27)
+E X(cid:101)k/k−1 X(cid:101)k =E X(cid:101)k/k−1 (I−K k H k/k−1 )X(cid:101)k/k−1 −K k V k
+(cid:110) (cid:111)
+=E X(cid:101)k/k−1 X(cid:101) T k/k−1 (I−K k H k/k−1 )T−X(cid:101)k/k−1 VT k KT k (14)
+=P (I−K H )T
+k/k−1 k k/k−1
+=PT =P
+k k
+
+--- Page 6 ---
+Sensors2019,19,1371 6of19
+(cid:110)
+T
+(cid:111) (cid:26) (cid:104) (cid:105)T (cid:27)
+E V k X(cid:101)k =E V k (I−K k H k/k−1 )X(cid:101)k/k−1 −K k V k
+=E (cid:110) V
+k
+X(cid:101) T
+k/k−1
+(I−K
+k
+H
+k/k−1
+)T−V
+k
+VT
+k
+KT
+k
+(cid:111) (15)
+= −R KT
+k k
+whereE (cid:110) X(cid:101)k/k−1 X(cid:101) T k/k−1 (cid:111) =P k/k−1 andE (cid:8) V k VT k (cid:9) =R k .
+Substitute Equations (14) and (15) back into Equation (13), the cross-correlation between the
+innovationandtheresidualattimekcanbeobtainedas
+E (cid:0) ε k ηT k (cid:1) =E (cid:26)(cid:16) H k/k−1 X(cid:101)k/k−1 +V k (cid:17)(cid:16) H k X(cid:101)k +V k (cid:17)T (cid:27)
+(16)
+=H P HT−R KTHT+R
+k/k−1 k k k k k k
+=H k/k−1 P k HT k +R k (cid:0) I−KT k HT k (cid:1) .
+(cid:3)
+Thiscompletestheproof.
+Remark. Considering the innovation and residual sequences are zero means, the covariance
+Cov
+(cid:0)
+ε ,η
+(cid:1)
+is equal to E
+(cid:0)
+ε
+ηT(cid:1)
+. If the Jacobian matrices are evaluated at the same state, E
+(cid:0)
+ε
+ηT(cid:1)
+k k k k k k
+issymmetric,andwehaveE
+(cid:0)
+ε
+ηT(cid:1)
+= E
+(cid:0)
+η
+εT(cid:1)
+. Otherwise,forasmallsamplingtime,theJacobian
+k k k k
+matricesH k/k−1 ≈H k . Thus,E (cid:0) ε k ηT k (cid:1) ≈E (cid:0) η k εT k (cid:1) .
+To improve the robustness of the Q-estimation, both the innovations and the residuals are
+used[37]. Takingtheexpectationofthedifferencebetweeninnovationandresidualfollowsthat
+(cid:104) (cid:105) (cid:16) (cid:17) (cid:16) (cid:17) (cid:16) (cid:17) (cid:16) (cid:17)
+E (η −ε )(η −ε )T =E ε εT +E η ηT −E ε ηT −E η εT . (17)
+k k k k k k k k k k k k
+FromEquation(12),theinnovationcovarianceE
+(cid:0)
+ε
+εT(cid:1)
+canbewrittenas
+k k
+E (cid:0) ε k εT k (cid:1) =E (cid:26)(cid:16) H k/k−1 X(cid:101)k/k−1 +V k (cid:17)(cid:16) H k/k−1 X(cid:101)k/k−1 +V k (cid:17)T (cid:27)
+=H k/k−1 E (cid:110) X(cid:101)k/k−1 X(cid:101) T k/k−1 (cid:111) HT k/k−1 +E (cid:8) V k VT k (cid:9) (18)
+=H k/k−1 P k/k−1 HT k/k−1 +R k .
+BasedonEquations(12)and(15),theresidualcovarianceE
+(cid:0)
+η
+ηT(cid:1)
+canbeobtainedasfollows
+k k
+E (cid:0) η
+k
+ηT
+k
+(cid:1) =E (cid:26)(cid:16) H
+k
+X(cid:101)k +V
+k
+(cid:17)(cid:16) H
+k
+X(cid:101)k +V
+k
+(cid:17)T (cid:27)
+=H
+k
+E (cid:110) X(cid:101)k X(cid:101) T
+k
+(cid:111) HT
+k
++H
+k
+E (cid:110) X(cid:101)k VT
+k
+(cid:111) +E (cid:110) V
+k
+X(cid:101) T
+k
+(cid:111) HT
+k
++E (cid:8) V
+k
+VT
+k
+(cid:9) (19)
+=R −H P HT.
+k k k k
+Then,thecovarianceofthedifferencesequencebetweeninnovationandresidualcanbedetermined
+basedontheTheoremandEquations(18)–(19),namely,
+E (cid:104) (η −ε )(η −ε )T (cid:105) =E (cid:0) ε εT(cid:1) +E (cid:0) η ηT(cid:1) −E (cid:0) ε ηT(cid:1) −E (cid:0) η εT(cid:1)
+k k k k k k k k k k k k
+≈H k/k−1 P k/k−1 HT k/k−1 +R k +R k −H k P k HT k −2 (cid:0) H k/k−1 P k HT k −R k KT k HT k +R k (cid:1) (20)
+=H k/k−1 P k/k−1 HT k/k−1 −H k P k HT k .
+Substituting for P k/k−1 from Equation (4) into Equation (20), the covariance of the difference
+sequencecanberewrittenas
+
+--- Page 7 ---
+Sensors2019,19,1371 7of19
+(cid:104) (cid:105)
+E (η k −ε k )(η k −ε k )T =H k/k−1 P k/k−1 HT k/k−1 −H k P k HT k
+=H k/k−1 (cid:20) 2 ∑ n ω i (c)(cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)(cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)T +Γ k−1 Q k−1 ΓT k−1 (cid:21) HT k/k−1 (21)
+i=0
+−H P HT.
+k k k
+Then,itcanbeverifiedthat
+(cid:104) (cid:105)
+H k/k−1 Γ k−1 Q k−1 ΓT k−1 HT k/k−1 =E (η k −ε k )(η k −ε k )T
+−H k/k−1 (cid:20) 2 ∑ n ω i (c)(cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)(cid:16) χ ( k i / ) k−1 −Xˆ k/k−1 (cid:17)T (cid:21) HT k/k−1 +H k P k HT k . (22)
+i=0
+(cid:104) (cid:105)
+On the other hand, the expectation of the difference sequence E (η −ε )(η −ε )T can be
+k k k k
+approximatedusingalimitednumberofsamples
+E (cid:104) (η k −ε k )(η k −ε k )T (cid:105) = M 1 M ∑ −1(cid:16) η k−j −ε k−j (cid:17)(cid:16) η k−j −ε k−j (cid:17)T (23)
+j=1
+whereMisthewindowsize.
+WhentheunknownelementsinQ k−1 islessthantherankofH k/k−1 ,theuniquesolutioncanbe
+obtainedthroughEquation(22). Otherwise,someunknownelementsinQ canbeassignedbytheir
+k−1
+previousestimates. Additionally,Q isnormallyadiagonalmatrix. Therefore,thecomputational
+k−1
+loadcanbefurtherreduced.
+Intheradartrackingsystem,therankofH k/k−1 isnotlessthanthenumberofunknownsinQ k−1 .
+Thus,theconditionforsolvinguniquesolutionsiswellsatisfied.
+3.2. AdaptiveREstimation
+Inpracticalapplications,themeasurementnoisecovarianceRiscloselyrelatedtotheperformance
+oftheradar. Duetodifferentexternalandinternaltimevaryingdisturbances,Risalsotimevarying
+andshouldbeestimatedadaptively.
+A relatively new method, RMNCE, used to estimate the measurement noise covariance can
+be applied to the systems with redundant measurements [33,34]. Assume that Z (k) and Z (k)
+1 2
+are measurements of the true value Z (k). Considering the steady-state and random error of the
+T
+measurement,theirexpressionyields
+(cid:40)
+Z (k) =Z (k)+f (k)+V (k)
+1 T 1 1 (24)
+Z (k) =Z (k)+f (k)+V (k)
+2 T 2 2
+wheref (k)andf (k)aresteadyitemsofthemeasurementerrors,V (k)andV (k)areuncorrelated,
+1 2 1 2
+zero-meanGaussianrandomnoise.
+Whenthemeasurementerrorsmeetthefollowingconditions:
+
+ diag
+(cid:20)
+···
+(cid:16)
+f 1 i(k)−f 1 i(k−1)
+(cid:17)2
+···
+(cid:21)
+≤E
+(cid:110)
+V 1 (k)V 1 (k)T
+(cid:111)
+ diag
+(cid:20)
+···
+(cid:16)
+f 2 i(k)−f 2 i(k−1)
+(cid:17)2
+···
+(cid:21)
+≤E
+(cid:110)
+V 2 (k)V 2 (k)T
+(cid:111) (25)
+thecovarianceoftherandomnoiseformeasurementZ (k)andZ (k)canbeestimatedas
+1 2
+
+ R =
+E[∇Z(k)∇Z(k)T]+E[∆Z1 (k)∆Z1 (k)T]−E[∆Z2 (k)∆Z2 (k)T]
+1 4 (26)
+ R =
+E[∇Z(k)∇Z(k)T]−E[∆Z1 (k)∆Z1 (k)T]+E[∆Z2 (k)∆Z2 (k)T]
+2 4
+
+--- Page 8 ---
+Sensors2019,19,1371 8of19
+where
+
+
+∇Z(k) = ∆Z
+1
+(k)−∆Z
+2
+(k)
+∆Z (k) =Z (k)−Z (k−1) (27)
+1 1 1
+ ∆Z (k) =Z (k)−Z (k−1)
+2 2 2
+TheproofisshownintheAppendixA.Foraradarnetwork,theradarscanprovidetherangeand
+azimuthmeasurementsZ byprocessingthereflectedsignalfromthetarget. Themeasurementerror
+k
+canbeclassifiedintothesteady-stateerrorf (k)andtherandomerrorV (k)asfollows:
+M R
+Z =Z (k)+f (k)+V (k). (28)
+k T M R
+Similarly,aredundantmeasurementZR fromtheotherradarnodecanbeexpressedas
+k
+ZR =Z (k)+fR (k)+VR(k) (29)
+k T M R
+wherefR (k)denotesthesteady-stateerroroftheredundantmeasurementsystem,andVR(k)isthe
+M R
+zero-meanwhitenoise,whichisuncorrelatedwithV (k).
+R
+Thesteady-stateerrorsofthe(redundant)measurementarestableoverashortperiod, sothe
+differencebetweeneverytwoadjacenttimestepsofthemcanbeneglectedcomparedtothenoise.
+Hence,theconditionsinEquation(25)arewellsatisfied,andthemeasurementnoisecovariancecanbe
+estimatedas:
+(cid:40) R k = (cid:110) E (cid:104) ∇Z(k)∇Z(k)T (cid:105) +E (cid:104) (Z k −Z k−1 )(Z k −Z k−1 )T (cid:105) −E (cid:104)(cid:0) Z k R−Z k R −1 (cid:1)(cid:0) Z k R−Z k R −1 (cid:1)T(cid:105)(cid:111) /4 . (30)
+∇Z(k)=(Z k −Z k−1 )− (cid:0) Z k R−Z k R −1 (cid:1)
+Consideringthesmoothnessofthecovarianceestimation,arecursiveestimationformulaisused.
+Finally,themeasurementnoisecovariancecanbeobtainedas
+(cid:40)
+Rˆ
+k
+= (1−d
+k
+)R
+k−1
++d
+k
+R
+k
+. (31)
+d = 1−b
+k 1−bk+1
+wherebisthefadingfactor,0<b<1.
+3.3. AdaptiveUKFScheme
+Based on the adaptive methods described above, the proposed adaptive UKF scheme aimed
+at target tracking in the presence of unknown time-varying noise covariance can be implemented
+asfollows:
+Step1: InitializetheoriginalestimatedstatevalueXˆ andcovarianceP .
+0 0
+Step2: CalculatethesigmapointsbasedonEquation(3).
+Step3: ApplytheinnovationandresidualsequencestoobtainthelinearmatrixEquation(22)and
+acquireQbysolvingtheequation.
+Step4: CalculatethestateandmeasurementpredictionaccordingtoEquations(4)–(6).
+Step 5: Use the raw measurement and redundant measurement sequences to estimate R via
+Equations(30)and(31).
+Step6: CalculateKalmangainandfilteringsolutionsthroughEquations(7)and(8).
+Step7: Forthenextsample,implementstepsfrom2to6.
+4. SimulationResultsandDiscussion
+Inthissection,theeffectivenessoftheproposedadaptiveUKFalgorithmformaneuveringtarget
+trackingwillbeillustratedthroughthesimulationsofdifferentcases.
+
+--- Page 9 ---
+Sensors 2019, 19 FOR PEER REVIEW 9
+4. Simulation Results and Discussion
+In this section, the effectiveness of the proposed adaptive UKF algorithm for maneuvering
+target tracking will be illustrated through the simulations of different cases.
+Sensors2019,19,1371 9of19
+4.1. Simulation Parameter and Cases
+4.1. SimTuhlea tsiiomnuPlaartaemde ttrearjaenctdoCrya sceosnsidered in the simulation is in the x-y plane. It is assumed that the
+target makes a turn movement, then an approximate linear motion. The target conducts a
+The simulated trajectory considered in the simulation is in the x-y plane. It is assumed that
+constant-acceleration curvilinear motion during 0–600 s, a variable acceleration motion during
+the target makes a turn movement, then an approximate linear motion. The target conducts a
+601–1000 s and a constant-velocity straight-line during 1001–1400 s. The initial coordinate of the
+constant-acceleration curvilinear motion during 0–600 s, a variable acceleration motion during
+target is x ,y 1000m,5000m, its initial velocity is x ,y 10ms,50ms and its initial 601–1000 s an0d a0 constant-velocity straight-line during 1001–014000 s. The initial coordinate of the
+(cid:0). . (cid:1) taargcceetliesra(txio,ny is) = (1000m,5000m),itsinitialvelocityis x ,y = (10m/s,50m/s)anditsinitial 0 0 0 0
+(cid:0).. .. (cid:1) (cid:0) (cid:1)
+accelerationis x ,y = 2m/s2,−4m/s2 . Inthesimulation,theprocessnoisecovariancematrixis 0 0
+settobeQ=diag[0.0010.001]. AtruetargettrajectoryisdepictedinFigure1,andtheactualcurvesof
+theaccelerationaredrawninFigure2.
+ x 0 , y 0    2 m  s 2 ,  4 m  s 2  . In the simulation, the process noise covariance matrix is
+set to be Q
+Sensors 2019, 19 FOR PEER REVIEW 9
+4. Simulation Results and Discussion
+In this section, the effectiveness of the proposed adaptive UKF algorithm for maneuvering
+target tracking will be illustrated through the simulations of different cases.
+4.1. Simulation Parameter and Cases
+The simulated trajectory considered in the simulation is in the x-y plane. It is assumed that the
+target makes a turn movement, then an approximate linear motion. The target conducts a
+constant-acceleration curvilinear motion during 0–600 s, a variable acceleration motion during
+601–1000 s and a constant-velocity straight-line during 1001–1400 s. The initial coordinate of the
+target is x ,y 1000m,5000m, its initial velocity is x ,y 10ms,50ms and its initial
+0 0 0 0
+acceleration is
+= diag[0.001 0.001]. A true target trajectory is depicted in Figure 1, and the actual
+curves of the acceleration are drawn in Figure 2.
+Figure 1. Simulated target trajectory.
+Figure1.Simulatedtargettrajectory.
+Figure 2. Actual curves of the acceleration.
+ x 0 , y 0    2 m  s 2 ,  4 m  s 2  . In the simulation, the process noise covariance matrix is
+set to be Q = diag[0.001 0.001]. A true target trajectory is depicted in Figure 1, and the actual
+curves of the acceleration are drawn in Figure 2.
+Figure 1. Simulated target trajectory.
+FFigiguurere2 2..A Acctutuaallc cuurvrveesso offt htheea accceceleleraratitoionn..
+AsshowninFigure2,thetargetperformedadynamicmaneuverduringtheperiodfrom601s
+to1000s. Notethatmaneuveraccelerationscanleadtoamismatchinthesystemmodelonwhich
+thetrackingfilterrelies. Therefore,dynamicmaneuverswillcausepotentialchangestotheprocess
+noisecovariance.
+
+--- Page 10 ---
+Sensors2019,19,1371 10of19
+SimulationCase1: ThemeasurementnoisecovariancematrixR=diag[1000.0012]isknownand
+theprocessnoisecovariancematrixQvariesovertime. Duringtheperiod200–350s,theprocessnoise
+covariancematrixisassignedtobeQ=diag[0.0150.015].
+SimulationCase2: ThemeasurementnoisecovariancematrixRisuncertain,andtheprocess
+noisecovariancematrixQisknown. ThemeasurementnoisecovariancematrixistakenasR=diag[20
+×10020×0.0012]duringtheperiod200–350s,anditisassignedtobeR=diag[1000.0012]forthe
+remainingperiods.
+SimulationCase3:BoththemeasurementnoisecovariancematrixRandtheprocessnoisecovariance
+matrixQareuncertain. Inthiscase,thechangesinCase1andCase2areimplementedsimultaneously.
+Inthefilters,thetargetdynamicequationappliedindifferentsimulationcasesis
+ 1 0 T 0 T2/2 0   T2/2 0 
+ 0 1 0 T 0 T2/2   0 T2/2 
+   
+ 0 0 1 0 T 0   T 0 
+X k =  
+ 0 0 0 1 0 T
+ 
+
+X k−1 +Γ k−1 W k−1 , Γ k−1 =  
+ 0 T
+ 
+
+(32)
+   
+ 0 0 0 0 1 0   1 0 
+0 0 0 0 0 1 0 1
+(cid:104) . . .. .. (cid:105) (cid:0). . (cid:1)
+whereX = x y x y x y . (x ,y )denotesthepositionofthetargetattimek. x ,y
+k k k k k k k k k k k
+(cid:0).. .. (cid:1)
+and x ,y denotethevelocityandaccelerationofthetargetrespectively. ThesamplingintervalTis
+k k
+1s. TheinitialstateX =[1000m,5000m,10m/s,50m/s,2m/s2,−4m/s2],andtheprocessnoise
+0
+covariancematrixis
+(cid:34) (cid:35)
+0.001 0
+Q = . (33)
+k−1
+0 0.001
+Themeasurementsystemsaretworadarobservationstations. Oneisassumedtobelocatedatthe
+originoftheCartesiancoordinatesandtheotherisregardedastheredundantmeasurementsystem,
+whichcanprovidethesamemeasurementsofslantranger andazimuthangle ϕ . Themeasurement
+k k
+modelisexpressedas
+(cid:34) (cid:35) (cid:34) (cid:112) (cid:35)
+Z = r k = x k 2+ (cid:16) y k (cid:17) 2 +V . (34)
+k
+ϕ arctan
+yk k
+k xk
+The initial measurement noise covariance R = diag[100 0.0012]. The noise covariance of the
+redundantmeasurementisunknown,whichcanbeestimatedwiththeRMNCEalgorithm.
+4.2. SimulationResults
+In view of the robustness and stability of the covariance matching and Sage-Husa adaptive
+schemes,onlytheprocessormeasurementnoisecovariancesareestimatedbythesemethodsinthe
+firsttwoCases. ForthethirdCase,arobustadaptiveUKFschemeproposedin[38]iscarriedoutas
+acontrasttoourproposedmethodforestimatingtheprocessandmeasurementnoisecovariances
+simultaneously. TheQ-estimationschemeintherobustadaptiveUKFalgorithmisthesameasthat
+appliedintheadaptivefadingUKF[25],whichisusedforcomparisoninthefirstCase. Furthermore,
+a new adaptive UKF proposed in [26], termed N-UKF, and an IMM algorithm constituted by two
+UKFswithdifferentnoisecovariances,termedasIMM-UKF,areusedfortrackingthetargetinthree
+differentcases.
+InallCases,thesimulationsarerun100timesbyutilizingtheMonteCarlomethod.Theperformances
+ofthealgorithmsareassessedbytherootmeansquareerrorofthepositiontracking,whichisdefinedas
+(cid:118)
+(cid:117)
+E = (cid:117) (cid:116) 1 ∑ N (cid:104)(cid:0) xˆi −x (cid:1)2 + (cid:0) yˆi −y (cid:1)2 (cid:105) (35)
+k N k k k k
+i=1
+
+--- Page 11 ---
+Sensors 2019, 19 FOR PEER REVIEW 11
+In all Cases, the simulations are run 100 times by utilizing the Monte Carlo method. The
+performances of the algorithms are assessed by the root mean square error of the position tracking,
+which is defined as
+E = 1  N  xˆi x 2   yˆi y 2 (35)
+k N  k k k k 
+Sensors2019,19,1371 i1 11of19
+where N is the simulation times,
+whereN isthesimulationtimes,
+(cid:0) xˆi,yˆi(cid:1)
+denotesthefilteringpositionofthetargetattimekinthe
+k k
+ithsimulation.
+ForthefirstCase,thepositiontrackingerrorsofthestandardUKF,adaptivefadingUKFwith
+covariancematching[25],IMM-UKFmethod,N-UKFalgorithm,andourproposedQ-adaptiveUKF
+areshowninFigure3. Themeansandvariancesofthepositiontrackingerrorsduringtheperiodsof
+200–550sand550–1400sarelistedinTable1.
+ ˆx ik , ˆy ik  denotes the filtering position of the target at time k in the
+ith simulation.
+For the first Case, the position tracking errors of the standard UKF, adaptive fading UKF with
+covariance matching [25], IMM-UKF method, N-UKF algorithm, and our proposed Q-adaptive UKF
+are shown in Figure 3. The means and variances of the position tracking errors during the periods
+of 200–550 s and 550–1400 s are listed in Table 1.
+FFigiguurree3 3..P Poossititioionnt trraacckkiningge errrroorrssf oforrC Caassee1 1..
+Table1.PositionerrorsofthedifferentschemesforCase1.
+Table 1. Position errors of the different schemes for Case 1.
+2002–050–5505 s0 s 5505–5104–0104s00 s
+AlgoAriltghomri thm
+MeaMn e(man) (m) VaVraiarinacnec e(m(m2)2 ) MeManea(mn )(m) VarianVcaer(iman2)ce (m2)
+StandSatradnd UarKdFU KF 1.45419.4 549 0.307.38738 3 25.27556.75565 341.6638481.6688
+AdapAtivdeap ftaidveinfagd UinKgFU KF 2.12624.1 264 0.205.21591 9 2.8260.88608 0.24110.2411
+IMM-UKF 1.3258 0.1141 2.7311 0.5510
+IMM-UKF 1.3258 0.1141 2.7311 0.5510
+N-UKF 3.7332 0.4344 4.5229 0.6996
+N-UKF 3.7332 0.4344 4.5229 0.6996
+Ourproposedscheme 1.3398 0.1080 2.7165 0.5497
+Our proposed scheme 1.3398 0.1080 2.7165 0.5497
+AAsss hshowownnin inF igFuigreur3e, it3,t aikt etsaakelos nag elrontigmeer ftoimrteh efosrta nthdea rsdtaUndKaFrdto UacKhFie vtoe tahcehdieevsier etdhea cdcuesriarceyd
+wahcceunrathcye pwrohceens sthneo isperococevsasr iannociseec hcaonvgaerisa.ncAe mchananeugevse.r Aof tmheanteaurgveetr foorf 4t0h0e stdaregteert iofroart e4s0t0h es
+edsteitmeraiotiroanteosf tthhee essttainmdaatriodnU oKf Fthuen sttialnthdearedn dUKofFt huentsiilm thuel aetniodn o.fT thhee sstiamtiustliactaiolne.r rTohres ostfatthisetisctaaln edrarordrs
+UoKf Fthleis stetadnidnaTradb UleK1Fd leimsteodn sitnra Tteasbtleh a1t dtheempoontestnrtaiatelsp trhoacet stshne opiosetecnhtaianlg pesroccaeussse dnobiyset acrhgaentgmesa nceauuvseerd
+lebayd tatorgaent minacrneeausveeirn ltehaed ptoos aitnio inncerreraosres ,ifnr otmhe 1p.4o5s4it9iomn etorr2o5r.s7, 5f6ro5mm .1.F4o5r49th mea tdoa 2p5t.i7v5e6f5a dmin. gFoUr KthFe
+aalgdoaprittihvme ,faindionrgd eUrKtoF eanlsguorreiththma,t tihne oprrdoecre stos neonissuerceo vthaarti atnhcee pdrooecsensso tncohisaen gceovtoaroiamncuec hddoeusr inngot
+tchheacnogrere tcotioo nm,uthceh adduarpintigv ethfaed cinogrrfeaccttioonr,i sthliem aitdeadpitnivae cfeardtaining rfaancgtoer. Oist hliemrwiteisde ,itnh ea ocveertra-aind jurasntegde.
+QOtwhielrlwleiased, ttohea odvievre-ragdejnucseteodf Qth ewfiilllt leerasdi ntcoe at hdeivmerigsemnactec hoef st.heU fnidlteerr tshinecceo tnhset rmaiinsmts,atthcheeps.o Usitnidoner
+ttrhaeck cinognsetrrraoinrtosf, tthhee apdoaspittiivoen fatrdaicnkginUgK eFrraolgr oorfi ththme iasddaepctrievaes efdadcionmg pUarKeFd waligtohrtihthemst ains ddaercdreUaKseFd.
+Ccoommppaarreindg wthiethm tehaen sstaannddavradr iUanKcFe.s oCfotmhepaproinsigti othnee rmroerasnds uarnindg v[2a0ri0ans,c5es5 0osf] tahned p[5o5s0itiso,n1 4e0r0rosr]s
+indtuerrivnagl s[,2i0t0is sc, le5a5r0 tsh]a atnthde [fi55lt0e rsi,n g14p0e0r fso] rimntaenrcveaslso, fitt hies uclseeadr mtheatth tohdes feixltceerpintgfo pretrhfeorsmtaanndcaersd oUf KthFe
+areallrobust. AsshowninTable1,thetrackingaccuracyofourproposedQ-adaptiveUKFscheme
+isalmostthesameasthatoftheIMM-UKFmethod,whichdemonstratesthatbothalgorithmscan
+resist the uncertainty of process noise. However, the computational load of IMM-UKF method is
+approximatelytwotimeshigherthanthatofourproposedadaptiveUKFscheme.Inaddition,although
+theN-UKFalgorithmresiststhedisturbanceofthechangingstatisticspropertiesofstates,itsaccuracy
+isnotoptimalduetotheneglectofthecorrelativitybetweentheinnovationandresidualsequences.
+
+--- Page 12 ---
+Sensors 2019, 19 FOR PEER REVIEW 12
+used methods except for the standard UKF are all robust. As shown in Table 1, the tracking
+accuracy of our proposed Q-adaptive UKF scheme is almost the same as that of the IMM-UKF
+method, which demonstrates that both algorithms can resist the uncertainty of process noise.
+However, the computational load of IMM-UKF method is approximately two times higher than
+that of our proposed adaptive UKF scheme. In addition, although the N-UKF algorithm resists the
+Sdenissotrusr2b01a9n,c1e9, 1o3f7 1the changing statistics properties of states, its accuracy is not optimal due 1t2oo ft1h9e
+neglect of the correlativity between the innovation and residual sequences. In this case, the
+simulation results demonstrate that our proposed method is affected by neither the time-varying
+Inthiscase,thesimulationresultsdemonstratethatourproposedmethodisaffectedbyneitherthe
+process noise nor the maneuvering motion models.
+time-varyingprocessnoisenorthemaneuveringmotionmodels.
+For the second Case, in order to verify the adaptive performance of our proposed UKF, the
+For the second Case, in order to verify the adaptive performance of our proposed UKF, the
+improved Sage-Husa adaptive algorithm in [31] is introduced to the UKF algorithm for target
+improvedSage-Husaadaptivealgorithmin[31]isintroducedtotheUKFalgorithmfortargettracking.
+tracking. Meanwhile, contrast simulations of the standard UKF, IMM-UKF method and N-UKF
+Meanwhile,contrastsimulationsofthestandardUKF,IMM-UKFmethodandN-UKFalgorithmare
+algorithm are conducted in this case. The position tracking errors of these algorithms are shown in
+conductedinthiscase. ThepositiontrackingerrorsofthesealgorithmsareshowninFigure4,andthe
+Figure 4, and the means and variances of the position tracking errors during the periods of 200–350
+meansandvariancesofthepositiontrackingerrorsduringtheperiodsof200–350sand601–1400sare
+s and 601–1400 s are listed in Table 2. The measurement noise standard deviations used in these
+listedinTable2. Themeasurementnoisestandarddeviationsusedinthesealgorithmsareshownin
+algorithms are shown in Figure 5.
+Figure5.
+Figure4.PositiontrackingerrorsforCase2.
+Figure 4. Position tracking errors for Case 2.
+Table2.PositionerrorsofthedifferentschemesforCase2.
+Table 2. Position errors of the different schemes for Case 2.
+200–350s 600–1400s
+Algorithm 200–350 s 600–1400 s
+Algorithm Mean(m) Variance(m2) Mean(m) Variance(m2)
+Mean (m) Variance (m2) Mean (m) Variance (m2)
+StandardUKF 2.9130 0.7260 26.7439 337.3589
+Standard UKF 2.9130 0.7260 26.7439 337.3589
+ImprovedSage-HusaUKF 2.4260 0.8123 359.2692 2.1492×105
+Improved Sage-Husa UKF 2.4260 0.8123 359.2692 2.1492×105
+IMM-UKF 3.0745 2.2106 2.8958 1.3549
+IMMN--UUKKFF 3.077.49590 0 2.22170.066 31 32.5.7839158 0.98311.3549
+OurpNr-oUpoKsFed scheme 7.919.09073 0 27.006.13216 4 23.9.1507731 1.05604.9831
+Our proposed scheme 1.9730 0.1264 2.9107 1.0564
+ItcanbeseenfromFigure4andTable2thatthe performancesofthestandardUKFandIMM-UKF
+methodsdeterioratewhenthemeasurementnoisec hangesduringtheperiodof200–350s. Asshown
+inFigure5, themeasurementnoisestandarddeviationsusedinthestandardUKFandIMM-UKF
+methodarefixedvalues,whichwillbemismatchedwhenthenoisechanges. Furthermore,duetothe
+mismatchedsystemmodel,thepositiontrackingerrorofthestandardUKFincreasessignificantlyafter
+the600thsecond. AlthoughtheimprovedSage-HusaUKFalgorithmcanovercomethetime-varying
+noisecovarianceofthemeasurement,itdivergeswhenthesystemmodelchanges. Itcanbefound
+inFigure5thatwhenthetargetperformsamaneuveringmotion,themeasurementnoisestandard
+deviations estimated by the improved Sage-Husa UKF algorithm are biased because the coupled
+in novationiscontaminated. TheN-UKFalgorithmcaneffectivelydetectthefilteringdivergencewhen
+thenoisevariancesincrease. However,duetothenegativeinfluenceoftheinaccurateestimatesof
+theprocessnoisecovariance,thetheoreticalestimateerrormaybemorethantheactualestimation
+error,andthuswhenthenoisevariancedecreasesthedetectionwillfailandthemeasurementnoise
+standarddeviationsarenotupdated. Bycontrast,ourproposedR-adaptiveUKFisimmunetothe
+
+--- Page 13 ---
+Sensors2019,19,1371 13of19
+stateestimationandcanmodifythemeasurementnoisecovarianceeffectively. Whenthemeasurement
+noise changes, both our proposed method and the improved Sage-Husa UKF algorithm require a
+delay to match the actual noise variances. This is because the estimate covariances are calculated
+cumulatively based on the data in a sliding window. The fading factor and the window size are
+usuallyselectedbyexperienceastheymakeatrade-offbetweenthesmoothnessandrapidityofthe
+measurementnoisecovarianceestimation. Inoursimulations,thefadingfactoris0.98andthewindow
+sizeforestimationischosenas25.Asexpected,theproposedR-adaptiveschemeavoidsthedivergence
+occurredintheimprovedSage-Husaalgorithm. Inaddition,thepositionerrorsofthestandardUKF
+andtheimprovedSage-HusaUKFalgorithmgrowto40mwithouttheQ-estimation,whichmeans
+thattheadaptiveprocessnoisecovarianceinourproposedschemecancontributetotheincreasein
+thetrackingprecision.
+Sensors 2019, 19 FOR PEER REVIEW 13
+FigFuigreur5e. 5E.s Etismtiamteadtemd emaseuasreumreemnetnnto nisoeisseta sntadnadrdardde dvieavtiiaotniosnfos rfoCra Cseas2e. 2.
+FigItu rcean6 sbheo wsesetnh efreosmtim Faitgeudrree s4u latsndof Tthaeblree d2u nthdaatn tthmee apseurfroemrmeanntcneosi soefv tahreia nsctaen.dItacradn UbeKsFe eannd
+thaIMttMhe-UesKtiFm mateetvhaordiasn dceetseflriuocrtautea tweahreonu tnhde tmheearesfuerreemnceenvt anlouiesse. cThoafnugreths edruervianlgu athtee tpheerpioedrf oorfm 20a0n–c3e50
+ofst.h Aese ssthimowatnio inn, Fthigeumree a5n, tshoef mtheeaesustriemmaetendt nnooiissee svtaarniadnacred odfetvhieatriaonngs euasnedd ianz itmheu tshtaanrdeacradl cUuKlaFte adn.d
+ThIeMirMre-UsuKltFs amreet1h0o0d.8 1a9r4em f2ixaendd 1v.a0l5u0e7s,× w1h0i − c6h rawdi2l,l anbed tmheisrmefaetrcehnecde vwarhieann cethsea reno1i0s0e mc2haanngdes.
+1.0Fu×rt1h0e − rm6 orared,2 d.uIet tios tchleea mr itshmatattchheedR MsyNstEemC amlgoodreilt,h tmhe cpaonsiptiroonv itdraeckainregl iearbroler eosft tihmea sttioanndfaorrdt UheKF
+redinucnrdeaasnetsm siegansuifriceamnetlnyt vafatreira ntchees .600th second. Although the improved Sage-Husa UKF algorithm
+canF oorvethrceotmhier dthCea tsiem,eth-veapryeirnfogr nmoainsec ecoavnadrifaenacseib oilfi ttyheo fmoeuarspurroempoesnetd, iat ddaipvteirvgeesU wKFhesnc htheme seyasrteem
+tesmteoddwelh cehnaQngaensd. RIt cchaann bgee sfiomuunldta inne oFuigsulyr.eI n5 ththisatc awseh,etnh ethstea ntadragredt UpKerFf,oIrMmMs -aU mKaFnmeuevtheoridn,gN m-UoKtiFon,
+algthoeri tmhemasaunrdemaernobt unsotisaed satpatnivdearUdK dFevsciahteiomnes iens[ti3m8]aatered abpyp tlhieed itmoptrraocvkeidn gSathgee-tHarugseat .UTKhFe caolgnotrraitshtm
+resaurelt sboiafstehde fibletecariunsge ptohsei tcioonuperlerodr sinanreovparetisoenn tiesd cionnFtiagmurinea7t.eTdh. eTmhee aNn-sUaKndF vaalgrioarnicthesmo fctahne epfofescittiiovnely
+tradcektiencgt ethrreo rfsildteurirningg dthiveeprgeerinocdes wofh2e0n0 –th55e0 nsoaisned v5a5r0i–a1n4c0e0s sinacrreelaisstee. dHinowTaebvleer,3 .due to the negative
+influence of the inaccurate estimates of the process noise covariance, the theoretical estimate error
+may be more than thTea balect3u.aPlo esisttioimnaertiroorns oefrrthoer,d aifnfedre nthtuscsh ewmheesnf otrhCea sneo3i.se variance decreases the
+detection will fail and the measurement noise standard deviations are not updated. By contrast, our
+200–550s 550–1400s
+proposedA Rl-gaodriatphtmive UKF is immune to the state estimation and can modify the measurement noise
+Mean(m) Variance(m2) Mean(m) Variance(m2)
+covariance effectively. When the measurement noise changes, both our proposed method and the
+StandardUKF 4.8845 4.0442 26.8136 316.1329
+improved Sage-Husa UKF algorithm require a delay to match the actual noise variances. This is
+RobustadaptiveUKF 4.6399 5.0780 3.0834 0.2204
+because the estimate covariances are calculated cumulatively based on the data in a sliding window.
+IMM-UKF 3.9900 1.3483 4.6487 2.3042
+The fading Nfa-UctKorF and the wind4o.w77 4s8ize are usu5a.l6l9y0 s0elected by 3e.3x5p1e7rience as the0y.3 m04a2ke a trade-off
+betwOeeunr ptrhoep ossmedosocthhenmeess and 3ra.0p6i2d3ity of the 1m.04e2a6surement n3o.7i3s1e3 covariance 0e.s7t7i0m9ation. In our
+simulations, the fading factor is 0.98 and the window size for estimation is chosen as 25. As
+expected, the proposed R-adaptive scheme avoids the divergence occurred in the improved
+Sage-Husa algorithm. In addition, the position errors of the standard UKF and the improved
+Sage-Husa UKF algorithm grow to 40 m without the Q-estimation, which means that the adaptive
+process noise covariance in our proposed scheme can contribute to the increase in the tracking
+precision.
+
+--- Page 14 ---
+Sensors 2019, 19 FOR PEER REVIEW 14
+Sensors2019,19,1371 14of19
+Sensors 2019, 19 FOR PEER REVIEW 14
+Figure 6. Estimated redundant measurement noise variance for Case 2.
+Figure 6 shows the estimated results of the redundant measurement noise variance. It can be
+seen that the estimate variances fluctuate around the reference values. To further evaluate the
+performance of the estimation, the means of the estimated noise variance of the range and azimuth
+are calculated. Their results are 100.8194 m2 and 1.0507×10−6 rad2, and the reference variances are
+100 m2 and 1.0×10−6 rad2. It is clear that the RMNEC algorithm can provide a reliable estimation for
+the redundant measurement variances.
+For the third Case, the performance and feasibility of our proposed adaptive UKF scheme are
+tested when Q and R change simultaneously. In this case, the standard UKF, IMM-UKF method,
+N-UKF algorithm and a robust adaptive UKF scheme in [38] are applied to tracking the target. The
+contrast results of the filtering position errors are presented in Figure 7. The means and variances of
+the position tracking errors during the periods of 200–550 s and 550–1400 s are listed in Table 3.
+FigFuigruer6e. 6E.s Etismtimateadterde dreudnudnadnatnmt emaesausruemreemnetnnto nisoeisvea vriaarniacnecfeo rfoCra Cseas2e. 2.
+Figure 6 shows the estimated results of the redundant measurement noise variance. It can be
+seen that the estimate variances fluctuate around the reference values. To further evaluate the
+performance of the estimation, the means of the estimated noise variance of the range and azimuth
+are calculated. Their results are 100.8194 m2 and 1.0507×10−6 rad2, and the reference variances are
+100 m2 and 1.0×10−6 rad2. It is clear that the RMNEC algorithm can provide a reliable estimation for
+the redundant measurement variances.
+For the third Case, the performance and feasibility of our proposed adaptive UKF scheme are
+tested when Q and R change simultaneously. In this case, the standard UKF, IMM-UKF method,
+N-UKF algorithm and a robust adaptive UKF scheme in [38] are applied to tracking the target. The
+contrast results of the filtering position errors are presented in Figure 7. The means and variances of
+the position tracking errors during the periods of 200–550 s and 550–1400 s are listed in Table 3.
+FFigiguurree7 7..P Poossititioionnt trraacckkiningge errrroorrssf oforrC Caassee3 3..
+AsshowninFigureT7abalne d3. TPaobsilteio3n, etrhreorfis lotef rthineg dirfefesruelntto sfchthemeesst afnord Caardse U3.K Falgorithmbecomes
+inaccurateinthepresenceoftheprocessandmeasurementnoisecovariancevariations.Thetime-varying
+200–550 s 550–1400 s
+noisecoAvlagroiarintchems leadtothedivergenceofthestandardUKF,eventhoughthenoisecovariancesreturn
+Mean (m) Variance (m2) Mean (m) Variance (m2)
+toitspriorivalueandchangesdisappearafterthe350thsecond. ThisisbecausethestandardUKF
+a lgorithmhasnoadaptiveabilities. AsdescribedinSection2.2,thecontaminatednoisecovariances
+caninfluencethefilteringgainandestimationcovariances,whichwouldcausethefilteringdivergence.
+TherobustadaptiveUKFandtheN-UKFalgorithmcanbothavoidthefilteringdivergence,butthe
+performancesoftheQ-matchingmethodinthesealgorithmsareaffectedbythevaryingmeasurement
+noisecovariance. Whentheprocessandmeasurementnoisecovarianceschangedsimultaneously,itis
+hardtodistinguishthetypeofthefault(eithermeasurementinterferenceorprocessnoiseuncertainty)
+onlythoughthestatisticalinformationoftheinnovation. Hence,theadaptationproceduresinboth
+Figure 7. Position tracking errors for Case 3.
+therobustadaptiveUKFandtheN-UKFalgorithmfailedtoaccordwiththenoisechanges. During
+theperiodof601–1000s,thefaultwasdetectedandisolatedeffectivelybytherobustadaptiveUKF
+Table 3. Position errors of the different schemes for Case 3.
+andN-UKFalgorithmwhenonlytheprocessnoisecovariancechanged,whichreducedtheposition
+tracking error. Compared with our pr2o0p0o–5se5d0 ss cheme, the computational l5o5a0d–1o4f00th se IMM-UKF
+Algorithm
+Mean (m) Variance (m2) Mean (m) Variance (m2)
+
+--- Page 15 ---
+Sensors2019,19,1371 15of19
+methodisdoubled,whilethefilteringresultsofIMM-UKFarealsonotoptimal. Onereasonforthis
+unstableperformanceisthatthemodelsandtheswitchingprobabilitiesintheIMM-UKFmethodare
+chosenbyexperience,andfurthermore,theframeworkoftheIMMmethodisdesignedforuncertain
+systemmodels. Inourschemes,thechangingmeasurementnoisecovarianceisestimatedthrough
+theredundantmeasurements,whichareentirelyimmunetothestateestimation. Thismeansthatthe
+processnoisecovariancecanbeestimateddependingonthe“clean”innovationandresidualsequences,
+whichhaveconsideredtheinfluenceofthecontaminatedmeasurementnoise. Thus,ourproposed
+algorithmstillmaintainedgoodtrackingaccuracywhentheprocessandmeasurementnoisecovariance
+varied during the period of 200–350 s. The simulation results prove that our proposed adaptive
+UKFschemewithQandR-adaptivecanachieveaccurateestimationandmeettherequirementsof
+targettracking.
+4.3. Discussion
+Theadaptivefilteringproblemsfortime-varyingnoisecovariancesinvolvedinnonlineartarget
+trackingsystemshavebeenresearched,andaninnovativeadaptiveUKFschemehasbeendeveloped
+toimprovethetrackingaccuracyandstability. FromthesimulationresultsinFigure3andTable1,
+itisobviousthataftertheadaptiveprocesses,thedivergenceofthestandardUKFhasbeeneffectively
+suppressed. However, it should be noted that the process noise covariance solution is likely to
+be negative when resolving the linear matrix Equation (22) because of the limited size of window
+in Equation (23) and the measurement approximation errors. Therefore, in order to avoid such
+situations, an absolute or scale operator should be applied to the covariance solution in practical
+applications[27,39].
+Moreover,thevaryingmeasurementnoisecovariancealsohasagreatinfluenceonthefiltering
+result,whichisshowninFigure4andTable2.AlthoughourproposedR-adaptiveschemecansuppress
+thenoiseandavoidthedivergencewhichoftenoccursintheimprovedSage-Husamethod,itrelieson
+aredundantmeasurementsystem. Withtheabsenceoftheredundantmeasurements,theRMNCE
+method would be infeasible. In this situation, if the computational power permits, an alternative
+schemenamedimprovedsecondordermutualdifferenceestimationcanbeappliedtodealwiththe
+singlemeasurementnoisecovarianceestimationproblem[40].
+When the process noise and measurement noise needed to be estimated simultaneously,
+thefilteringaccuracywaswellmaintainedbyapplyingtheRMNCEmethodandtuningtheprocess
+noisecovarianceadaptivelybasedonthecorrectcorrelationoftheinnovationandresidualsequences.
+AlthoughourproposedadaptiveschemesareusedforUKF,itcanalsobeappliedforEKF,sinceno
+specialfeatureofUKFisusedinestimatingQorR.Furthermore,theproposedcorrectionschemes
+avoidthenegativeimpactoftheprocessnoiseonestimatingthemeasurementnoisecovariance. Itcan
+beseenfromthetargettrackingsimulationresults,asshowninthesimulationresultsinFigure7and
+Table3,thatourproposedadaptiveschemecansolvetheuncertaintiesofthenoisecovarianceand
+makeaconsiderablecontributiontothefilteringaccuracyandstability.
+Insummary,theproposedadaptiveUKFschemecanprovideaccuracyandreliabletrackingin
+challenging environments, compared with the standard UKF, IMM-UKF method and the current
+adaptive UKF strategies. The next step is to broaden the application fields of the proposed
+adaptive scheme, and further extend the estimation of measurement noise covariance to a single
+measurementsystem.
+5. Conclusions
+Accurate estimation of the dynamic parameters in the maneuvering target relies in the
+performanceofthefilter. However,thestandardandcurrentadaptiveUKFalgorithmswilldiverge
+wheneverthefilteringmodelsinvolvethetime-varyingnoisecovariance. Toimprovethestabilityand
+accuracyofthetargettracking,anewadaptiveUKFalgorithmisproposed. Intheproposedmethod,
+thecovarianceoftheprocessandmeasurementnoiseistunedinrealtimebyusingtheinnovation,
+
+--- Page 16 ---
+Sensors2019,19,1371 16of19
+residual and redundant measurement sequences. The process noise covariance can be obtained
+by resolving the linear matrix equation, which is deduced from the expectation of the difference
+sequencebetweeninnovationandresidual. Themeasurementnoisecovarianceisestimatedthrough
+theRMNCEmethodbyusingtheredundantmeasurementfromthemultiradarsystem. Simulation
+resultsdemonstratethattheadaptiveUKFschemepresentedinthispapercaneffectivelyrestrainthe
+filteringdivergenceandhasabetterfilteringperformancecomparedwiththestandardandexisting
+adaptiveUKFalgorithms. Forthefuture,theinfluenceofthecorrelationbetweenthemeasurementsis
+worthfurtherresearch,whichwillbenefittheaccuracyofthemeasurementnoisecovarianceestimation.
+Inanotherway,themodernartificialintelligencemethodsmayavoidthedilemmaofthefilteringnoise
+covarianceestimation.
+AuthorContributions: Conceptualization,H.Z.,B.G.andZ.L.;Methodology,B.G.;Software,B.G.;Validation,
+B.G.,L.J.andZ.L.;FormalAnalysis,B.G.,L.J.andM.M.B.;Investigation,H.Z.andB.G.;Resources,H.Z.;Data
+Curation,B.G.;Writing—OriginalDraftPreparation,B.G.;Writing—Review&Editing,H.Z.,B.G.,L.J.andM.M.B.;
+Visualization,B.G.;Supervision,H.Z.;ProjectAdministration,H.Z.;FundingAcquisition,H.Z.
+Funding:ThisresearchwasfundedbytheNationalKeyResearchandDevelopmentProgramofChina(GrantNos.
+2017YFC0821102,2016YFB0502004)andBeijingIntelligentLogisticsSystemCollaborativeInnovationCenter.
+ConflictsofInterest:Theauthorsdeclarenoconflictofinterest.
+AppendixA
+ThisAppendixgivestheproofofnoisecovarianceestimationbasedontheredundantmeasurement.
+AsshowninEquation(24),themeasurementsfromdifferentsystemsareavailable. Inthiscondition,
+thefirstorderdifferencesequenceoftwomeasurementsystemscanbecalculatedas
+  ∆Z 1 (k) =
+=
+Z
+[Z
+1
+T
+(k
+(k
+)
+)
+−
+−
+Z
+Z
+1 (
+T
+k
+(k
+−
+−
+1)
+1)
+=
+]+
+[Z
+[
+T
+f 1
+(
+(
+k
+k
+)
+)
++
+−
+f
+f
+1
+1
+(
+(
+k
+k
+)
+−
++
+1
+V
+)
+1
+]
+(
++
+k)
+[
+]
+V
+−
+1 (
+[
+k
+Z
+)
+T
+−
+(k
+V
+−
+1 (
+1
+k
+)
+−
++
+1
+f
+)
+1
+]
+(k−1)+V 1 (k−1)]
+(A1)
+ ∆Z 2 (k) =
+=
+Z
+[Z
+2
+T
+(k
+(k
+)
+)
+−
+−
+Z
+Z
+2 (
+T
+k
+(k
+−
+−
+1)
+1)
+=
+]+
+[Z
+[
+T
+f 2
+(
+(
+k
+k
+)
+)
++
+−
+f
+f
+2
+2
+(
+(
+k
+k
+)
+−
++
+1
+V
+)
+2
+]
+(
++
+k)
+[
+]
+V
+−
+2 (
+[
+k
+Z
+)
+T
+−
+(k
+V
+−
+2 (
+1
+k
+)
+−
++
+1
+f
+)
+2
+]
+(k−1)+V 2 (k−1)]
+Then,thesecond-ordermutualdifferencesequenceofthemeasurementsyields
+∇Z(k) =∆Z (k)−∆Z (k)
+1 2 (A2)
+=[f
+1
+(k)−f
+1
+(k−1)]−[f
+2
+(k)−f
+2
+(k−1)]+[V
+1
+(k)−V
+1
+(k−1)]−[V
+2
+(k)−V
+2
+(k−1)].
+WhentheconditioninEquation(25)iswellsatisfiedandconsiderV (k)andV (k)areuncorrelated,
+1 2
+zero-meanGaussianrandomnoise,theautocorrelationofthefirstorderdifferencesequencescanbe
+obtainedas
+(cid:104) (cid:105) (cid:110) (cid:111)
+E ∆Z (k)∆Z (k)T =E [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T
+1 1 1 1 1 1
+= [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T
+T T T T
++diag
+(cid:20)
+···
+(cid:16)
+f 1 i(k)−f 1 i(k−1)
+(cid:17)2
+···
+(cid:21)
++E
+(cid:110)
+V 1 (k)V 1 (k)T
+(cid:111)
+(A3)
+(cid:110) (cid:111)
+≈ [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T+E V (k)V (k)T
+T T T T 1 1
+= [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T+2R .
+T T T T 1
+Similarly,
+(cid:104) (cid:105) (cid:110) (cid:111)
+E ∆Z (k)∆Z (k)T =E [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T
+2 2 2 2 2 2
+= [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T
+T T T T
++diag
+(cid:20)
+···
+(cid:16)
+f 2 i(k)−f 2 i(k−1)
+(cid:17)2
+···
+(cid:21)
++E
+(cid:110)
+V 2 (k)V 2 (k)T
+(cid:111)
+(A4)
+(cid:110) (cid:111)
+≈ [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T+E V (k)V (k)T
+T T T T 2 2
+= [Z (k)−Z (k−1)][Z (k)−Z (k−1)]T+2R .
+T T T T 2
+
+--- Page 17 ---
+Sensors2019,19,1371 17of19
+Then,wecanobtainthat
+(cid:104) (cid:105) (cid:104) (cid:105)
+E ∆Z (k)∆Z (k)T −E ∆Z (k)∆Z (k)T =2R −2R . (A5)
+1 1 2 2 1 2
+Ontheotherhand,theautocorrelationofthesecond-orderdifferencesequencescanbeobtainedas
+(cid:104) (cid:105) (cid:110) (cid:111)
+E ∇Z(k)∇Z(k)T =E [∆Z (k)−∆Z (k)][∆Z (k)−∆Z (k)]T
+1 2 1 2
+=diag
+(cid:20)
+···
+(cid:16)
+f 1 i(k)−f 1 i(k−1)
+(cid:17)2
+···
+(cid:21)
++E
+(cid:110)
+V 1 (k)V 1 (k)T
+(cid:111)
++diag
+(cid:20)
+···
+(cid:16)
+f 2 i(k)−f 2 i(k−1)
+(cid:17)2
+···
+(cid:21)
++E
+(cid:110)
+V 2 (k)V 2 (k)T
+(cid:111)
+(cid:110) (cid:111) (cid:110) (cid:111) (A6)
++E V (k−1)V (k−1)T +E V (k−1)V (k−1)T
+1 1 2 2
+(cid:110) (cid:111) (cid:110) (cid:111)
+≈E V (k)V (k)T +E V (k−1)V (k−1)T
+1 1 1 1
+(cid:110) (cid:111) (cid:110) (cid:111)
++E V (k)V (k)T +E V (k−1)V (k−1)T
+2 2 2 2
+=2R +2R .
+1 2
+Finally,therandomnoisecovariancesofmeasurementforZ (k)andZ (k)canbeestimatedby
+1 2
+solvingEquations(A5)and(A6)as
+
+ R =
+E[∇Z(k)∇Z(k)T]+E[∆Z1 (k)∆Z1 (k)T]−E[∆Z2 (k)∆Z2 (k)T]
+1 4 (A7)
+ R =
+E[∇Z(k)∇Z(k)T]−E[∆Z1 (k)∆Z1 (k)T]+E[∆Z2 (k)∆Z2 (k)T]
+2 4
+(cid:3)
+Thiscompletestheproof.
+References
+1. Zhou,H.;Huang,H.;Zhao,H.;Zhao,X.;Yin,X.AdaptiveUnscentedKalmanFilterforTargetTrackingin
+thePresenceofNonlinearSystemsInvolvingModelMismatches.RemoteSens.2017,9,657.[CrossRef]
+2. Chatterjee,S.;Sardar,S.;Biswas,S.;Roy,S.WSNbasedrobustgroundtargettrackingforprecisionguided
+missiles.Int.J.Res.Comput.Appl.Manag.2013,3,4.
+3. Sreeja,S.;Hablani,H.Precisionmunitionguidanceandestimationoftargetpositionin2-D.InProceedings
+oftheAIAAGuidance,Navigation,andControlConference,SanDiego,CA,USA,4–8January2016.
+4. Cao,Y.; Wang,G.; Yan,D.; Zhao,Z.TwoAlgorithmsfortheDetectionandTrackingofMovingVehicle
+TargetsinAerialInfraredImageSequences.RemoteSens.2016,8,28.[CrossRef]
+5. Zhao,M.;Zhang,X.;Yang,Q.ModifiedMulti-ModeTargetTrackerforHigh-FrequencySurfaceWaveRadar.
+RemoteSens.2016,8,28.[CrossRef]
+6. Benfold, B.; Reid, I. Stable multi-target tracking in real-time surveillance video. In Proceedings of the
+ComputerVisionandPatternRecognition,ColoradoSprings,CO,USA,20–25June2011;pp.3457–3464.
+7. Duh,F.B.;Lin,C.T.Trackingamaneuveringtargetusingneuralfuzzynetwork.IEEETrans.Syst.ManCybern.
+PartBCybern.2004,34,16–33.[CrossRef]
+8. Shi,Y.;Han,C.Z.AdaptiveUKFMethodwithApplicationstoTargetTracking.ActaAutom.Sin.2011,37,
+755–759.
+9. Kalman,R.E.Anewapproachtolinearfilteringandpredictionproblem. J.BasicEng. 1960,82,95–108.
+[CrossRef]
+10. Van der Merwe, R.; Doucet, A.; De Freitas, N.; Wan, E. The unscented particle filter. Adv. Neural Inf.
+Process.Syst.2001,96,584–590.
+11. Aditya,P.;Apriliani,E.;KhusnulArif,D.;Baihaqi,K.Estimationofthree-dimensionalradartrackingusing
+modifiedextendedkalmanfilter.J.Phys.Conf.Ser.2018,897,012071.[CrossRef]
+12. Kumar,G.; Prasad,D.; Singh,R.P.TargettrackingusingadaptiveKalmanFilter. InProceedingsofthe
+2017InternationalConferenceonSmartgrids,PowerandAdvancedControlEngineering,Bangalore,India,
+17–19August2017;pp.376–380.
+
+--- Page 18 ---
+Sensors2019,19,1371 18of19
+13. Lippiello, V.; Siciliano, B.; Villani, L. Visual motion tracking with full adaptive extended Kalman filter:
+Anexperimentalstudy.InProceedingsofthe16thIFACWorldCongress,Prague,CzechRepublic,3–8July
+2005;pp.283–288.
+14. Wang,X.;Wang,S.;Ma,J.J.AnImprovedParticleFilterforTargetTrackinginSensorSystems.Sensors2007,
+7,144–156.[CrossRef]
+15. Okuma,K.;Taleghani,A.;DeFreitas,N.;Little,J.;Lowe,D.ABoostedParticleFilter:MultitargetDetection
+andTracking.InProceedingsofthe8thEuropeanConferenceonComputerVision,Prague,CzechRepublic,
+11–14May2004;pp.28–39.
+16. Julier,S.;Uhlmann,J.K.AGeneralMethodforApproximatingNonlinearTransformationsofProbability
+Distributions. Available online: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.46.6718
+(accessedon26September2018).
+17. Konatowski,S.;Pienie˛z˙ny,A.T.AcomparisonofestimationaccuracybytheuseofKF,EKF&UKFfilters.
+WitTrans.Model.Simul.2007,46,779–789.
+18. Tang,X.;Xie,J.;Wang,X.;Jiang,W.High-PrecisionAttitudePost-ProcessingandInitialVerificationforthe
+ZY-3Satellite.RemoteSens.2014,7,111–134.[CrossRef]
+19. Wan,E.A.;VanderMerwe,R.TheunscentedKalmanfilterfornonlinearestimation.InProceedingsofthe
+IEEE2000AdaptiveSystemsforSignalProcessing,Communications,andControlSymposium,LakeLouise,
+AB,Canada,4October2000;pp.153–158.
+20. Blair,W.D.;Watson,G.A.;Rice,T.R.Trackingmaneuveringtargetswithaninteractingmultiplemodelfilter
+containingexponentially-correlatedaccelerationmodels.InProceedingsoftheTwenty-ThirdSoutheastern
+SymposiumonSystemTheory,Columbia,SC,USA,10–12March1991.
+21. Li,X.R.;Jilkov,V.P.Surveyofmaneuveringtargettracking. PartV.Multiple-modelmethods. IEEETrans.
+Aerosp.Electron.Syst.2005,41,1255–1321.
+22. Farina,A.;Immediata,S.;Timmoneri,L.ImpactofballistictargetmodeluncertaintyonIMM-UKFand
+IMM-EKFtrackingaccuracies. InProceedingsofthe200614thEuropeanSignalProcessingConference,
+Florence,Italy,4–6September2006.
+23. Xu, Q.; Li, X.; Chan, C.Y. A Cost-Effective Vehicle Localization Solution Using an Interacting Multiple
+Model-UnscentedKalmanFilters(IMM-UKF)AlgorithmandGreyNeuralNetwork.Sensors2017,17,1431.
+[CrossRef][PubMed]
+24. Zhang, S. An Adaptive Unscented Kalman Filter for Dead Reckoning Systems. In Proceedings of the
+2009InternationalConferenceonInformationEngineeringandComputerScience,Wuhan,China,19–20
+December2009.
+25. Soken,H.E.;Hajiyev,C.AdaptiveFadingUKFwithQ-Adaptation: ApplicationtoPicosatelliteAttitude
+Estimation.J.Aerosp.Eng.2013,26,628–636.[CrossRef]
+26. Li,L.;Hua,C.;Yang,H.AnewadaptiveunscentedKalmanfilterbasedoncovariancematchingtechnique.
+InProceedingsofthe2014InternationalConferenceonMechatronicsandControl,Jinzhou,China,3–5July
+2014;pp.1308–1313.
+27. Meng,Y.;Gao,S.;Zhong,Y.;Hu,G.;Subic,A.CovariancematchingbasedadaptiveunscentedKalmanfilter
+fordirectfilteringinINS/GNSSintegration.ActaAstronaut.2016,120,171–181.[CrossRef]
+28. Akhlaghi,S.;Zhou,N.;Huang,Z.AdaptiveadjustmentofnoisecovarianceinKalmanfilterfordynamic
+stateestimation. InProceedingsofthe2017IEEEPower&EnergySocietyGeneralMeeting,Chicago,IL,
+USA,16–20July2017;pp.1–5.
+29. Partovibakhsh,M.;Liu,G.AnadaptiveunscentedKalmanfilteringapproachforonlineestimationofmodel
+parametersandstate-of-chargeoflithium-ionbatteriesforautonomousmobilerobots.IEEETrans.Control
+Syst.Technol.2015,23,357–363.[CrossRef]
+30. Zhang,X.;Guo,M.;Wang,C.;Cheng,G.;Niu,S.AdaptiveFilteringAlgorithmofMulti-SensorInformation
+FusionforIndividualNavigation.Navig.Position.Timing2018,5,35–41.
+31. Zhang,H.;Chang,Y.H.;Che,H.Measurement-basedadaptiveKalmanfilteringalgorithmforGPS/INS
+integratednavigationsystem.J.Chin.Inert.Technol.2010,18,696–701.
+32. Zhou,Q.;Zhang,H.;Li,Y.;Li,Z.AnAdaptiveLow-CostGNSS/MEMS-IMUTightly-CoupledIntegration
+SystemwithAidingMeasurementinaGNSSSignal-ChallengedEnvironment.Sensors2015,15,23953–23982.
+[CrossRef]
+
+--- Page 19 ---
+Sensors2019,19,1371 19of19
+33. Zhou,Q.;Zhang,H.;Wang,Y.ARedundantmeasurementAdaptiveKalmanFilterAlgorithm.ActaAeronaut.
+Astronaut.Sin.2015,36,1596–1605.
+34. Li, Z.; Zhang, H.; Zhou, Q.; Che, H. An Adaptive Low-Cost INS/GNSS Tightly-Coupled Integration
+Architecture Based on Redundant Measurement Noise Covariance Estimation. Sensors 2017, 17, 2032.
+[CrossRef][PubMed]
+35. Kandepu,R.; Foss,B.; Imsland,L.ApplyingtheunscentedKalmanfilterfornonlinearstateestimation.
+J.ProcessControl2008,18,753–768.[CrossRef]
+36. Julier, S.J. The Scaled Unscented Transformation. In Proceedings of the American Control Conference,
+Anchorage,AK,USA,8–10May2002;pp.4555–4559.
+37. Salahshoor,K.;Mosallaei,M.;Bayat,M.Centralizedanddecentralizedprocessandsensorfaultmonitoring
+usingdatafusionbasedonadaptiveextendedKalmanfilteralgorithm. Measurement2008,41,1059–1076.
+[CrossRef]
+38. Hajiyev,C.RobustadaptiveunscentedKalmanfilterforattitudeestimationofpicosatellites.Int.J.Adapt.
+ControlSignalProcess.2014,28,107–120.[CrossRef]
+39. Myers, K.; Tapley, B. Adaptive sequential estimation with unknown noise statistics. IEEE Trans.
+Autom.Control1976,21,520–523.[CrossRef]
+40. Jiang,L.;Zhang,H.Redundantmeasurement-basedsecondordermutualdifferenceadaptiveKalmanfilter.
+Automatica2019,100,396–402.[CrossRef]
+©2019bytheauthors.LicenseeMDPI,Basel,Switzerland.Thisarticleisanopenaccess
+articledistributedunderthetermsandconditionsoftheCreativeCommonsAttribution
+(CCBY)license(http://creativecommons.org/licenses/by/4.0/).

@@ -1,0 +1,1174 @@
+
+--- Page 1 ---
+ReceivedApril28,2020,acceptedMay11,2020,dateofpublicationMay19,2020,dateofcurrentversionJune2,2020.
+DigitalObjectIdentifier10.1109/ACCESS.2020.2995672
+An Adaptive Turn Rate Estimation for
+Tracking a Maneuvering Target
+MOHAMEDELTOUKHY ,M.OMAIRAHMAD ,(LifeFellow,IEEE),
+ANDM.N.S.SWAMY ,(LifeFellow,IEEE)
+DepartmentofElectricalandComputerEngineering,ConcordiaUniversity,Montreal,QCH3G1M8,Canada
+Correspondingauthor:MohamedEltoukhy(m_eltou@ece.concordia.ca)
+ThisworkwassupportedinpartbytheNaturalSciencesandEngineeringResearchCouncil(NSERC)ofCanada,andinpartbythe
+RegroupementStratgiqueenMicrolectroniqueduQubec(ReSMiQ).
+ABSTRACT Trackingmaneuveringtargetsaccuratelyisoneofthemostchallengingtasksinthedesignof
+aircrafttrackingsystems.Forefficienttrackingperformance,thetargetmotionpredictedbythetargetmotion
+model needs to match the target’s actual motion during the maneuver. For tracking a maneuvering target,
+acombinationoftheconstantvelocity(CV)modelandthecoordinatedturn(CT)modelwithaknownturn
+rateareincorporatedintheinteractingmultiplemodel(IMM)algorithm.However,insuchaschemewhena
+targetperformsanunexpectedmaneuver,thetrackingperformancedeteriorates,ortheschememayevenfail
+totrackthetarget.Toovercomethisproblem,thereexistsaschemeintheliterature,inwhichinsteadofusing
+anaprioriknowledgeofthetargetturnrate,itisestimatedadaptivelyusingthetargetaccelerationandspeed.
+However,thisalgorithmusesathree-dimensionalmodeltoestimatetheturnrateintwo-dimensionalspace,
+whichmayresultinaninaccurateestimationofthetargetacceleration,andthusmayleadtoininaccurate
+turnratevalue.Inthispaper,anadaptivealgorithmtotrackamaneuveringtargetinanIMMframeworkis
+proposed.Estimatingtheturnrateisbasedonthespeedofthetargetandtheradiusoftheturn,wherethelatter
+iscomputedbyasimplemethodusingthepreviousthreesuccessivemeasurements.Further,adetailedstudy
+toselectanappropriatetransitionprobabilitymatrixfortheproposedalgorithmiscarriedout.Simulation
+results demonstrate that the proposed tracking algorithm outperforms the other algorithms in terms of its
+trackingaccuracyandconsistency,particularlyintherealisticsituationwhenneitheranaprioriknowledge
+aboutthetargetturnratenorabouttherangerateinformationisavailabletothetrackingalgorithm.
+INDEX TERMS Interactingmultiplemodelforradartracking,targettracking,targetturnrateestimation,
+maneuveringtargets.
+I. INTRODUCTION the target in the non-maneuvering mode, when the detector
+Oneofthemajorchallengesfacedbyanytargettrackingsys- decidesthatamaneuverisbegun,thealgorithmswitchesto
+temistotracktargetsduringmaneuverability,i.e.,whenthe track the target in the maneuvering mode. One of the most
+aircraftturnsrightorleftwithacertainangle.Twoapproaches basic algorithms in this approach uses the two-level white
+have been used for tracking a maneuvering target. One of noise filter [2], in which the filter models the target motion
+them uses a maneuver detector and the other does not. The with a constant velocity (CV) and switches between two
+maneuverdetectorisastatisticaltest,whichisformulatedto noise levels, the low noise level for the non-maneuvering
+decidewhetherthetargetmaneuverhasbegunornot.Same mode and the high noise level for the maneuvering mode.
+frameworkisusedtotestwhetherthemaneuverhasendedor Anotheralgorithminthemaneuver-detectorapproachisthe
+not[1]. variable dimension (VD) algorithm [3]. This algorithm also
+In the first approach, the algorithm uses a single filter in usesonefilterandutilizestwomotionmodels:theCVmodel
+all the tracking process. The algorithm is assumed to track is used for the non-maneuvering motion of the target, and
+the constant acceleration (CA) model for the maneuvering
+The associate editor coordinating the review of this manuscript and motion. In general, the algorithms in this approach show a
+approvingitforpublicationwasZhixiongPeterLi . high peak position error at the beginning of the maneuver
+94176 ThisworkislicensedunderaCreativeCommonsAttribution4.0License.Formoreinformation,seehttps://creativecommons.org/licenses/by/4.0/ VOLUME8,2020
+
+--- Page 2 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+motion, which may be higher than the raw measurement Theperformanceoftheproposedalgorithmisevaluatedand
+data[3]. comparedwithtwoothertypesofIMMtrackingalgorithms
+Thesecondapproachistotrackthetargetwithoutamaneu- thatuselinearmodels.Oneofthesetypesusesaknownturn
+ver detector. In this approach, a number of filters are used rate,whereastheotheradaptivelyestimatesitusingthespeed
+in parallel, each of which uses a different motion model. and acceleration. These algorithms are evaluated in various
+Theoutputisaweightedsumoftheoutputsofthesefilters. maneuversintermsofthenormalizedpositionerror[18]and
+These weights are proportional to the probability of each estimatorconsistency[25].
+filter being the accurate one to track this target [4]. This This manuscript is organized as follows: Section II intro-
+approachovercomestheproblemofpeakpositionerrorthat duce the state space model (the target motion and measure-
+appearsinthemaneuver-detectoralgorithms[5],[6].Several mentmodelsusedinthiswork).AbriefreviewoftheIMM
+algorithms have been proposed in this approach such as the algorithmisprovidedinSectionIII.InSectionIV,weintro-
+firstordergeneralizedpseudo-Bayesian(GPB1),thesecond ducetheproposedalgorithmwhereinamethodofestimating
+orderofGPB(GPB2),andinteractingmultiplemodel(IMM) theturnrateisgiven.SectionVisdevotedtotheperformance
+[7]–[11].TheIMMalgorithmhasaslightlyhighercomplex- evaluationandcomparisonoftheresultswiththatoftheother
+ity,butabetterperformancecomparedtothatofGPB1algo- existinglinearIMMalgorithms.Finally,SectionVIcontains
+rithm and significantly lower complexity than GPB2 with a theconclusions.
+comparabletrackingperformance[12].Theimplementation
+of IMM with a large number of filters does not guarantee II. THESTATESPACEMODEL
+a better performance, despite its increased complexity [13]. The precision of the target motion model is crucial to the
+Thisalgorithmshowsanefficienttrackingperformancewhen trackingaccuracyofatracker,inthattheperformanceofthe
+it utilizes the CV model and coordinated turn (CT) model trackerdeterioratesifthereisamismatchbetweenthemotion
+withknownturnrate [14],[15].However,thetrackingper- predicted by the assumed model and the actual motion of
+formance deteriorates when the turn rates deviate from the the target. Assuming the target performs a two-dimensional
+maneuver performed by the target, i.e., a prior information motion and a CT maneuver, the target kinematics may be
+about the target maneuver is required for better tracking represented by its position and velocity, and the target state
+performance[16]. vectorisgivenby
+For a practical implementation of the IMM algorithm,
+x =[ξ , ξ˙ , η , η˙ ] (cid:48) (1)
+we have to determine the turn rate, since it is not known. k k k k k
+The first method assumes that the maneuver range that will where ξ and η represent the target’s position in the x and
+k k
+be performed by the target is known a priori [17], and the y directions, respectively, ξ˙ and η˙ are the corresponding
+k k
+turn rate is selected to cover these expected maneuvers, but target velocity components, and (·)(cid:48) denotes the transpose.
+thetrackingperformancedegradesifthispriorknowledgeof
+Theequationofthestate-spacemodelthatdescribesthetarget
+therangeisinaccurate.Thesecondmethodobtainstheturn
+motionisgivenby[26].
+rate by estimating the magnitude of target acceleration and
+speed [18]. In general, the estimated accelerations may not x k =F k−1 x k−1 +(cid:48)w k−1 (2)
+bepreciseandmaycausebiasedestimationoftheturnrate.
+Inthethirdmethod,theturnrateisincludedinthestatevector whereF k−1 isthestatetransitionmatrixand(cid:48) isthedistur-
+and is estimated along with the other elements of the state bancematrixthatcanbeexpressedas
+vector[5],[19].ThisresultsinanonlinearCTmodel,which  0.5T2 0 
+is computationally more expensive to estimate the elements
+of the state vector. Recently, it has been proposed that the (cid:48) =    T 0 0.5 0 T2    (3)
+range rate information can be used to improve the turn rate
+0 T
+estimation[20]–[22].However,thisinformationmaynotbe
+availableinallradartypes[16]. whereT isthesamplingperiod.Generally,radarsystemspro-
+In this work, it is assumed that the target performs the videthemeasurementsinpolarcoordinates,thatis,interms
+maneuver in a uniform circular motion in two-dimensional of azimuth and range. However, tracking using polar coor-
+planewithaconstantspeed,asmentionedin[23].Theframe- dinates is not as accurate as tracking using Cartesian coor-
+work of IMM with three filters is used. One of these filters dinatesandhencethelatterisrecommendedwithasuitable
+uses the CV model and the other two use the CT model, measurement conversion [27]. Therefore, using a suitable
+one of which is to track the target for the right turn and the conversion of the polar measurement such as used in [28],
+otherfortheleftturn[24].Inthisalgorithm,theturnrateof we can track the target in Cartesian coordinates for better
+the target is adaptively estimated at each time step without trackingperformance.Therefore,mostofthealgorithmsthat
+anypriorknowledgeaboutthetargetmaneuverabilityorthe have been proposed for target tracking assume that suitable
+range rate. The turn rate is based on the estimation of the conversion has already been made of the polar measure-
+radiusoftheturnandthespeedofthetargetandiscalculated menttoCartesiancoordinates[5],[11],[15],[18].Wehave
+as the speed of the target divided by the radius of the turn. also followed the same practice as others have done. Then,
+VOLUME8,2020 94177
+
+--- Page 3 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+themeasurementequationisgivenby
+z =H x +m (4)
+k k k k
+withthemeasurementmatrix
+(cid:20) (cid:21)
+1 0 0 0
+H = (5)
+k 0 0 1 0
+where z k is the received measurement, (cid:48)w k−1 , and m k are
+theadditivewhiteGaussianprocessandmeasurementnoise
+vectors, respectively. Conventionally, (cid:48)w k−1 and m k are
+assumedtobeindependentwithzeromeanandwithcovari-
+FIGURE1. OnecycleoftheIMMalgorithmwhenr=2[14].
+ancematrices(cid:48)Q k−1 (cid:48)(cid:48)andC k ,respectively.
+Whenthetargetperformsastraight-linemotionatacon-
+stantvelocity,thestatetransitionmatrix(F
+k
+=FC
+k
+V)isgiven residualofthefilterβj
+k
+by[26]
+ 1 T 0 0  βj k =z k −H k x˜j k (10)
+FCV =   0 1 0 0  (6) wherez k isthereceivedmeasurementvector.Theinnovation
+k 0 0 1 T errorcovariancematrix,S j ,isgivenby
+k
+0 0 0 1
+S j =H P ˜j H (cid:48) +C (11)
+whereFCV correspondstotheCVmodel.Whenitperforms k k k k k
+k
+a CT motion with a known turn rate ω, the state transition TheKalmangainK j isdefinedas
+k
+matrix(F =FCT)isgivenby[29]
+k k K j =P ˜j H (cid:48) (S j ) −1 (12)
+ sin(ωT) 1−cos(ωT) k k k k
+1 0 −
+ ω ω  Theoutputstateestimatexˆj oftheKalmanfilterjanditserror
+FC k T =    0 1− co c s o (ω s( T ω ) T) 0 − si s n in (ω (ω T T ) )    (7) covariancematrixP ˆj k aree k xpressedas
+0 1 
+ ω ω  xˆj = x˜j +K jβj (13)
+0 sin(ωT) 0 cos(ωT) k k k k
+P ˆj = [I−K j H ]P ˜j (14)
+k k k k
+ThiscorrespondstotheCTmodelwithaknownturnrate.
+whereIistheidentitymatrix.
+III. THEIMMALGORITHM AssumingtheIMMalgorithmtocontainonlytwoKalman
+The IMM algorithm is quite effective in tracking a maneu- filters,eachofwhichisusedtofindtheoutputstateestimate
+vering target, wherein the target maneuver is modeled as a ofthetargetaccordingtoaspecifictypeofmotion(e.g.non-
+combinationofdifferentmotionmodels.Theoutputateach maneuvering,referredtoasmode1,andmaneuveringmode,
+time step is a combination of the outputs of all the filters referredtoasmode2).Thealgorithmstartswithinitialvalues
+weighted by the corresponding mode probability, the mode forthemodeprobabilitiesµ1 andµ2 .Inaddition,afixed
+k−1 k−1
+probability being defined as the probability of the model matrixP tr isassumed,whose(i,j)thelement,p ij , i,j=1,2,
+matchingthetargetmotion.Ateachtimestep,thealgorithm istheprobabilityoftransitionfrommodeitomodej,wherein
+decidesastowhichmodelissuitabletopredictthemotionof the sum of the elements of each row in this matrix is unity.
+the target (non-maneuvering or maneuvering motion) based Themodeprobabilitiesaswellasthetransitionprobabilities
+onthemodeprobability.Theblockdiagramofasinglecycle are used to calculate the mixing probabilities µi|j (i,j =
+k−1
+of the IMM algorithm, which uses two Kalman filters each 1,2).Thesemixingprobabilitiesalongwiththefilteroutputs
+usingadifferentmotionmodel,isshowninFig.1[14]. xˆj ,j = 1,2ofthepreviouscycleareutilizedtocalculate
+k−1
+Thepredictedstatevectorx˜j foraKalmanfilterjisgiven theinputstothefilters,xˆ0j ,j = 1,2.Inotherwords,each
+k k−1
+by[30] filter input is calculated as a weighted sum of all the filter
+x˜j k =F k−1 xˆo k j −1 (8) o z utp is ut r s ec o e f iv th ed e , p e r a e c v h iou fi s lt c e y r c u le p . d W ate h s en its th o e u n tp e u w t m sta e t a e s , u x r ˆ e 1 m a e n n d t
+k k
+w pr h e e d r i e cte xˆ d o k j − e 1 rro i r s c t o h v e ar i i n a p n u c t e s m ta a t t e rix v , e P c ˜ t j o , r is fo g r ive th n e by filter j. The x (cid:51) ˆ2 k 2 k . , T a h re en c , om th p e u l t i e k d el f i r h o o m od th p e ro m b e a a b s i u li r t e ie m s e o n f ti t n h n e o fi v l a t t e i r o s n , β (cid:51) k 1 k , a a n n d d
+k thecorrespondingcovariancematrixS foreachfilter.Next,
+k
+P ˜j k =F k−1 P ˆo k j −1 F (cid:48) k−1 +(cid:48)Q k−1 (cid:48)(cid:48) (9) a th n e d m (cid:51) o 2 d ,µ e 1 prob a a n b d il µ it 2 ies , a a re nd u P pda . t F ed ina to lly µ , 1 k th a e n o d ut µ p 2 k u , ts u t s a i t n e g es (cid:51) ti 1 k -
+k k−1 k−1 tr
+where P ˆoj is the error covariance matrix of the input state matexˆ iscomputedasaweightedsumoftheoutputsofthe
+k−1 k
+vector for the filter j. The measurement innovation or the filters using the weights of the updated mode probabilities,
+94178 VOLUME8,2020
+
+--- Page 4 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+µ1 andµ2.Theoutputsofthefiltersandtheupdatedmode
+k k
+probabilitiesaresetastheinitialdataforthenextcycle.More
+details about the IMM algorithm can be found in [31]. The
+stepsoftheIMMalgorithmwithr filtersareasfollows
+1) Stateinteraction:Inthisstep,thepreviousstateesti-
+matesandtheircovariancematricesaremixedusingthe
+calculated mixing probabilities
+µi|j
+. The input state
+k−1
+vector of the jth filter,
+xˆoj
+and its covariance matrix
+k−1
+ˆoj
+P arecalculatedas
+k−1
+r
+xˆoj = (cid:88) xˆi µi|j i,j=1,··· ,r (15)
+k−1 k−1 k−1
+i=1
+FIGURE2. Targetmotions.
+and
+r
+P ˆoj = (cid:88) µi|j [P ˆi +[xˆi −xˆoj ] and
+k−1 k−1 k−1 k−1 k−1
+×
+i=1
+[xˆi −xˆoj ] (cid:48) ], i,j=1,··· ,r (16) P ˆ k = (cid:88)
+r
+µj k [P j k +[xˆj k −xˆ k ][xˆj k −xˆ k ] (cid:48) ] (23)
+k−1 k−1
+j=1
+where
+µi k | − j 1 = e¯ 1 j pijµi k−1 , i,j=1,··· ,r (17) C IV o . ns T i H de E r P a R t O ar P g O e S t E th D at T i R s A m CK ov IN in G g A in LG a O c R ir I c T u H la M r path around a
+fixedcenterataspeedvina2-Dspace.Thenitsangularspeed
+withthenormalizationconstant
+(ortheturnrate)ωisgivenby[32],[33]
+r
+(cid:88) v
+e¯j = p ij µi k−1 , i,j=1,··· ,r (18) ω= (24)
+R
+i=1
+where R is the radius of the circle. If v is assumed to be
+2) Modeprobabilityupdate:whenthemeasurementz
+k
+constant,thenangularspeed,i.e.,theturnrateisalsoconstant.
+is received, each Kalman filter uses its input state
+Thespeedvofthetargetcanbecalculatedateachtimestep
+and its error covariance matrix to calculate its output
+statexˆj
+anditserrorcovariancematrixP
+ˆj
+.Moreover,
+from the estimated velocity components in the output state
+k k estimatevectorgivenby
+boththeinnovationβj
+anditserrorcovariancematrix
+k (cid:113)
+S j [30] are used to calculate the likelihood of each v= ξ˙2+η˙2 (25)
+k
+filter,whichisgivenby
+where ξ˙ and η˙ are the velocity components in the x and y
+1
+(cid:51)j = exp[−0.5(βj ) (cid:48) (S j )(βj )], j=1,··· ,r directions. Therefore, our aim is to estimate the radius R of
+k (cid:113) k k k
+2πS j theturnatagiveninstant.
+k
+Forthispurpose,weassumethatthetargetmotionconsists
+(19)
+ofthreesub-motionsasdepictedinFig.2.Thesub-motions
+Then, the mode probability update for the jth filter is aretwostraight-linemotionsbeforeandaftertheturn,anda
+computedas circular motion during the turn with its center at (oξ ,oη ).
+k k
+1 Forthecircularpartofthemotion,weassumethatthetarget
+µj k = G (cid:51)j k e¯j, j=1,··· ,r (20) movesonthecircumferenceofacirclewithradiusR k ,such
+thatthereceivedmeasurementsareatthesamedistancefrom
+and
+thecenterofthecircle.
+r
+G= (cid:88) (cid:51)j e¯j (21) Suppose we have three consecutive measurements given
+k by(ξ k−2 ,η k−2 ),(ξ k−1 ,η k−1 ),and(ξ k ,η k ).Then,
+j=1
+3) Fusion of the outputs: The output state estimate xˆ R k−2 =R k−1 =R k (26)
+k
+ˆ
+and its error covariance matrix P k are computed as a Thenusingthedistanceformulabetweentwopointsand(26),
+fusionofallthefilteroutputstatesandtheircovariance wecandetermine(oξ ,oη ),thecoordinatesofthecenterand
+k k
+matricesweightedbytheupdatedmodelprobabilities, thentheradiusR .ThedetailedproofisinAppendixA.
+k
+respectively. The block diagram of the proposed tracking IMM algo-
+r rithm is shown in Fig. 3. The algorithm uses three Kalman
+xˆ = (cid:88) xˆjµj (22) filters, first of which uses the CV model to account for the
+k k k
+j=1 straight-line motion of the target, and the second and third
+VOLUME8,2020 94179
+
+--- Page 5 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+FIGURE3. Theblockdiagramofonecycleoftheproposedtrackingalgorithm.
+Algorithm1DeterminationoftheTurnRateω
+k Algorithm2TheProposedTrackingAlgorithm
+1: Input: (ξ ( k ξ˙ −2 , , η˙ η k ) −2 ), (ξ k−1 ,η k−1 ), (ξ k ,η k ), and 1: Input:P p tr rop ,(cid:48),Q,C,µ o ,ω o CTL,ω o CTR,N,andz k
+3 2 : : b F e in g d in :ω k k k 2 3 : : F In in it d ia : l x i ˆ z k a a ti n o d n P : ˆ k using z 1 and z 2 , find xˆ o and P ˆ o ∀ KF
+from(36)and(37)
+4: Obtainoξ using(A.5)
+5: Obtainoη k using(A.7) 4: Atk=3,Set:
+k
+6: ObtainR k using(A.8) xˆ1 k−1 = xˆ2 k−1 =xˆ3 k−1 =xˆ 0
+7: Obtainv k using(25) P ˆ1 = P ˆ2 =P ˆ3 =P ˆ
+8: Obtainω k using(24) k−1 k−1 k−1 o
+µ = µ
+9: end k−1 o
+ωCTL = ωCTL
+k−1 o
+ωCTR = ωCTR
+filters, denoted by CTL and CTR filters, use the CT model k−1 o
+to account for the left turning and right turning motions, 5: begintheprocessatk=3toN
+respectively. For left turns, the estimated turn rate takes a 6: forj=1:3do
+positive sign, while negative values are used for the right 7: Obtaine¯jandµi k | − j 1 using(18)and (17)
+turns [26]. A sign-changing block is located at the input of 8: Obtainxˆo k j −1 andP ˆo k j −1 using(15)and (16)
+theCTRfiltertoswitchthesignoftheturnrateprovidedto
+9: Obtain
+xˆj
+and P
+ˆj
+using (13) and (14) with
+theCTmodelinthatfiltertoaccountfortherightturn.The k k
+ωCTR andωCTL
+t
+t
+h
+h
+r
+a
+e
+t
+e
+ca
+m
+lc
+e
+u
+a
+l
+s
+a
+u
+te
+re
+s
+m
+th
+e
+e
+n
+r
+t
+a
+s
+d
+z
+i
+k
+u
+,
+s
+z
+R
+k
+k
+−
+a
+1
+t
+,
+t
+a
+h
+n
+e
+d
+cu
+z
+r
+k
+r
+−
+e
+2
+nt
+a
+t
+r
+i
+e
+m
+f
+e
+ed
+ste
+to
+p,
+t
+a
+h
+s
+e
+s
+b
+h
+l
+o
+o
+w
+ck
+n 10: O
+k
+b
+−
+ta
+1 inβj
+k a
+k
+n
+−
+d
+1
+S
+j
+k using(10)and(11)
+in Fig. 3. Furthermore, the speed of the target is calculated 11:
+Obtain(cid:51)j
+using(19)
+k
+from the output state estimate of the algorithm. This output 12:
+ObtainGandµj
+using(21)and(20)
+k
+state vector contains the estimated components for both the 13: endfor
+positionandvelocityofthetarget,wherethetargetspeedis 14: Computexˆ k andP ˆ k using(22)and(23)
+calculated using (25). The output of the last two mentioned 15: Computeω k usingAlgorithm1
+blocks,R k andv k ,arethenusedtocalculatetheturnrateω k , 16: Computeω k CTL andω k CTR using(27)and(28)
+whichinturnisusedinthenexttimestepofthealgorithm. 17: endtheprocess
+ωCTL = ω (27)
+k k
+ωCTR = −ω (28)
+k k
+discarded,andtheothertwopreviousmeasurementsz k−1 and
+whereω k CTL andω k CTR aretheleftandrightturnrates,respec- z k areretainedasz k−2 andz k−1 ,respectively,andtheprocess
+tively. Once
+ωCTL
+and
+ωCTR
+have been determined and the isrepeated.ThecompletealgorithmisgivenasAlgorithm2,
+k k
+new measurement z k is received, the measurement z k−2 is wherein (cid:48)Q(cid:48)(cid:48) and C are the covariance matrices for any
+94180 VOLUME8,2020
+
+--- Page 6 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+valueofk,and Forallthealgorithms,theKalmanfiltersareinitializedby
+(cid:34) (cid:35) using the first two consecutive measurements of the target
+σ2 0
+Q = Q (29) position [16]. Let the first two consecutive measurements
+0 σ2
+Q receivedbez 1 andz 2 givenby
+C = (cid:20)σ 0 C 2 σ 0 2 (cid:21) (30) z 1 = [zξ 1 ,zη 1 ] (cid:48) (34)
+whereσ andσ are,respectively,th
+C
+estandarddeviationsof
+z
+2
+= [zξ
+2
+,zη
+2
+] (cid:48) (35)
+Q C
+theprocessnoiseandmeasurementnoiseinxorydirections. wherezξ andzξ arethemeasuredpositionsinthex direc-
+1 2
+ItistobepointedoutthatifonlyoneKFisemployedfor tion at time k = 1,2, respectively, while zη and zη are
+1 2
+the turningmotion using the CTmodel, then the modelcan the measured positions in the y direction at time k = 1,2,
+be designed either with a positive value or a negative value respectively.Then,theinitialestimatestatevectorxˆ o isgiven
+of the turn rate. For example, in the former case, the model by
+c
+a
+a
+b
+n
+le
+e
+t
+s
+o
+ti
+m
+m
+a
+a
+k
+te
+e
+t
+a
+he
+go
+tu
+o
+r
+d
+n
+e
+r
+s
+a
+t
+t
+i
+e
+m
+o
+a
+n
+te
+ly
+in
+fo
+th
+r
+e
+le
+c
+f
+a
+t
+s
+t
+e
+ur
+o
+n
+f
+s,
+ri
+b
+g
+u
+h
+t
+t
+w
+tu
+i
+r
+l
+n
+l
+s
+n
+.
+o
+T
+t
+h
+b
+i
+e
+s xˆ o =[zξ 2 ,
+zξ
+2
+−
+T
+zξ
+1,zη 2 ,
+zη
+2
+−
+T
+zη
+1] (cid:48) (36)
+is due to the fact that when the target performs a right turn,
+whereT isthesamplingperiod.Theinitialerrorcovariance
+thealgorithmwillassignahigherweighttotheKFwiththe ˆ
+matrixP isgivenby[16]
+CVmodel,thusresultinginalessaccuratepredictionofthe o
+target position. Hence, it is not appropriate to use only one  σ2 σ2/T 0 0 
+C C
+KFforestimatingboththerightandleftturnrates. P ˆ o =    σ C 2 0 /T 2σ C 2 0 /T2 σ 0 2 σ2 0 /T    (37)
+C C
+V. PERFORMANCEEVALUATION 0 0 σ2/T 2σ2/T2
+C C
+In this section, the performance of the proposed algorithm
+whereσ isthestandarddeviationofthemeasurementnoise.
+as well as that of the existing linear IMM algorithms are C
+Assumingthatthetargetmovesnearlyinastraight-lineatthe
+comparedandevaluatedusingthefollowingmetrics.
+beginningofthetrackingprocess,theinitialmodeprobability
+Thenormalizedpositionerror(NPE)[18]isusedtocom-
+isgivenby[18]
+parethetrackingaccuracyoftheposition,andisgivenby
+
+NPE k = (cid:113) (cid:113) M 1 M 1 (cid:80) (cid:80) M i= M i= 1 1 (z ( i ξ ξˆ k k i− − ξ ξ k k i i ) ) 2 2 + + ( ( η z ˆ iη k i k − − η η k i k i )2 )2 (31) µ o =   0 r . 0 6 − .4 1 s o t t r h i e a r gh m t o l t i i n o e n m s otion (38)
+where ξˆi and ηˆi are the estimated positions in the x and y wherer isthetotalnumberoffiltersineachofthefourIMM
+k k
+directions,respectively,whileξiandηi arethecorresponding algorithmsunderconsideration.
+k k
+truepositions,zi
+ξ k
+andzi
+η k
+arethemeasuredpositions,andM WeuseasamplingperiodT of1second,whichconforms
+isthenumberofrunsperformedintheMonte-Carlosimula- to the sampling period of modern radar systems [11]. The
+tion.WhenthevalueofNPEislessthanunity,theestimator standarddeviationσ C ofthemeasurementnoisetobe10m.
+performanceisacceptable;ontheotherhand,whenitisnot Monte-Carlosimulationsof100runsisperformedassuming
+lessthanunity,theestimatorperformanceisnotacceptable, the noise for all the algorithms to be the same, for fair
+atthistimestep. comparison.
+Another test to check whether the error of the state is The three algorithms that are used in the comparison are
+well-suitedwiththecorrespondingcovariancematrixofthe describedbelow
+estimatedstateornot,whichistheaveragenormalizedesti- The first algorithm, which we denote by A1, is an IMM
+mationerrorsquared(ANEES)test[28].Itisgivenby algorithmthatemploysthreefilters;oneofthefiltersusesthe
+CVmodelandtheothertwotheCTmodelwithknownturn
+M
+ANEES = 1 (cid:88) (xi −xˆi) (cid:48) (P ˆi) −1(xi −xˆi) (32) ratesof±2.5◦/s.Thestandarddeviationfortheprocessnoise
+k Mn
+x i=1
+k k k k k forallthemodelsisassumedtobe0.003m/s2.Thetransition
+probabilitymatrixofthealgorithmisassumedas
+where xi and xˆi are the true and estimated state vectors,
+respectiv
+k
+ely,and
+k
+P
+ˆi
+istheestimatederrorcovariancematrix
+ 0.9 0.05 0.05 
+ofthetargetattheti
+k
+mestepkintheMonte-Carlorunnumber
+PA
+tr
+1 = 0.05 0.9 0.05 (39)
+0.05 0.05 0.9
+i,whilen isthedimensionofthestatevector.Thelogarith-
+x
+micANEES(LANEES)isgivenby Thesecondalgorithm,whichwedenotebyA2,isthesame
+as A1 except for the turn rates of the CT models that is
+LANEES =log (ANEES ) (33)
+k 10 k assumedtobe±3.5◦/s.
+is more expressive in terms of displaying the results [25]. The third algorithm [18], which we denote as A3, is also
+When the value of LANEES is equal or less than zero, an IMM algorithm but employs only two filters; one uses a
+theestimatorissaidtobeconsistentatthistimestep. CV model, and the other a turning rate model that utilizes
+VOLUME8,2020 94181
+
+--- Page 7 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+thetarget’sposition,velocity,andaccelerationtoestimatethe
+targetposition,whichwedenoteby3CTR.The3CTRmodel
+isgivenby[18]
+(cid:20) (cid:21)
+A 0
+F3CTR = f (40)
+0 A
+f
+where
+ 1 ω−1sin(ωT) ω−2(1−cos(ωT)) 
+A f = 0 cos(ωT) ω−1sin(ωT)  (41)
+0 −ωsin(ωT) cos(ωT)
+Itscorrespondingdisturbancematrixcanbeexpressedas
+ 0.167T3 0 
+(cid:48) f =  0.5T2 0 (42)
+T 0
+The initial value of the turn rate is assumed to be 0.2◦/s.
+ThestandarddeviationfortheprocessnoiseforboththeCV
+model and the 3CTR model is assumed to be 0.1m/s2 and
+10.5m/s2,respectively,andthetransitionprobabilitymatrix
+ofthealgorithmtobe[18]
+(cid:20) 0.98 0.02 (cid:21)
+PA3 = (43)
+tr 0.02 0.98
+Inordertocomparetheperformanceofouralgorithmwith
+thatofothertwoalgorithms,weassumethatthetargetmoves
+ataspeedof100m/swithwhiteGaussianatmosphericnoise
+havingzeromeanandstandarddeviationof0.1m/s2inboth
+thex andydirections.Theparameter(standarddeviation)of
+the process noise is tuned to provide good tracking perfor-
+mance for given statistics of the atmospheric and measure-
+mentnoises.Inourproposedalgorithm,ithasbeenfoundthat
+thestandarddeviationoftheprocessnoiseof0.003m/s2 for
+allthefiltersinallthescenariosforanatmosphericnoisewith
+a standard deviation of 0.1m/s2 and 10m for the standard
+deviationofmeasurementnoiseprovidesgoodperformance.
+However, if the levels of the atmospheric and measurement
+noises change, the parameter of the process noise in the
+proposed algorithm needs to be re-tuned. After having con-
+sidered a number of probability transition matrices, it has
+been found that the best transition probability matrix from
+thepointofviewofbothNPEandLANEESisgivenby
+ 0.9 0.05 0.05 
+P p
+tr
+rop = 0.1 0.8 0.1 (44)
+0.1 0.1 0.8
+For details regarding the above choice, see Appendix B.
+We choose the initial values of the turn rates of the two CT
+modelstobe0.2◦/sand−0.2◦/s.
+Comparison is now carried out under five scenarios, FIGURE4. Theresultsofthefirstscenarioforatargetthatperformsturns
+of1.5◦/s,and2.5◦/s.(a)Truetargettrajectory.(b)Normalizedposition
+inwhichthetargetsperformsvariousmaneuvers.Thesesce-
+error.(c)Consistencytest.
+narios along with the corresponding performance results in
+terms of NPE and consistency, as measured by LANEES,
+are shown in the sub-figures (a), (b), and (c), respectively, theleftwithaturnrateof1.5◦/sfor15seconds.Afterwards,
+inFig.4toFig.8. itmovesagaininastraight-linemotionfor10seconds,and
+In the first scenario, the target starts with a straight-line thenperformsanotherturntotheleftwithaturnrateof2.5◦/s
+motion for 15 seconds, then performs the first maneuver to for30seconds.Finally,itgoesinastraight-linemotionfora
+94182 VOLUME8,2020
+
+--- Page 8 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+FIGURE5. Theresultsofthesecondscenarioforatargetthatperforms FIGURE6. Theresultsofthethirdscenarioforatargetthatperforms
+turnsof1.5◦/s,and3◦/s.(a)Truetargettrajectory.(b)Normalized turnsof1.5◦/s,and3.5◦/s.(a)Truetargettrajectory.(b)Normalized
+positionerror.(c)Consistencytest. positionerror.(c)Consistencytest.
+further 10 seconds. This target trajectory of this scenario is It is seen from Fig. 4b that all the four algorithms
+shownFig.4a.Theinitialstatevectorisassumedtobe exhibit acceptable performance in terms of NPE. However,
+asexpected,A1exhibitsthebestperformance,particularlyat
+x =[12500m, −70.5m/s, 10000m, −70.5m/s] (cid:48) (45) the second maneuver in view of the fact that the algorithm
+o
+VOLUME8,2020 94183
+
+--- Page 9 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+design matches the target maneuver. In addition, it is seen
+from Fig. 4c that throughout the tracking period, LANEES
+value is always negative for all the algorithms and hence,
+the algorithms are consistent, except for A3, which has a
+positivevalueatthebeginningofthesecondmaneuver.
+Thesecondscenarioisthesameasthefirstoneexceptthat
+the second turn rate of the target is increased to 3◦/s. This
+scenario is depicted in Fig. 5a. From Fig. 5b, it is observed
+that the proposed algorithm and A2 exhibit acceptable per-
+formance throughout the tracking period. The performance
+ofA1deteriorates,asexpected,comparedtoitsperformance
+in the previous scenario, since the turn rate of the target is
+outsidetherangeforwhichthealgorithmisdesigned.Algo-
+rithm A2 provides the best performance, as expected, since
+theturnrateofthetargetiscoveredintheregionforwhichthe
+algorithmisdesigned.TheperformanceofA3isacceptable
+throughout the tracking period except at the beginning of
+thesecondmaneuver.AsseenfromFig.5c,theconsistencyof
+A1isnotacceptableduringthesecondmaneuver,asistobe
+expected. The other algorithms are consistent, but A3 again
+hasapositivevalueatthebeginningofthesecondmaneuver.
+In the third scenario, the second turn rate is increased to
+3.5◦/s. This scenario is shown in Fig. 6a. It is seen from
+Figs 6b and 6c that A1 cannot track the second maneu-
+ver. As expected, A2 gives the best performance, since the
+turnrateofthetargetmatcheswithoneoftheturnratesfor
+whichthealgorithmhasbeendesigned.Theperformanceof
+theproposedalgorithmaswellasthatofA3intermsofNPE
+and LANEES are acceptable; however, as in the previous
+scenarios, A3 exhibits positive value for LANEES at the
+beginningofthesecondmaneuver.
+Inthefourthscenario,thetargetperformstwomaneuvers
+thefirsttotherightataturnrateof−3◦/sandthesecondto
+theleftataturnrateof2◦/s.ThisscenarioisshowninFig.7a.
+FromFig.7b,itisseenthattheperformanceofbothA1and
+A2 is better than that of A3 and the proposed one. As is
+to be expected, the performance of A1 is the best during
+the second maneuver, since the target turn rate is close to
+oneoftheturnratesemployedinthedesignofthealgorithm.
+However, the performance of A2 is the best during the first
+maneuverbecausethetargetturnrateisclosetooneofturn
+ratesusedinthedesignofthisalgorithm.Boththeproposed
+algorithmandA3exhibitacceptableperformanceintermsof
+NPE; however,A3 hasvalue ofmore than unityfor NPEat
+the beginning of the first maneuver. It is seen from Fig. 7c
+that all the algorithms have acceptable consistency, except
+thatA1andA3havepositivevaluesforLANEESattheend
+andthebeginningofthefirstmaneuver,respectively.
+Thefifthscenarioisthesameasthefourthscenarioexcept FIGURE7. Theresultsofthefourthscenarioforatargetthatperforms
+that the turn rate of the first maneuver is −4.5◦/s and that turnsof−3◦/s,and2◦/s.(a) Truetargettrajectory.(b)Normalized
+positionerror.(c)Consistencytest.
+ofthesecondis4.5◦/s.ThisscenarioisdepictedinFig.8a.
+FromFigs8band8citisseenthat,asexpected,bothA1and
+A2areunabletotrackthetargetforeitherofthemaneuvers, metrics.However,A3exhibitsapositivevalueforLANEES
+since the target turn rate is outside the ranges for which at the beginning of both maneuvers, whereas the proposed
+these algorithms are designed. Both the proposed algorithm algorithmhasacceptableconsistencythroughoutthetracking
+and A3 show satisfactory performance in terms of the two process.
+94184 VOLUME8,2020
+
+--- Page 10 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+FIGURE8. Theresultsofthefifthscenarioforatargetthatperformsturns FIGURE9. Theresultsofthefirstscenarioforatargetthatperformsturns
+of−4.5◦/s,and4.5◦/s.(a)Truetargettrajectory.(b)Normalizedposition of−2.5◦/s,and3.25◦/s.(a)Truetargettrajectory.(b)Normalizedposition
+error.(c)Consistencytest. error.(c)Consistencytest.
+It is noticed from these scenarios that the algorithms
+A1 and A2 exhibit a performance better than that of A3 or performance may not be acceptable or they may even fail
+theproposedalgorithm,whenthetargetturnrateiscovered to track the target. Further, it is observed that A3 and the
+intheregionforwhichthesealgorithmshavebeendesigned. proposedalgorithmexhibitacceptableperformanceinallthe
+However, when the turn rate is outside the range, then their scenarios.But,theperformanceoftheproposedalgorithmis
+VOLUME8,2020 94185
+
+--- Page 11 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+theseresults,theproposedalgorithmrepresentsapromising
+performance in realistic scenarios, where prior information
+aboutthetargetturnrateisrarelyavailable.
+VI. CONCLUSION
+In this paper, we have proposed an algorithm to track a
+maneuveringtarget,whentheinformationonthetargetturn
+rateisnotaprioriknownandthesysteminformationabout
+only the position of the target. The turn rate is obtained
+adaptively based on the speed of the target and the radius
+of the turn using the interacting multiple model framework.
+Wehaveproposedasimplemethodofcomputingtheradius
+of the turn using the previous three consecutive measure-
+ments, assuming that the target performs a circular maneu-
+ver.Adetailedstudyhasbeencarriedouttochooseanappro-
+priatetransitionprobabilitymatrix,sothattheperformanceof
+theproposedalgorithmisacceptableintermsoftwometrics,
+normalizedpositionerror(NPE)andthelogarithmicaverage
+normalizedestimationerrorsquared(LANEES).Acompar-
+isonoftheproposedalgorithmwithtwoexistingalgorithms
+has been carried out. One of these two algorithms assumes
+thatthetargetturnrateisknownandtheotheroneestimates
+itduringthetrackingprocess.Allthealgorithmsinthiscom-
+parisonuselinearmodels,namely,theconstantvelocity(CV)
+andcoordinatedturn(CT)models.Basedonanumberofsce-
+narioswithvarioustargetturnrates,ithasbeenshownthatthe
+proposedalgorithmexhibitssatisfactoryperformanceinallof
+the scenarios considered, and its performance is superior to
+thatoftheadaptivealgorithm.Further,whenanunexpected
+maneuverisperformedbythetarget,andthetargetturnrate
+isnotcoveredbythealgorithmsthathavebeendesignedwith
+apriorinformationonthetargetturnrate,theperformanceof
+thesealgorithmsdeterioratesorthealgorithmsmayevenfail
+to track the target, whereas the proposed algorithm always
+exhibits a satisfactory performance. These results foster the
+use of the proposed algorithm in real life situations, where
+the information on neither the target turn rate nor the range
+rateisavailabletothetrackingalgorithm.
+APPENDIXA
+DETERMINATIONOFTHERADIUSOFTHETURNUSING
+THREEMEASUREMENTS
+In this derivation, we assume that the target performs a CT
+motion during the maneuvering time on the circumference
+of a circle with radius R
+k
+, its center at (oξ
+k
+,oη
+k
+) and the
+target moves in a straight line motion before and after the
+maneuver as shown in Fig. 2. Assume that three successive
+measurementsarereceived.Thesemeasurementsaredefined
+t F u IG rn U s R o E f 1 3 0 ◦ . /s T , h a e nd re − su 2 l ◦ ts /s o . f (a th ) e T s ru e e co t n a d rg s e c t e t n ra a j r e io ct f o o r r y. a (b ta ) r N g o et rm th a a l t iz p e e d rforms as (ξ k−2 ,η k−2 ), (ξ k−1 ,η k−1 ), and (ξ k ,η k ). Therefore, these
+measurementswillbeatthesamedistancefromthecenterof
+positionerror.(c)Consistencytest.
+theturnduringthemaneuvermotion;thus
+alwaysbetterthanthatofA3duringallthescenariosinterms R k−2 =R k−1 =R k (A.1)
+ofbothNPEandtheconsistency,whereastheconsistencyof
+Then,constructtwoequationssuchas
+A3mayhaveapositivevalueatthebeginningofamaneuver,
+when the turn rate is outside the range of ±2◦/s. Based on R k−2 = R k−1 (A.2)
+94186 VOLUME8,2020
+
+--- Page 12 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+oη = (ξ k 2 −2 −ξ k 2 −1 +η k 2 −2 −η k 2 −1 )(ξ k−1 −ξ k )−(ξ k 2 −1 −ξ k 2+η k 2 −1 −η k 2)(ξ k−2 −ξ k−1 ) (A.7)
+k 2((η k−2 −η k−1 ))(ξ k−1 −ξ k )−2((η k−1 −η k ))(ξ k−2 −ξ k−1 )
+R k−1 = R k (A.3) For purpose of illustration, we consider the following two
+othertransitionmatrices
+From(A.3)weget  0.95 0.025 0.025 
+(ξ k −oξ k )2+(η k −oη k )2 =(ξ k−1 −oξ k )2+(η k−1 −oη k )2 P2 tr = 0 0 . . 2 2 0 0 .8 0 0 .8  (B.2)
+(A.4)
+and
+ 0.95 0.025 0.025 
+or
+P3
+tr
+= 0.15 0.8 0.05 (B.3)
+oξ = (ξ k 2 −1 −ξ k 2)+(η k 2 −1 −η k 2)−2oη(η k−1 −η k ) 0.15 0.05 0.8
+k 2(ξ k−1 −ξ k ) and compare their performance with that of P1 under two
+tr
+(A.5) differentscenarios.
+The first scenario is shown in Fig. 9a. The target starts
+Similarly,from(A.2)wecanderivethat
+with a straight-line motion for 15 seconds, then performs
+the first maneuver to the right with a turn rate of −2.5◦/s
+oξ = (ξ k 2 −2 −ξ k 2 −1 )+(η k 2 −2 −η k 2 −1 )−2oη(η k−2 −η k−1 ) for15seconds.Afterwards,itmovesagaininastraight-line
+k 2(ξ k−2 −ξ k−1 ) motionfor10seconds,andthenperformsanothermaneuver
+(A.6) totheleftwithaturnrateof3.25◦/sfor30seconds.Finally,
+itgoesinastraight-linemotionforafurther10seconds.The
+Hence, from (A.5) and (A.6) we get (A.7), as shown at the
+initialstatevectorusedis
+topofthispage.
+x =[12500m, −70.5m/s, 10000m, −70.5m/s] (cid:48) (B.4)
+Therefore,from(A.5)and(A.7),wegetthecenterposition o
+(oξ k ,oη k ). We now calculate the radius R k using (oξ k ,oη k ) ThealgorithmwithP1 tr showsabettertrackingperformance
+and(ξ k ,η k )asthelastreceivedinformationaboutthetarget. duringthemaneuversintermsofNPE,asshowninFig.9b,
+comparedtothatofthealgorithmwithP2 orP3.Itisclear
+(cid:113) tr tr
+R k = (ξ k −oξ k )2+(η k −oη k )2 (A.8) fromFig.9cthealgorithmwithP1 tr preservesitsconsistency
+throughoutthetrackingperiod,whiletheothertwodonotin
+APPENDIXB thesensethatLANEESforthesetwobecomespositiveduring
+DETERMINATIONOFTHESTATETRANSITIONMATRIX themaneuvers.
+As mentioned earlier, the target has three modes of motion, Thesecondscenarioisthesameasthefirstoneexceptfor
+namely, straight-line motion (SL), left turning motion (LT), the maneuveringturn rates; thefirst maneuver isperformed
+and right turning motion (RT), which will be referred to as
+totheleftwithaturnrateof3◦/sandthesecondmaneuver
+modes 1, 2, and 3, respectively. The element p , i (cid:54)= j in totherightwithaturnrateof−2◦/s,asshowninFig.10a.
+ij
+thetransitionprobabilitymatrixP representstheprobability ItisseefromFig.10bandFig.10cthattheconclusionsmade
+tr
+of the target transiting from mode i to mode j, while p regardingNPEandconsistencyofthealgorithmwithP1,P2
+ii tr tr
+represents the probability of the target continuing to be in and P3 for the previous scenario hold good for the present
+tr
+mode i. It has been found in [2] that p should be between scenarioalso.
+ii
+0.8and0.98forgoodtrackingresults. From the above two scenarios, it is clear that the perfor-
+We assume that p and p should have values less than manceofthealgorithmintermsofbothNPEandLANEES
+22 33
+p in view of the fact that we adaptively estimate ω and isbetterwithP1 asthetransitionprobabilitymatrixthanwith
+11 tr
+thepredictedpositionbytheCTmodelsarenotprecise.The P2 orP3.SimilarperformanceofP1 hasbeenobservedin
+tr tr tr
+otherelementsofthismatrixareadjustedsuchthatthesum otherscenariosandwithothertransitionprobabilitymatrices,
+of the elements in each row is equal to unity. A number butarenotreportedhere.Inviewofthesefindings,wechoose
+of different transition matrices and various scenarios with P1 astheproposedtransitionprobabilitymatrixanddenote
+tr
+prop
+different maneuvers have been considered, and it has been itbyP tr .
+found that the best performance in terms of both NPE and
+LANEESmetricsisgivenby REFERENCES
+[1] X. R. Li and V. P. Jilkov, ‘‘Survey of maneuvering target tracking:
+ 0.9 0.05 0.05  Decision-basedmethods,’’Proc.SPIE,vol.4728,Aug.2002,pp.511–534.
+P1
+tr
+= 0.1 0.8 0.1 (B.1) [2]
+t
+Y
+o
+.
+T
+B
+r
+a
+a
+r
+c
+-S
+ki
+h
+n
+a
+g
+lo
+a
+m
+nd
+,X
+N
+.
+a
+R
+v
+.
+ig
+L
+a
+i
+t
+,
+i
+a
+o
+n
+n
+d
+:T
+T
+h
+.K
+eo
+i
+r
+ru
+y
+b
+A
+a
+l
+r
+g
+a
+o
+ja
+r
+n
+it
+,
+h
+E
+m
+s
+s
+ti
+a
+m
+n
+a
+d
+ti
+S
+o
+o
+n
+f
+W
+tw
+i
+a
+th
+re
+A
+.
+p
+N
+p
+e
+l
+w
+ica
+Y
+ti
+o
+o
+r
+n
+k
+s
+,
+0.1 0.1 0.8
+NY,USA:Wiley,2004.
+VOLUME8,2020 94187
+
+--- Page 13 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+[3] Y.Bar-ShalomandK.Birmiwal,‘‘Variabledimensionfilterformaneuver- [28] S. V. Bordonaro, P. Willett, and Y. Bar-Shalom, ‘‘Unbiased tracking
+ingtargettracking,’’IEEETrans.Aerosp.Electron.Syst.,vols.AES–18, withconvertedmeasurements,’’inProc.IEEERadarConf.,May2012,
+no.5,pp.621–629,Sep.1982. pp.0741–0745.
+[4] T.KirubarajanandY.Bar-Shalom,‘‘KalmanfilterversusIMMestimator: [29] R.A.BestandJ.P.Norton,‘‘Anewmodelandefficienttrackerforatarget
+Whendoweneedthelatter?’’IEEETrans.Aerosp.Electron.Syst.,vol.39, withcurvilinearmotion,’’IEEETrans.Aerosp.Electron.Syst.,vol.33,
+no.4,pp.1452–1457,Oct.2003. no.3,pp.1030–1037,Jul.1997.
+[5] X.R.LiandY.Bar-Shalom,‘‘Designofaninteractingmultiplemodel [30] M.B.Rhudy,R.A.Salguero,andK.Holappa,‘‘AKalmanfilteringtutorial
+algorithmforairtrafficcontroltracking,’’IEEETrans.ControlSyst.Tech- forundergraduatestudents,’’Int.J.Comput.Sci.Eng.Surv.,vol.8,no.1,
+nol.,vol.1,no.3,pp.186–194,Sep.1993. pp.1–18,2017.
+[6] M.Silbert,S.Sarkani,andT.Mazzuchi,‘‘Comparingthestateestimatesof [31] E.Mazor,A.Averbuch,Y.Bar-Shalom,andJ.Dayan,‘‘Interactingmul-
+aKalmanfiltertoaperfectIMMagainstamaneuveringtarget,’’inProc. tiplemodelmethodsintargettracking:Asurvey,’’IEEETrans.Aerosp.
+14thInt.Conf.Inf.Fusion,Jul.2011,pp.1–5. Electron.Syst.,vol.34,no.1,pp.103–123,Jan.1998.
+[32] D.S.Pietro.RelatingAngularandRegularMotionVariables.Accessed:
+[7] G.AckersonandK.Fu,‘‘Onstateestimationinswitchingenvironments,’’
+Nov. 2019. [Online]. Available: https://www.khanacademy.org/science/
+IEEETrans.Autom.Control,vol.AC-15,no.1,pp.10–17,Feb.1970.
+physics/torque-angular-momentum/rotational-kinematics/v/relating-
+[8] C. Chang and M. Athans, ‘‘State estimation for discrete systems with
+angular-and-regular-motion-variables
+switchingparameters,’’IEEETrans.Aerosp.Electron.Syst.,vol.AES-14,
+[33] A.RuinaandR.Pratap.(Oct.2019).IntroductiontoStaticsandDynamics.
+no.3,pp.418–425,May1978.
+[Online].Available:http://ruina.tam.cornell.edu/Book
+[9] J.K.Tugnait,‘‘Commentson,’’stateestimationfordiscretesystemswith
+switchingparameters,’’IEEETrans.Aerosp.Electron.Syst.,vol.AES-15, MOHAMEDELTOUKHYreceivedtheB.Sc.and
+no.3,p.464,May1979. M.Sc.degreesinelectricalengineeringfromthe
+[10] H.A.P.BlomandY.Bar-Shalom,‘‘Theinteractingmultiplemodelalgo- MilitaryTechnicalCollege(MTC),Cairo,Egypt,
+rithmforsystemswithmarkovianswitchingcoefficients,’’IEEETrans. in 2005 and 2013, respectively. He is currently
+Autom.Control,vol.AC-33,no.8,pp.780–783,Aug.1988. pursuingthePh.D.degreewiththeElectricaland
+[11] G. Xie, L. Sun, T. Wen, X. Hei, and F. Qian, ‘‘Adaptive transition Computer Engineering Department, Concordia
+probability matrix-based parallel IMM algorithm,’’ IEEE Trans. Syst., University,Montreal,QC,Canada.From2005to
+Man, Cybern. Syst., early access, Jun. 27, 2019, doi: 10.1109/TSMC. 2017,hewasaResearchAssistantwiththeTech-
+2019.2922305.
+nicalResearchCenter(TRC),Cairo.Hisresearch
+[12] K.WatanabeandS.G.Tzafestas,‘‘Generalizedpseudo-bayesestimation interestsincludeadaptivefilters,dataassociation,
+and detection for abruptly changing systems,’’ J. Intell. Robotic Syst.,
+anddataprocessing.Hiscurrentresearchinterestincludestrackingmultiple
+vol.7,no.1,pp.95–112,Feb.1993.
+targetsinaclutteredenvironment.HehasbeenamemberoftheLaboratoryof
+[13] X.-R.LiandY.Bar-Shalom,‘‘Multiple-modelestimationwithvariable
+SignalProcessing,ConcordiaUniversity,since2018.Hereceivedanumber
+structure,’’ IEEE Trans. Autom. Control, vol. 41, no. 4, pp.478–493,
+ofawardssuchastheEgyptianMoDScholarshipintheperiods,from2010to
+Apr.1996.
+2013andfrom2018to2021.
+[14] A.F.Genovese,‘‘Theinteractingmultiplemodelalgorithmforaccurate
+stateestimationofmaneuveringtargets,’’JohnsHopkinsAPLTech.Dig., M. OMAIR AHMAD (Life Fellow, IEEE)
+vol.22,no.4,pp.614–623,2001. received the B.Eng. degree in electrical engi-
+[15] A.Munir,J.A.Mirza,andA.Q.Khan,‘‘Parameteradjustmentinthe neering from Sir George Williams University,
+turnratemodelsintheinteractingmultiplemodelalgorithmtotracka Montreal, QC, Canada, and the Ph.D. degree in
+maneuveringtarget,’’inProc.IEEEInt.MultiTopicConf.INMICTechnol. electricalengineeringfromConcordiaUniversity,
+21stCentury,Dec.2001,pp.262–266. Montreal.From1978to1979,hewasaFaculty
+[16] Y.He,J.Xiu,andX.Guan,RadarDataProcessingWithApplications. MemberwiththeNewYorkUniversityCollege,
+Singapore:Wiley,2016. Buffalo,NY,USA.In1979,hejoinedtheFaculty
+[17] Y.Bar-Shalom,Multitarget-MultisensorTracking:AdvancedApplications. ofConcordiaUniversity,asanAssistantProfessor
+Norwood,MA,USA,ArtechHouse,1990,p.391. ofcomputerscience.Subsequently,hejoinedthe
+[18] A.MunirandD.P.Atherton,‘‘Maneuvringtargettrackingusingdifferent DepartmentofElectricalandComputerEngineering,ConcordiaUniversity,
+turnratemodelsintheinteractingmultiplemodelalgorithm,’’inProc.34th wherehewastheChair,from2002to2005,whereheiscurrentlyaProfessor.
+IEEEConf.Decis.Control,Dec.1995,pp.2747–2751. HewasaGuestProfessorwithSoutheastUniversity,Nanjing,China.Hewas
+[19] R. Visina, Y. Bar-Shalom, and P. Willett, ‘‘Multiple-model estimators a Founding Researcher of Micronet and a Canadian Network of Centers
+fortrackingsharplymaneuveringgroundtargets,’’IEEETrans.Aerosp. of Excellence, from 1990 to 2004. He is also the Concordia University
+Electron.Syst.,vol.54,no.3,pp.1404–1414,Jun.2018.
+ResearchChair(TierI)ofmultimediasignalprocessing.Hehasauthored
+[20] X.Yuan,C.Han,Z.Duan,andM.Lei,‘‘Adaptiveturnrateestimationusing
+intheareaofsignalprocessing.Heholdsfourpatents.Hiscurrentresearch
+rangeratemeasurements,’’IEEETrans.Aerosp.Electron.Syst.,vol.42,
+interestsincludetheareasofimageandspeechprocessing,biomedicalsignal
+no.4,pp.1532–1541,Oct.2006.
+processing, watermarking, biometrics, video signal processing and object
+[21] L.ZhuandX.Cheng,‘‘Highmanoeuvretargettrackingincoordinated
+detectionandtracking,deeplearningtechniquesinsignalprocessing,and
+turns,’’IETRadar,SonarNavigat.,vol.9,no.8,pp.1078–1087,Oct.2015.
+fast signal transforms and algorithms. In 1988, he was a member of the
+[22] V.B.Frencl,J.B.R.doVal,R.S.Mendes,andY.C.Zuñiga,‘‘Turnrate
+AdmissionandAdvancementCommitteeoftheIEEE.Hewasarecipient
+estimationusingrangeratemeasurementsforfastmanoeuvringtracking,’’
+ofnumeroushonorsandawards,includingtheWightonFellowshipfromthe
+IETRadar,SonarNavigat.,vol.11,no.7,pp.1099–1107,Jul.2017.
+SandfordFlemingFoundation,aninductiontoProvostsCircleofDistinction
+[23] F.A.AdministrationandU.S.F.A.Administration,Pilot’sHandbookof
+forCareerAchievements,andtheAwardofExcellenceinDoctoralSuper-
+AeronauticalKnowledge.NewYork,NY,USA:Skyhorse,2016.
+visionfromtheFacultyofEngineeringandComputerScience,Concordia
+[24] B.Han,H.Huang,L.Lei,C.Huang,andZ.Zhang,‘‘AnimprovedIMM
+University. He was the Local Arrangements Chairman of the 1984 IEEE
+algorithmbasedonSTSRCKFformaneuveringtargettracking,’’IEEE
+Access,vol.7,pp.57795–57804,2019. International Symposium on Circuits and Systems. He has served as the
+ProgramCo-Chairforthe1995IEEEInternationalConferenceonNeural
+[25] M. Zarei-Jalalabadi and S. M.-B. Malaek, ‘‘Modification of unscented
+Kalman filter using a set of scaling parameters,’’ IET Signal Process., NetworksandSignalProcessing,the2003IEEEInternationalConference
+vol.12,no.4,pp.471–480,Jun.2018. onNeuralNetworksandSignalProcessing,andthe2004IEEEInternational
+[26] X.RongLiandV.P.Jilkov,‘‘Surveyofmaneuveringtargettracking.Part MidwestSymposiumonCircuitsandSystems.HewastheGeneralCo-Chair
+I.Dynamicmodels,’’IEEETrans.Aerosp.Electron.Syst.,vol.39,no.4, ofthe2008IEEEInternationalConferenceonNeuralNetworksandSignal
+pp.1333–1364,Oct.2003. Processing. He is the Chair of the Montreal Chapter IEEE Circuits and
+[27] A.FarinaandS.Pardini,‘‘Surveyofradardata-processingtechniquesin Systems Society. He was an Associate Editor of the IEEE TRANSACTIONS
+air-traffic-controlandsurveillancesystems,’’IEEProc.FCommun.,Radar ONCIRCUITSANDSYSTEMS—I:FUNDAMENTALTHEORYANDAPPLICATIONS,from
+SignalProcess.,vol.127,no.3,pp.190–204,Jun.1980. 1999to2001.
+94188 VOLUME8,2020
+
+--- Page 14 ---
+M.Eltoukhyetal.:AdaptiveTurnRateEstimationforTrackingaManeuveringTarget
+M. N. S. SWAMY (LifeFellow,IEEE)received bookchapters.HeservedasamemberfortheBoardofGovernorsofthe
+theB.Sc.degree(Hons.)inmathematicsfromthe CASSociety.HewasaFoundingMemberofMicronet,aCanadianNetwork
+University of Mysore, Mysore, India, in 1954, ofCentersofExcellence,from1990to2004,andalsoitsCoordinatorof
+the Diploma degree in electrical communication ConcordiaUniversity.HeisaFellowoftheInstituteofElectricalEngineers,
+engineeringfromtheIndianInstituteofScience, U.K., the Engineering Institute of Canada, the Institution of Engineers,
+Bengaluru,India,in1957,andtheM.Sc.andPh.D. India,andtheInstitutionofElectronicandTelecommunicationEngineers,
+degrees in electrical engineering from the Uni- India. He was inducted to the Provosts Circle of Distinction for career
+versityofSaskatchewan,Saskatoon,SK,Canada, achievements, in 2009. He was a recipient of many IEEE-CAS Society
+in 1960 and 1963, respectively. He was con- Awards,includingthe1986Guillemin-CauerBestPaperAwardEducation
+ferredwiththetitleofHonoraryProfessorbythe Award,in2000,andtheGoldenJubileeMedal,in2000.Hehasservedasthe
+NationalChiaoTungUniversity,Hsinchu,Taiwan,in2009.Heiscurrently ProgramChairforthe1973IEEECircuitsandSystems(CAS)Symposium,
+a Research Professor with the Department of Electrical and Computer theGeneralChairforthe1984IEEECASSymposium,andtheViceChair
+Engineering,ConcordiaUniversity,Montreal,QC,Canada,whereheserved for the 1999 IEEE CAS Symposium. He has been the Editor-in-Chief of
+astheFoundingChairoftheDepartmentofElectricalEngineering,from theCircuits,Systems,andSignalProcessing(CSSP)journal,since1999.
+1970 to 1977, and the Dean of engineering and computer science, from Recently,theCSSPhasinstitutedtheBestPaperAwardinhisname.Hehas
+1977to1993.Duringthattime,hehasdevelopedthefacultyintoaresearch served as the Editor-in-Chief for the IEEE TRANSACTIONSON CIRCUITSAND
+orientedone,fromwhatwasprimarilyasanundergraduatefaculty.Since SYSTEMS—I, from 1999 to 2001, and an Associate Editor for the IEEE
+2001,hehasbeentheConcordiaChair(TierI)ofsignalprocessing.Hehas TRANSACTIONSONCIRCUITSANDSYSTEMS,from1985to1987.Hehasservedthe
+alsotaughtattheDepartmentofElectricalEngineering,TechnicalUniversity IEEEinvariouscapacities,suchasthePresidentElect,in2003,thePresident,
+ofNovaScotia,Halifax,NS,Canada,theUniversityofCalgary,Calgary,AB, in2004,thePast-President,in2005,theVicePresident(publications),from
+Canada,andtheDepartmentofMathematics,UniversityofSaskatchewan. 2001to2002,andtheVicePresident,in1976.
+Hehaspublishedintheareasofnumbertheory,circuits,systems,andsignal
+processing.Heholds five patents.He has coauthored ninebooksandfive
+VOLUME8,2020 94189

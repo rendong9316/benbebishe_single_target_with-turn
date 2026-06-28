@@ -1,0 +1,212 @@
+[
+  {
+    "Title": "[HTML][HTML] Adaptive unscented Kalman filter for target tracking with unknown time-varying noise covariance",
+    "Authors": "B Ge, H Zhang, L Jiang, Z Li, MM Butt - Sensors, 2019 - mdpi.com",
+    "Abstract": "… adaptive UKF algorithm, this paper proposes a new adaptive … is applied to resolve the process \nnoise covariance in real time. Using … noise covariances involved in the maneuvering target …",
+    "URL": "https://www.mdpi.com/1424-8220/19/6/1371"
+  },
+  {
+    "Title": "Variational nonlinear Kalman filtering with unknown process noise covariance",
+    "Authors": "H Lan, J Hu, Z Wang, Q Cheng - IEEE Transactions on …, 2023 - ieeexplore.ieee.org",
+    "Abstract": "… as unscented transformation of the unscented Kalman filter [3], … proposed nonlinear adaptive \nKalman filtering method based … ability of IMM-UKF to handle target maneuvers relies on the …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/10247583/"
+  },
+  {
+    "Title": "Enhanced Unscented Kalman Filter With Time‐Varying Attenuation Factor for Cross‐Domain Unmanned Surface Vehicle/Autonomous Underwater Vehicle Tracking …",
+    "Authors": "H Zhang, H He, S Rong, F Sun… - Journal of Field …, 2026 - Wiley Online Library",
+    "Abstract": "… time‐varying attenuation UKF (TA‐UKF) method designed to … , maneuvering targets introduce \ntimevarying process noise … into the covariance update, enabling real‐time adaptation to …",
+    "URL": "https://onlinelibrary.wiley.com/doi/abs/10.1002/rob.70202"
+  },
+  {
+    "Title": "A new adaptive high-order unscented Kalman filter for improving the accuracy and robustness of target tracking",
+    "Authors": "W Zhou, J Hou - IEEE Access, 2019 - ieeexplore.ieee.org",
+    "Abstract": "… For maneuvering target, model mismatch and loss of high-order … with the mean and covariance \nof UKF, by matching highorder … and vk denote the process noise and measurement noise, …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/8809697/"
+  },
+  {
+    "Title": "Robust cognitive radar tracking based on adaptive unscented Kalman filter in uncertain environments",
+    "Authors": "L Zhong, Y Li, W Cheng, W Zhou - IEEe Access, 2020 - ieeexplore.ieee.org",
+    "Abstract": "… Specifically, UKF is used to derive the cognitive mathematical … To verify the efficiency of the \nscheme, maneuvering target … novel adaptive UKF algorithm, the process noise covariance is …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/9178749/"
+  },
+  {
+    "Title": "IMM algorithm for tracking targets that maneuver through coordinated turns",
+    "Authors": "GA Watson, WD Blair - Signal and Data Processing of Small …, 1992 - spiedigitallibrary.org",
+    "Abstract": "… One of the more difficult targets to track is an aircraft flying at high speeds and performing \ncoordinated-turn maneuvers. The interacting multiple model (1MM) algorithm can be used for …",
+    "URL": "https://www.spiedigitallibrary.org/conference-proceedings-of-spie/1698/1/IMM-algorithm-for-tracking-targets-that-maneuver-through-coordinated-turns/10.1117/12.139376.short"
+  },
+  {
+    "Title": "Multiple-model estimators for tracking sharply maneuvering ground targets",
+    "Authors": "RS Matei, Y Bar-Shalom, P Willett - IEEE Transactions on …, 2018 - ieeexplore.ieee.org",
+    "Abstract": "… interacting multiple model estimator (IMM) should be designed to accommodate such \nmaneuvers… The coordinated-turn (CT) dynamic model has been widely used for tracking air targets …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/8255572/"
+  },
+  {
+    "Title": "An adaptive turn rate estimation for tracking a maneuvering target",
+    "Authors": "M Eltoukhy, MO Ahmad, MNS Swamy - IEEE Access, 2020 - ieeexplore.ieee.org",
+    "Abstract": "… model and the coordinated turn (CT) model with a known turn rate are incorporated in the \ninteracting multiple model (… target performs an unexpected maneuver, the tracking performance …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/9096293/"
+  },
+  {
+    "Title": "EKF/UKF maneuvering target tracking using coordinated turn models with polar/Cartesian velocity",
+    "Authors": "M Roth, G Hendeby… - … Conference on Information …, 2014 - ieeexplore.ieee.org",
+    "Abstract": "… We investigate tracking of maneuvering targets under the assumption of coordinated turn (… \nvariants that are based on these models are important building blocks of interacting multiple …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/6916122/"
+  },
+  {
+    "Title": "[HTML][HTML] A constant speed changing rate and constant turn rate model for maneuvering target tracking",
+    "Authors": "G Zhai, H Meng, X Wang - Sensors, 2014 - mdpi.com",
+    "Abstract": "… The interacting multiple model (IMM) method [14–16] models the target motion as a hybrid \nsystem … acceleration and a coordinated turn, which are two typical maneuvers. Obviously, the …",
+    "URL": "https://www.mdpi.com/1424-8220/14/3/5239"
+  },
+  {
+    "Title": "Adaptive strong tracking square-root cubature Kalman filter for maneuvering aircraft tracking",
+    "Authors": "H Zhang, J Xie, J Ge, W Lu, B Zong - IEEE Access, 2018 - ieeexplore.ieee.org",
+    "Abstract": "… , references [19]-[25] introduce the fading factor in the state error covariance matrix and \nstructure the strong tracking (ST) nonlinear filter. However, the fading factor in [19]-[25] has two …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/8301027/"
+  },
+  {
+    "Title": "A modified adaptive Kalman filtering method for maneuvering target tracking of unmanned surface vehicles",
+    "Authors": "Y Fan, S Qiao, G Wang, S Chen, H Zhang - Ocean Engineering, 2022 - Elsevier",
+    "Abstract": "… -based expended Sage-Husa adaptive robust Kalman filter (MST-ESHARKF) … fading \nfactor for the strong tracking Kalman filter is introduced to eliminate disturbance-induced filter …",
+    "URL": "https://www.sciencedirect.com/science/article/pii/S0029801822021734"
+  },
+  {
+    "Title": "Strong tracking SCKF based on adaptive CS model for manoeuvring aircraft tracking",
+    "Authors": "H Zhang, J Xie, J Ge, W Lu, B Liu - IET Radar, Sonar & …, 2018 - Wiley Online Library",
+    "Abstract": "… modified strong tracking (ST) square-root cubature Kalman filter (SCKF) for the manoeuvring \naircraft tracking … Therefore, this section relocates the effective position of the fading factor by …",
+    "URL": "https://ietresearch.onlinelibrary.wiley.com/doi/abs/10.1049/iet-rsn.2017.0467"
+  },
+  {
+    "Title": "An improved IMM algorithm based on STSRCKF for maneuvering target tracking",
+    "Authors": "B Han, H Huang, L Lei, C Huang, Z Zhang - IEEE Access, 2019 - ieeexplore.ieee.org",
+    "Abstract": "… maneuvering situations, this paper propose an improved interactive multiple model strong \ntracking square room cubature Kalman filter … for time-varying fading factor, and introduce it into …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/8698226/"
+  },
+  {
+    "Title": "[HTML][HTML] A novel strong tracking cubature Kalman filter and its application in maneuvering target tracking",
+    "Authors": "A Zhang, BAO Shuida, GAO Fei, BI Wenhao - Chinese Journal of …, 2019 - Elsevier",
+    "Abstract": "… The fading factor exerts a significant role in the strong tracking idea. However, traditional \nfading factor … of current strong-tracking-based nonlinear filtering algorithms such as Cubature …",
+    "URL": "https://www.sciencedirect.com/science/article/pii/S1000936119302948"
+  },
+  {
+    "Title": "Survey of maneuvering target tracking. Part V. Multiple-model methods",
+    "Authors": "XR Li, VP Jilkov - IEEE Transactions on aerospace and …, 2005 - ieeexplore.ieee.org",
+    "Abstract": "… prevailing approach to maneuvering target tracking in recent years. The survey is presented \n… : autonomous, cooperating, and variable structure. It emphasizes the underpinning of each …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/1561886/"
+  },
+  {
+    "Title": "Overview of multiple-model methods for maneuvering target tracking",
+    "Authors": "XR Li, VP Jilkov - Signal and Data Processing of Small Targets …, 2004 - spiedigitallibrary.org",
+    "Abstract": "… a comprehensive survey of techniques for tracking maneuvering … The survey is presented \nin a structured way, centered … , cooperating, and variable structure. It emphasizes on the …",
+    "URL": "https://www.spiedigitallibrary.org/conference-proceedings-of-spie/5204/0000/Overview-of-multiple-model-methods-for-maneuvering-target-tracking/10.1117/12.511164.short"
+  },
+  {
+    "Title": "A survey of manoeuvring target tracking methods",
+    "Authors": "GW Pulford - arXiv preprint arXiv:1503.07828, 2015 - arxiv.org",
+    "Abstract": "… In contrast to the multiple model approaches based on multi-level noise or Markov inputs, \nthe focus of this section is on variable structure systems of the type (4), repeated here: …",
+    "URL": "https://arxiv.org/abs/1503.07828"
+  },
+  {
+    "Title": "Interacting multiple model methods in target tracking: a survey",
+    "Authors": "E Mazor, A Averbuch, Y Bar-Shalom… - IEEE Transactions on …, 1998 - ieeexplore.ieee.org",
+    "Abstract": "… Practical suboptimal algorithms with variable structure are presented in [69]. A graph-… \nvia two important examples: a generic maneuvering target tracking problem in ATC and a …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/640267/"
+  },
+  {
+    "Title": "Survey of maneuvering target tracking: decision-based methods",
+    "Authors": "XR Li, VP Jilkov - Signal and Data Processing of Small Targets …, 2002 - spiedigitallibrary.org",
+    "Abstract": "… that provide a comprehensive survey of techniques for tracking maneuvering targets without \n… Part I and Part II deal with target motion models. Part III covers the measurement models …",
+    "URL": "https://www.spiedigitallibrary.org/conference-proceedings-of-spie/4728/0000/Survey-of-maneuvering-target-tracking-decision-based-methods/10.1117/12.478535.short"
+  },
+  {
+    "Title": "A motion model for tracking highly maneuvering targets",
+    "Authors": "Q Xiangdong, W Baoshu - Proceedings of the 2002 IEEE Radar …, 2002 - ieeexplore.ieee.org",
+    "Abstract": "… time correlated stochastic process with zero mean, it is regarded as a stochastic process \nwith non-zero mean in our current statistical jerk model (cs-jerk), which enhances significantly …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/999767/"
+  },
+  {
+    "Title": "Survey of maneuvering target tracking. Part I. Dynamic models",
+    "Authors": "XR Li, VP Jilkov - IEEE Transactions on aerospace and …, 2003 - ieeexplore.ieee.org",
+    "Abstract": "… , or statistical properties of the noise w for the particular target … to use a random jerk process \nto model the target maneuvers. A … This model and the “current” model are the same in spirit—…",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/1261132/"
+  },
+  {
+    "Title": "Survey of maneuvering target tracking: dynamic models",
+    "Authors": "XR Li, VP Jilkov - Signal and Data Processing of Small Targets …, 2000 - spiedigitallibrary.org",
+    "Abstract": "… or statistical properties of the noise w for the particular target … the \"current\" model corresponds \nto a Singer model with noise … to use a random jerk process to model the target maneuvers. …",
+    "URL": "https://www.spiedigitallibrary.org/conference-proceedings-of-spie/4048/0000/Survey-of-maneuvering-target-tracking-dynamic-models/10.1117/12.391979.short"
+  },
+  {
+    "Title": "An improved current statistical model for maneuvering target tracking",
+    "Authors": "W Wang, H Hou - 2009 4th IEEE Conference on Industrial …, 2009 - ieeexplore.ieee.org",
+    "Abstract": "… Model(CSM) for tracking for maneuvering target has preferable performance, but its \nperformance sharply decreases when target is in weak jerk maneuvering state or target … model is …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/5138963/"
+  },
+  {
+    "Title": "[HTML][HTML] An adaptive constant acceleration model for maneuvering target tracking",
+    "Authors": "J Huang, J Xie, H Zhai, Z Li, W Feng - Remote Sensing, 2025 - mdpi.com",
+    "Abstract": "… ) model is proposed for the maneuvering target tracking problem. … Jerk and the velocity as \nwell as the acceleration so that the … the current statistical characteristics of the target maneuver. …",
+    "URL": "https://www.mdpi.com/2072-4292/17/5/850"
+  },
+  {
+    "Title": "Detection and tracking of multipath targets in over-the-horizon radar",
+    "Authors": "SJ Davey, GA Fabrizio… - IEEE Transactions on …, 2018 - ieeexplore.ieee.org",
+    "Abstract": "… and the second uses group-target track-before-detect algorithm. … following maneuvers when \nthe individual single-mode target … The state is now estimated using a Kalman filter with Mμ(x) …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/8554289/"
+  },
+  {
+    "Title": "[PDF][PDF] A survey of manoeuvring target tracking methods and their applicability to over-the-horizon radar",
+    "Authors": "GW Pulford, BF La Scala - CSSIP report, 1996 - researchgate.net",
+    "Abstract": "… manoeuvring target tracking include: adaptive Kalman filters [… we focus on the over-the-horizon \nradar sensor and signal … tracking system and those aspects which relate specifically to …",
+    "URL": "https://www.researchgate.net/profile/Graham-Pulford/publication/2505516_A_Survey_of_Manoeuvring_Target_Tracking_Methods_and_their_Applicability_to_Over-The-Horizon_Radar/links/54b585fd0cf26833efd32e23/A-Survey-of-Manoeuvring-Target-Tracking-Methods-and-their-Applicability-to-Over-The-Horizon-Radar.pdf"
+  },
+  {
+    "Title": "Maneuvering target altitude tracking in over-the-horizon radars exploiting multipath Doppler signatures",
+    "Authors": "YD Zhang, JJ Zhang, MG Amin… - 2013 IEEE International …, 2013 - ieeexplore.ieee.org",
+    "Abstract": "… to track the instantaneous altitude of maneuvering targets by … Kalman filter to reliably track \nthe instantaneous target altitude. … 1 Hz are filtered out prior to the target tracking. The estimated …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/6638421/"
+  },
+  {
+    "Title": "Instantaneous altitude estimation of maneuvering target in over-the-horizon radar exploiting multipath Doppler signatures",
+    "Authors": "YD Zhang, JJ Zhang, MG Amin, B Himed - EURASIP Journal on Advances …, 2013 - Springer",
+    "Abstract": "… Over-the-horizon radar systems are capable of … target altitude estimation in an extended \nKalman filter setup. The maximum a-posteriori criterion is used for the estimation of initial target …",
+    "URL": "https://link.springer.com/article/10.1186/1687-6180-2013-100"
+  },
+  {
+    "Title": "[PDF][PDF] An Analysis of Manoeuvring Target Detectors and Trackers for Over-The-Horizon Radar",
+    "Authors": "BF La Scala, GW Pulford - CSSIP Report, 1996 - researchgate.net",
+    "Abstract": "… for manoeuvring target tracking and the types of manoeuvres … the VDA algorithm to track a \nmanoeuvring target. One approach is … filter or twostage Kalman filter with a different target state …",
+    "URL": "https://www.researchgate.net/profile/Graham-Pulford/publication/2509902_An_Analysis_of_Manoeuvring_Target_Detectors_and_Trackers_for_Over-The-Horizon_Radar/links/54ba508e0cf24e50e93f004b/An-Analysis-of-Manoeuvring-Target-Detectors-and-Trackers-for-Over-The-Horizon-Radar.pdf"
+  },
+  {
+    "Title": "Comparison and choice of models in tracking target with coordinated turn motion",
+    "Authors": "X Yuan, C Han, Z Duan, M Lei - 2005 7th International …, 2005 - ieeexplore.ieee.org",
+    "Abstract": "… state components. Four widely used models are compared in this paper augmented coordinated \n… The first two are nonlinear, so the Unscented Kalman Filter (UKF) is used. The third one …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/1592032/"
+  },
+  {
+    "Title": "Models and algorithms for tracking target with coordinated turn motion",
+    "Authors": "X Yuan, F Lian, C Han - Mathematical Problems in Engineering, 2014 - Wiley Online Library",
+    "Abstract": "… models are compared in this paper—coordinated turn (CT) model with known turn rate, \naugmented coordinated turn (ACT) … For unscented Kalman filter (UKF) is a very efficient tool for …",
+    "URL": "https://onlinelibrary.wiley.com/doi/abs/10.1155/2014/649276"
+  },
+  {
+    "Title": "[BOOK][B] Augmented models in estimation and control",
+    "Authors": "UD Mäder - 2010 - research-collection.ethz.ch",
+    "Abstract": "… Since the parameters usually enter the system dynamics nonlinearly, nonlinear \nestimation schemes such as the Extended Kalman Filter or the Unscented Kalman Filter are …",
+    "URL": "https://www.research-collection.ethz.ch/entities/publication/bd27fdeb-9814-426a-b104-a2f1d4c553e2"
+  },
+  {
+    "Title": "[HTML][HTML] Intelligent tracking method for aerial maneuvering target based on unscented Kalman filter",
+    "Authors": "Y Dong, W Li, D Li, C Liu, W Xue - Remote Sensing, 2024 - mdpi.com",
+    "Abstract": "… LSTM layer, with preprocessed Cartesian coordinate system historical trajectory data as input. \n… simulated trajectory data was added for data augmentation, resulting in a total of 71,942 …",
+    "URL": "https://www.mdpi.com/2072-4292/16/17/3301"
+  },
+  {
+    "Title": "Multiple model unscented kalman filtering in dynamic bayesian networks for intention estimation and trajectory prediction",
+    "Authors": "J Schulz, C Hubmann, J Löchner… - 2018 21st International …, 2018 - ieeexplore.ieee.org",
+    "Abstract": "… In this paper, we present a multiple model unscented Kalman filter based DBN inference \nmethod for driver intention estimation and multi-agent trajectory prediction. This inference …",
+    "URL": "https://ieeexplore.ieee.org/abstract/document/8569932/"
+  }
+]
