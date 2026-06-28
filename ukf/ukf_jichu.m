@@ -93,42 +93,31 @@ end
 % init_ukf — UKF 单点/两点初始化
 % =========================================================================
 function ukf = init_ukf(ukf, meas, meas2)
-    % 步骤1：获取第一帧（及可选第二帧）雷达量测
-    rng_meas = meas.range_meas;
-    az_meas = meas.azimuth_meas;
+    % 步骤1：用最新可用量测反解初始位置
+    % 若两点起始中有meas2，优先用meas2（当前帧，不过时）
+    % 若仅有单点，用meas
+    if nargin >= 3 && ~isempty(meas2)
+        [lon, lat] = meas_to_latlon_ukf(ukf, meas2.range_meas, meas2.azimuth_meas);
+    else
+        [lon, lat] = meas_to_latlon_ukf(ukf, meas.range_meas, meas.azimuth_meas);
+    end
 
-    % 步骤2：极坐标→经纬度转换（球面反算）
-    [lon, lat] = meas_to_latlon_ukf(ukf, rng_meas, az_meas);
-
-    % 步骤3：设置初始状态向量
+    % 步骤2：初始速度设为0，由UKF自行收敛
+    % 两点差分在 Pd=60% 条件下噪声大（σ_vel > 100 m/s），
+    % 初始速度错误会导致航迹发散且不可恢复。
+    % P_vel_std 已编码速度不确定性（~440 m/s），
+    % UKF 将在3-5帧内自行收敛到正确速度。
     lon_dot = 0.0;
     lat_dot = 0.0;
-    if nargin >= 3 && ~isempty(meas2)
-        % 两点初始化：利用前两帧量测估计初始速度
-        [lon2, lat2] = meas_to_latlon_ukf(ukf, meas2.range_meas, meas2.azimuth_meas);
-        dt_init = meas2.time_sec - meas.time_sec;
-        if dt_init > 0.01
-            lon_dot = (lon2 - lon) / dt_init;
-            lat_dot = (lat2 - lat) / dt_init;
-            % 速度合理性检验
-            lat_mid = (lat + lat2) / 2;
-            v_east = lon_dot * pi/180 * ukf.R_EARTH * cosd(lat_mid);
-            v_north = lat_dot * pi/180 * ukf.R_EARTH;
-            speed_ms = sqrt(v_east^2 + v_north^2);
-            if speed_ms < 10 || speed_ms > 2000
-                lon = lon2;  lat = lat2;
-                lon_dot = 0.0;  lat_dot = 0.0;
-            end
-        end
-    end
+
     ukf.x = [lon; lon_dot; lat; lat_dot];
 
-    % 步骤4：构建初始协方差矩阵
+    % 步骤3：构建初始协方差矩阵
     pp = ukf.params.ukf_P_pos_std;
     pv = ukf.params.ukf_P_vel_std;
     ukf.P = diag([pp^2, pv^2, pp^2, pv^2]);
 
-    % 步骤5：标记滤波器已初始化
+    % 步骤4：标记滤波器已初始化
     ukf.initialized = true;
 end
 

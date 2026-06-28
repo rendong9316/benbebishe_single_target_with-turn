@@ -304,8 +304,8 @@ function params = simulation_params()
     % gate_sigma — 马氏距离门控的 sigma 倍数（2D 量测）
     %   门内概率：sigma=4 → ~99.97%，sigma=7 → ~>99.99%
     %   [turn: R1=7.0, R2=7.0 — 拐弯预测偏差大，放宽门限]
-    params.radar1_gate_sigma = 4.0;
-    params.radar2_gate_sigma = 5.0;
+    params.radar1_gate_sigma = 4;
+    params.radar2_gate_sigma = 5;
 
     % =====================================================================
     % 7.5 模糊自适应 Q（两雷达共用）
@@ -323,8 +323,8 @@ function params = simulation_params()
     % 7.7 航迹管理（雷达专属）
     % =====================================================================
     % [turn: R1=20 — 拐弯可能短暂飞出覆盖，需延长丢点容忍]
-    params.radar1_tracker_K_loss = 15;       % R1 连续丢点终止帧数
-    params.radar2_tracker_K_loss = 12;       % R2 连续丢点终止帧数
+    params.radar1_tracker_K_loss = 10;       % R1 连续丢点终止帧数
+    params.radar2_tracker_K_loss = 10;       % R2 连续丢点终止帧数
 
     % =====================================================================
     % 模块8: 航迹管理参数（M/N 起始逻辑 + K_loss 终止逻辑）
@@ -360,13 +360,14 @@ function params = simulation_params()
     % K_loss = 15: 连续 15 帧（15×30s = 450s = 7.5分钟）未检测到目标
     % 则终止航迹。该时长足够覆盖因电离层短暂扰动（~1~2 分钟量级）导致的
     % 检测中断，但不会在目标已永久离开覆盖区后无限维持航迹。
-    params.tracker_K_loss = 15;
+    
+    %params.tracker_K_loss = 15;
 
     % 关联门限 Sigma 数
     % gate_sigma = 2.0: 新息的马氏距离（Mahalanobis distance）超过 2
     % 倍标准差的量测被排除在关联之外。对于 2 维量测（距离+方位），门内
     % 包含概率 = chi2cdf(4, 2) ≈ 86.5%。
-    params.gate_sigma = 2.0;
+    params.gate_sigma = 2.5;
 
     % =====================================================================
     % 模块9: 检测概率与虚警参数
@@ -502,5 +503,5 @@ function params = simulation_params()
     % 随机数生成器种子
     % 42 是一个经典的"计算机科学梗"（《银河系漫游指南》中"生命、宇宙
     % 及一切的答案"），没有特殊的数学意义，任何固定整数均可。
-    params.random_seed = 47;
+    params.random_seed = 19;
 end

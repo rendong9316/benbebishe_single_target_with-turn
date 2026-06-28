@@ -1,14 +1,14 @@
 % =========================================================================
-% run_mc_turn.m — 拐弯场景蒙特卡洛仿真
+% run_mc_straight.m — 直线场景蒙特卡洛仿真
 % =========================================================================
-% 不弹图窗、不保存中间.mat、控制台输出进度 + 逐run明细 + 最终统计。
-% 最终统计含均值/标准差/中位数/最小/最大，并保存完整数据到 .mat。
+% 与 run_mc_turn.m 对应，验证直线航迹（无拐弯）下各阶段RMSE统计特性。
+% 无自适应UKF（直线场景不需机动检测），无图窗，最终保存完整数据到.mat。
 % =========================================================================
 
 clear; close all; clc;
 addpath(genpath('.'));
 
-N_MC = 50;
+N_MC = 500;
 
 % ---- 预分配结果数组 ----
 rmse.raw_R1   = nan(N_MC, 1);
@@ -17,22 +17,16 @@ rmse.cal_R1   = nan(N_MC, 1);
 rmse.cal_R2   = nan(N_MC, 1);
 rmse.ukf_R1   = nan(N_MC, 1);
 rmse.ukf_R2   = nan(N_MC, 1);
-rmse.ad_R1    = nan(N_MC, 1);
-rmse.ad_R2    = nan(N_MC, 1);
-rmse.fus_base = nan(N_MC, 1);
-rmse.fus_ad   = nan(N_MC, 1);
-rmse.sgl_base = nan(N_MC, 1);
-rmse.sgl_ad   = nan(N_MC, 1);
+rmse.fus_best = nan(N_MC, 1);   % 四种融合中最优
+rmse.sgl_best = nan(N_MC, 1);   % 两站对齐后较优者
 
-fprintf('========== 拐弯场景蒙特卡洛仿真 N=%d ==========\n', N_MC);
-fprintf('%-6s %6s %8s %8s %8s %8s %8s %8s %8s %8s  %8s %8s %8s %8s\n', ...
-    '运次', '种子', '原R1', '校R1', 'UK1', '自R1', ...
-    '原R2', '校R2', 'UK2', '自R2', ...
-    '融基', '融自', '单基', '单自');
-fprintf('%-6s %6s %8s %8s %8s %8s %8s %8s %8s %8s  %8s %8s %8s %8s\n', ...
-    '---', '----', '------', '------', '------', '------', ...
-    '------', '------', '------', '------', ...
-    '------', '------', '------', '------');
+fprintf('========== 直线场景蒙特卡洛仿真 N=%d ==========\n', N_MC);
+fprintf('%-6s %6s %8s %8s %8s %8s %8s %8s  %8s %8s\n', ...
+    '运次', '种子', '原R1', '校R1', 'UK1', ...
+    '原R2', '校R2', 'UK2', '融优', '单优');
+fprintf('%-6s %6s %8s %8s %8s %8s %8s %8s  %8s %8s\n', ...
+    '---', '----', '------', '------', '------', ...
+    '------', '------', '------', '------', '------');
 
 tic;
 
@@ -46,19 +40,13 @@ for mc = 1:N_MC
     rmse.cal_R2(mc)   = r.cal_R2;
     rmse.ukf_R1(mc)   = r.ukf_R1;
     rmse.ukf_R2(mc)   = r.ukf_R2;
-    rmse.ad_R1(mc)    = r.ad_R1;
-    rmse.ad_R2(mc)    = r.ad_R2;
-    rmse.fus_base(mc) = r.fus_base;
-    rmse.fus_ad(mc)   = r.fus_ad;
-    rmse.sgl_base(mc) = r.sgl_base;
-    rmse.sgl_ad(mc)   = r.sgl_ad;
+    rmse.fus_best(mc) = r.fus_best;
+    rmse.sgl_best(mc) = r.sgl_best;
 
-    fprintf('%-6d %6d %8.1f %8.1f %8.1f %8.1f %8.1f %8.1f %8.1f %8.1f  %8.1f %8.1f %8.1f %8.1f', ...
-        mc, mc, r.raw_R1, r.cal_R1, r.ukf_R1, r.ad_R1, ...
-        r.raw_R2, r.cal_R2, r.ukf_R2, r.ad_R2, ...
-        r.fus_base, r.fus_ad, r.sgl_base, r.sgl_ad);
+    fprintf('%-6d %6d %8.1f %8.1f %8.1f %8.1f %8.1f %8.1f  %8.1f %8.1f', ...
+        mc, mc, r.raw_R1, r.cal_R1, r.ukf_R1, ...
+        r.raw_R2, r.cal_R2, r.ukf_R2, r.fus_best, r.sgl_best);
 
-    % 自动标记坏种子: UKF 不降反升（RMSE > 校准值 × 2）或绝对 RMSE > 30 km
     if r.ukf_R1 > 30 || r.ukf_R2 > 30 || r.ukf_R1 > r.cal_R1 * 2 || r.ukf_R2 > r.cal_R2 * 2
         fprintf('  ------- BAD SEED');
     end
@@ -68,15 +56,12 @@ close all;
 
 elapsed_total = toc;
 
-% ---- 计算改善率（逐次算）----
+% ---- 计算改善率 ----
 imp_cal_R1   = (1 - rmse.cal_R1   ./ rmse.raw_R1)   * 100;
 imp_cal_R2   = (1 - rmse.cal_R2   ./ rmse.raw_R2)   * 100;
 imp_ukf_R1   = (1 - rmse.ukf_R1   ./ rmse.cal_R1)   * 100;
 imp_ukf_R2   = (1 - rmse.ukf_R2   ./ rmse.cal_R2)   * 100;
-imp_ad_R1    = (1 - rmse.ad_R1    ./ rmse.ukf_R1)    * 100;
-imp_ad_R2    = (1 - rmse.ad_R2    ./ rmse.ukf_R2)    * 100;
-imp_fus_base = (1 - rmse.fus_base ./ rmse.sgl_base)  * 100;
-imp_fus_ad   = (1 - rmse.fus_ad   ./ rmse.sgl_ad)    * 100;
+imp_fusion   = (1 - rmse.fus_best ./ rmse.sgl_best)  * 100;
 
 % ---- 输出统计表 ----
 fprintf('\n========== 蒙特卡洛 %d 次统计结果 ==========\n', N_MC);
@@ -93,12 +78,8 @@ print_row('校准后 R1',            rmse.cal_R1);
 print_row('校准后 R2',            rmse.cal_R2);
 print_row('基础UKF R1',           rmse.ukf_R1);
 print_row('基础UKF R2',           rmse.ukf_R2);
-print_row('自适应UKF R1',         rmse.ad_R1);
-print_row('自适应UKF R2',         rmse.ad_R2);
-print_row('基础融合最优',         rmse.fus_base);
-print_row('自适应融合最优',       rmse.fus_ad);
-print_row('基础单站最优(对齐)',   rmse.sgl_base);
-print_row('自适应单站最优(对齐)', rmse.sgl_ad);
+print_row('融合最优',             rmse.fus_best);
+print_row('单站最优(对齐)',       rmse.sgl_best);
 
 fprintf('\n--- 阶段改善率 (%%) ---\n');
 fprintf('%-28s %8s %8s %8s %8s %8s\n', ...
@@ -106,27 +87,24 @@ fprintf('%-28s %8s %8s %8s %8s %8s\n', ...
 fprintf('%-28s %8s %8s %8s %8s %8s\n', ...
     '----------------------------', '------', '------', '------', '------', '------');
 
-print_row('校准改善 R1',        imp_cal_R1);
-print_row('校准改善 R2',        imp_cal_R2);
-print_row('UKF改善 R1',         imp_ukf_R1);
-print_row('UKF改善 R2',         imp_ukf_R2);
-print_row('自适应改善 R1',      imp_ad_R1);
-print_row('自适应改善 R2',      imp_ad_R2);
-print_row('融合改善(基础)',     imp_fus_base);
-print_row('融合改善(自适应)',   imp_fus_ad);
+print_row('校准改善 R1',          imp_cal_R1);
+print_row('校准改善 R2',          imp_cal_R2);
+print_row('UKF改善 R1',           imp_ukf_R1);
+print_row('UKF改善 R2',           imp_ukf_R2);
+print_row('融合改善',             imp_fusion);
 
 fprintf('\n总耗时: %.0f 秒\n', elapsed_total);
 
 % ---- 保存完整数据 ----
 if ~exist('results', 'dir'), mkdir('results'); end
-outf = fullfile('results', sprintf('mc_turn_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
+outf = fullfile('results', sprintf('mc_straight_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
 save(outf, 'rmse', 'imp_cal_R1', 'imp_cal_R2', 'imp_ukf_R1', 'imp_ukf_R2', ...
-    'imp_ad_R1', 'imp_ad_R2', 'imp_fus_base', 'imp_fus_ad', 'N_MC');
+    'imp_fusion', 'N_MC');
 fprintf('\n完整数据已保存: %s\n', outf);
 
 
 % =========================================================================
-% run_one — 单次仿真运行, 返回各阶段RMSE
+% run_one — 单次直线仿真运行
 % =========================================================================
 function r = run_one(seed)
     % ---- Phase 0: 场景初始化 ----
@@ -134,7 +112,8 @@ function r = run_one(seed)
     params.random_seed = seed;
     rng(params.random_seed);
 
-    [traj, ~] = aircraft_trajectory_create('turn', params);
+    traj = aircraft_trajectory_create(params.aircraft_waypoints, ...
+        params.aircraft_speed_ms, params.dt_sec);
     true_track = aircraft_trajectory_interpolate('generate', traj);
 
     t1_grid = params.time_offset_radar1_sec : params.dt_sec : traj.duration_sec;
@@ -274,7 +253,7 @@ function r = run_one(seed)
     r.cal_R1 = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'cal');
     r.cal_R2 = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'cal');
 
-    % ---- Phase 5.1: 基础UKF ----
+    % ---- Phase 5: 基础UKF ----
     params.ukf_range_std_m    = params.radar1_range_noise_std_m;
     params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
     params.ukf_Q_scale     = params.radar1_ukf_Q_scale;
@@ -306,22 +285,8 @@ function r = run_one(seed)
     r.ukf_R1 = rmse_tracks(trackSnapshots_R1, true_track, t1_grid, n_frames);
     r.ukf_R2 = rmse_tracks(trackSnapshots_R2, true_track, t2_grid, n_frames);
 
-    % ---- Phase 5.2: 机动自适应UKF ----
-    rng(params.random_seed);
-    ukf1_tpl_ad = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
-        params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-    ukf2_tpl_ad = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
-        params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-
-    [trackSnapshots_R1_ad, ~] = single_track_runner_adaptive(detList_R1, ukf1_tpl_ad, params, n_frames);
-    [trackSnapshots_R2_ad, ~] = single_track_runner_adaptive(detList_R2, ukf2_tpl_ad, params_r2, n_frames);
-
-    r.ad_R1 = rmse_tracks(trackSnapshots_R1_ad, true_track, t1_grid, n_frames);
-    r.ad_R2 = rmse_tracks(trackSnapshots_R2_ad, true_track, t2_grid, n_frames);
-
     % ---- Phase 6: 时间对齐 ----
-    aligned_R2    = time_align_tracks(trackSnapshots_R2,    params);
-    aligned_R2_ad = time_align_tracks(trackSnapshots_R2_ad, params);
+    aligned_R2 = time_align_tracks(trackSnapshots_R2, params);
 
     % ---- Phase 7: 融合 ----
     matched_pair = struct('R1_track_id', 1, 'R2_track_id', 1, ...
@@ -329,30 +294,20 @@ function r = run_one(seed)
         'mean_dist_km', 0, 'quality', 100);
     method_names = {'SCC', 'BC', 'CI', 'FCI'};
 
-    fus_base_rmses = nan(1, 4);
-    fus_ad_rmses   = nan(1, 4);
-
+    fus_rmses = nan(1, 4);
     for m = 1:4
-        snaps_base = run_track_fusion(matched_pair, trackSnapshots_R1, aligned_R2, params, method_names{m});
-        snaps_ad   = run_track_fusion(matched_pair, trackSnapshots_R1_ad, aligned_R2_ad, params, method_names{m});
-        fus_base_rmses(m) = rmse_fusion_snaps(snaps_base, true_track, t1_grid, n_frames);
-        fus_ad_rmses(m)   = rmse_fusion_snaps(snaps_ad,   true_track, t1_grid, n_frames);
+        snaps = run_track_fusion(matched_pair, trackSnapshots_R1, aligned_R2, params, method_names{m});
+        fus_rmses(m) = rmse_fusion_snaps(snaps, true_track, t1_grid, n_frames);
     end
+    r.fus_best = min(fus_rmses);
 
-    r.fus_base = min(fus_base_rmses);
-    r.fus_ad   = min(fus_ad_rmses);
-
-    sgl_R1_base = rmse_tracks(trackSnapshots_R1, true_track, t1_grid, n_frames);
-    sgl_R2_base = rmse_tracks(aligned_R2,       true_track, t1_grid, n_frames);
-    sgl_R1_ad   = rmse_tracks(trackSnapshots_R1_ad, true_track, t1_grid, n_frames);
-    sgl_R2_ad   = rmse_tracks(aligned_R2_ad,       true_track, t1_grid, n_frames);
-
-    r.sgl_base = min(sgl_R1_base, sgl_R2_base);
-    r.sgl_ad   = min(sgl_R1_ad,   sgl_R2_ad);
+    sgl_R1 = rmse_tracks(trackSnapshots_R1, true_track, t1_grid, n_frames);
+    sgl_R2 = rmse_tracks(aligned_R2,        true_track, t1_grid, n_frames);
+    r.sgl_best = min(sgl_R1, sgl_R2);
 end
 
 % =========================================================================
-% 工具函数
+% 工具函数（与 run_mc_turn.m 相同）
 % =========================================================================
 function v = rmse_detlist(detList, true_track, t_grid, n_frames, mode)
     errs = [];
