@@ -107,18 +107,22 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang_adaptive(det
                         [lon, lat, ukf] = ukf_zishiying('update', ukf, innov_w, z_pred, ...
                             Z_pred, X_pred, x_pred, P_pred, P_zz, params);
 
-                        % 运动学保护（全生命周期）
-                        v_new_dir = atan2d(ukf.x(4), ukf.x(2));
-                        if abs(angdiff_ad(v_pred_dir, v_new_dir)) > 90
-                            reject_update = true;
-                        end
-                        if ~reject_update
-                            speed_ms = sqrt(ukf.x(2)^2 + ukf.x(4)^2) ...
-                                * 111320.0 * cosd(abs(ukf.x(3)));
-                            if speed_ms > 500
+                        % Probation 期速度合理性检查（life≤10）
+                        %   方向突变 >90° / 速度 >500 m/s → ghost
+                        if life <= 10
+                            v_new_dir = atan2d(ukf.x(4), ukf.x(2));
+                            if abs(angdiff_ad(v_pred_dir, v_new_dir)) > 90
                                 reject_update = true;
                             end
+                            if ~reject_update
+                                speed_ms = sqrt(ukf.x(2)^2 + ukf.x(4)^2) ...
+                                    * 111320.0 * cosd(abs(ukf.x(3)));
+                                if speed_ms > 500
+                                    reject_update = true;
+                                end
+                            end
                         end
+                        % 全生命周期位置跳变保护（>50 km → ghost）
                         if ~reject_update
                             jump_m = sphere_utils_haversine_distance(x_pred(1), x_pred(3), lon, lat);
                             if jump_m > 50000

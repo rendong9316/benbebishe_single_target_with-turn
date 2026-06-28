@@ -9,7 +9,7 @@ clear; close all; clc;
 addpath(genpath('.'));
 addpath(genpath('nanyang'));
 
-N_MC = 500;
+N_MC = 200;
 
 % ---- 预分配结果数组 ----
 rmse.raw_R1   = nan(N_MC, 1);
