@@ -18,7 +18,14 @@
 %       └──────(连续miss≥K_loss)───────┘
 % =========================================================================
 
-function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf_tpl, params, n_frames)
+function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf_tpl, params, n_frames, varargin)
+    % 可选参数: true_track, t_grid (真值辅助起始需要)
+    has_truth = false;
+    if ~isempty(varargin) && length(varargin) >= 2
+        true_track = varargin{1};
+        t_grid = varargin{2};
+        has_truth = true;
+    end
     % ---- 初始化 ----
     trackSnapshots = cell(n_frames, 1);
     ukf = [];
@@ -70,20 +77,24 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
             % =============================================================
             case 'WAITING'
                 if isfield(params, 'use_truth_init') && params.use_truth_init
-                    % ---- 真值辅助起始：跳过M/N，直接用真实检测起始 ----
-                    real_det = [];
-                    for d = 1:length(dets)
-                        if ~dets(d).is_clutter
-                            real_det = dets(d);
-                            break;
-                        end
-                    end
-                    if ~isempty(real_det)
+                    % ---- 真值辅助起始：跳过M/N，用真值位置初始化UKF ----
+                    if has_truth
                         if isempty(init_det1)
-                            init_det1 = real_det;
+                            % 用当前帧真值位置构造一个"伪检测"（含range/az字段）
+                            tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                            tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                            Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
+                                ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                            az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                            init_det1 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az);
                             init_frame1 = k;
-                        elseif isempty(init_det2) && (k - init_frame1) >= 3
-                            init_det2 = real_det;
+                        elseif isempty(init_det2) && (k - init_frame1) >= 1
+                            tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                            tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                            Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
+                                ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                            az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                            init_det2 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az);
                             ukf = ukf_jichu('init', ukf_tpl, init_det1, init_det2);
                             ukf.dt = params.dt_sec;
                             ukf.initialized = true;
@@ -97,6 +108,35 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
                                 NaN, NaN, ukf, life, 0, init_det2);
                             trackSnapshots{k} = snap;
                             continue;
+                        end
+                    else
+                        % ---- 无真值数据时的降级：用真实检测起始 ----
+                        real_det = [];
+                        for d = 1:length(dets)
+                            if ~dets(d).is_clutter
+                                real_det = dets(d);
+                                break;
+                            end
+                        end
+                        if ~isempty(real_det)
+                            if isempty(init_det1)
+                                init_det1 = real_det;
+                                init_frame1 = k;
+                            elseif isempty(init_det2) && (k - init_frame1) >= 1
+                                init_det2 = real_det;
+                                ukf = ukf_jichu('init', ukf_tpl, init_det1, init_det2);
+                                ukf.dt = params.dt_sec;
+                                ukf.initialized = true;
+                                ukf.Q_base = ukf.Q;
+                                ukf.Q_ema = 1.0;
+                                if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                                track_state = 'TRACKING';
+                                track_type = 1;  life = 1;  missed = 0;
+                                snap.trackList{1} = make_snap(1, 1, ...
+                                    NaN, NaN, ukf, life, 0, init_det2);
+                                trackSnapshots{k} = snap;
+                                continue;
+                            end
                         end
                     end
                 else
@@ -157,9 +197,9 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
                         [lon, lat, ukf] = ukf_jichu('update', ukf, innov_w, ...
                             z_pred, Z_pred, X_pred, x_pred, P_pred, P_zz);
 
-                        % Probation 期速度合理性检查（life≤10）
+                        % Probation 期速度合理性检查（仅M/N起始需要，真值辅助跳过）
                         %   方向突变 >90° / 速度 >500 m/s → ghost
-                        if life <= 10
+                        if life <= 10 && ~(isfield(params, 'use_truth_init') && params.use_truth_init)
                             v_new_dir = atan2d(ukf.x(4), ukf.x(2));
                             if abs(angdiff(v_pred_dir, v_new_dir)) > 90
                                 reject_update = true;

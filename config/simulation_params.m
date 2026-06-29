@@ -323,7 +323,7 @@ function params = simulation_params()
     % 7.7 航迹管理（雷达专属）
     % =====================================================================
     params.use_truth_init = true;            % 真值辅助起始：跳过M/N直接起始
-    % [K_loss=4 — 平衡UKF收敛与单站断裂，让融合填补断点]
+    % [K_loss=4 — 平衡RMSE与断裂频率]
     params.radar1_tracker_K_loss = 4;        % R1 连续丢点终止帧数
     params.radar2_tracker_K_loss = 4;        % R2 连续丢点终止帧数
 

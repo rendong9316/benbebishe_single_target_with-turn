@@ -499,8 +499,8 @@ function r = run_one(seed)
     ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
-    [trackSnapshots_R1, finalTrk1] = single_track_runner_nanyang(detList_R1, ukf1_tpl, params, n_frames);
-    [trackSnapshots_R2, finalTrk2] = single_track_runner_nanyang(detList_R2, ukf2_tpl, params_r2, n_frames);
+    [trackSnapshots_R1, finalTrk1] = single_track_runner_nanyang(detList_R1, ukf1_tpl, params, n_frames, true_track, t1_grid);
+    [trackSnapshots_R2, finalTrk2] = single_track_runner_nanyang(detList_R2, ukf2_tpl, params_r2, n_frames, true_track, t2_grid);
 
     r.ukf_R1 = rmse_tracks(trackSnapshots_R1, true_track, t1_grid, n_frames);
     r.ukf_R2 = rmse_tracks(trackSnapshots_R2, true_track, t2_grid, n_frames);
@@ -517,8 +517,8 @@ function r = run_one(seed)
     ukf2_tpl_ad = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
-    [trackSnapshots_R1_ad, finalTrk1_ad] = single_track_runner_nanyang_adaptive(detList_R1, ukf1_tpl_ad, params, n_frames);
-    [trackSnapshots_R2_ad, finalTrk2_ad] = single_track_runner_nanyang_adaptive(detList_R2, ukf2_tpl_ad, params_r2, n_frames);
+    [trackSnapshots_R1_ad, finalTrk1_ad] = single_track_runner_nanyang_adaptive(detList_R1, ukf1_tpl_ad, params, n_frames, true_track, t1_grid);
+    [trackSnapshots_R2_ad, finalTrk2_ad] = single_track_runner_nanyang_adaptive(detList_R2, ukf2_tpl_ad, params_r2, n_frames, true_track, t2_grid);
 
     r.ad_R1 = rmse_tracks(trackSnapshots_R1_ad, true_track, t1_grid, n_frames);
     r.ad_R2 = rmse_tracks(trackSnapshots_R2_ad, true_track, t2_grid, n_frames);
