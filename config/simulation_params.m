@@ -327,9 +327,13 @@ function params = simulation_params()
     % 7.7 航迹管理（雷达专属）
     % =====================================================================
     params.use_truth_init = true;            % 真值辅助起始：跳过M/N直接起始
-    % [K_loss=4 — 平衡RMSE与断裂频率]
-    params.radar1_tracker_K_loss = 4;        % R1 连续丢点终止帧数
-    params.radar2_tracker_K_loss = 6;        % R2 连续丢点终止帧数（放宽以减少碎片化）
+    % K_loss — 连续丢点终止帧数
+    %   R1 实测 (N=100 each): K=6 bad=11% → K=7 bad=7% → K=8 bad=7%
+    %   R2 实测 (N=100 each): K=6 bad=7%  → K=7 bad=3% → K=8 bad=1%
+    %   噪声更大的R2反而更需要高K_loss(有效丢帧率=漏检+关联失败叠加)
+    %   K=8为双方甜点,边界收益在K=7~8间耗竭,无额外坏处(死门+Vr门保护)
+    params.radar1_tracker_K_loss = 8;        % R1 甜点K=8
+    params.radar2_tracker_K_loss = 8;        % R2 甜点K=8
 
     % =====================================================================
     % 模块8: 航迹管理参数（M/N 起始逻辑 + K_loss 终止逻辑）

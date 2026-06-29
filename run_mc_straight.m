@@ -51,7 +51,7 @@ seg_info = cell(N_MC, 1);
 fprintf('╔══════════════════════════════════════════════════════════════╗\n');
 fprintf('║     直线场景蒙特卡洛仿真  N=%d  架构:真值辅助+纯M/N        ║\n', N_MC);
 fprintf('╠══════════════════════════════════════════════════════════════╣\n');
-fprintf('║ Pd=0.6  Pfa=0.001  K_loss=4  dt=30s  n_frames≈52           ║\n');
+fprintf('║ Pd=0.6  Pfa=0.001  R1_Kloss=4 R2_Kloss=6  dt=30s  n_frames≈52  ║\n');
 fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
 
 tic;
@@ -117,9 +117,13 @@ for mc = 1:N_MC
     dr2_est = mean(dr2_list);  da2_est = mean(da2_list);
 
     % Phase 2+4: 点迹生成 + 偏差校正
+    % 关键设计: 每部雷达仅调用 rng() 一次，帧间随机流连续推进。
+    % 不同种子间使用不同偏移(1e7/2e7)完全隔离随机流，
+    % 打破旧 rng(seed+k) 的 Toeplitz 对角线相关性。
     detList_R1 = cell(n_frames, 1);  detList_R2 = cell(n_frames, 1);
+
+    rng(params.random_seed + 1e7);  % R1: 独立随机流，连续推进
     for k = 1:n_frames
-        rng(params.random_seed + k);
         [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
         detRaw = generate_frame_detections(params.radar1_lon, params.radar1_lat, ...
             params.radar1_tx_lon, params.radar1_tx_lat, pos(1), pos(2), vel(1), vel(2), ...
@@ -141,8 +145,10 @@ for mc = 1:N_MC
             detRaw(d).raw_lat = raw_lat;  detRaw(d).raw_lon = raw_lon;
         end
         detList_R1{k} = detRaw;
+    end
 
-        rng(params.random_seed + 10000 + k);
+    rng(params.random_seed + 2e7);  % R2: 独立随机流，与R1完全隔离
+    for k = 1:n_frames
         [pos2, vel2] = aircraft_trajectory_interpolate(traj, t2_grid(k));
         detRaw2 = generate_frame_detections(params.radar2_lon, params.radar2_lat, ...
             params.radar2_tx_lon, params.radar2_tx_lat, pos2(1), pos2(2), vel2(1), vel2(2), ...

@@ -116,6 +116,8 @@ function varargout = aircraft_trajectory_create(varargin)
         switch varargin{1}
             case 'turn'
                 [varargout{1}, varargout{2}] = create_turn_trajectory(varargin{2});
+            case 'gradual_turn'
+                [varargout{1}, varargout{2}] = create_gradual_turn_trajectory(varargin{2});
             otherwise
                 error('aircraft_trajectory_create: unknown action "%s"', varargin{1});
         end
@@ -287,6 +289,241 @@ function [traj, waypoints] = create_turn_trajectory(params)
     speed_ms = 140.0;
 
     traj = aircraft_trajectory_create(waypoints, speed_ms, params.dt_sec);
+end
+
+% =========================================================================
+% create_gradual_turn_trajectory - 渐进拐弯航迹生成器
+% =========================================================================
+% 【功能】生成民航客机式渐进拐弯航迹（1°/s转弯率）
+%   航路点: W1(起点) → W2(拐弯顶点) → W3(终点)
+%   转弯模型: 协调转弯，转弯率 ω = 1°/s，转弯半径 R = v/ω
+%   航迹结构: ①W1→入弯点(直线) ②入弯点→出弯点(圆弧) ③出弯点→W3(直线)
+%
+% 【几何推导】
+%   转弯角 θ = |bearing_out − bearing_in|
+%   转弯半径 R = speed_ms / (turn_rate_deg_per_sec × π/180)
+%   转弯提前量 d_anticipate = R × tan(θ/2)（沿入向从W2退后）
+%   弧长 = R × θ_rad
+%
+% 【轨迹生成】
+%   第1段（入弯直线）：W1到入弯点，恒定航向 = bearing_in
+%   第2段（转弯圆弧）：以1°/s匀速改变航向，dt_sec采样
+%   第3段（出弯直线）：出弯点到W3，恒定航向 = bearing_out
+%
+% 【输入】params — 参数结构体，使用 .aircraft_speed_ms, .dt_sec
+% 【输出】traj — 航迹结构体（与 aircraft_trajectory_create 标准输出兼容）
+%         waypoints — 3×2 航路点矩阵 [lon, lat]（不含高度）
+% =========================================================================
+function [traj, waypoints] = create_gradual_turn_trajectory(params)
+    % ---- 航路点定义 ----
+    % W1: 起点, W2: 拐弯顶点, W3: 终点
+    W1 = [126.6685, 32.2184];  % 起点
+    W2 = [128.2501, 31.0887];  % 拐弯顶点
+    W3 = [132.0502, 31.4379];  % 终点
+    waypoints = [W1(1), W1(2), 0;
+                 W2(1), W2(2), 0;
+                 W3(1), W3(2), 0];
+
+    speed_ms = params.aircraft_speed_ms;
+    dt = params.dt_sec;
+    turn_rate_deg_per_sec = 1.0;  % 民航标准转弯率
+
+    % ---- 第1步：计算入向和出向方位角 ----
+    bearing_in  = sphere_utils_azimuth(W1(1), W1(2), W2(1), W2(2));
+    bearing_out = sphere_utils_azimuth(W2(1), W2(2), W3(1), W3(2));
+
+    % ---- 第2步：计算转弯角度（标准化到 [0, 180]） ----
+    delta_heading = bearing_out - bearing_in;
+    % 标准化到 [-180, 180]
+    if delta_heading > 180
+        delta_heading = delta_heading - 360;
+    elseif delta_heading < -180
+        delta_heading = delta_heading + 360;
+    end
+    turn_angle_deg = abs(delta_heading);
+    turn_sign = sign(delta_heading);
+    if turn_sign == 0
+        turn_sign = 1;  % 退化情况：无转弯
+    end
+
+    % ---- 第3步：转弯几何参数 ----
+    omega_rad_per_sec = turn_rate_deg_per_sec * pi / 180.0;  % 转弯率 (rad/s)
+    R_turn_m = speed_ms / omega_rad_per_sec;  % 转弯半径 (m)
+    turn_angle_rad = turn_angle_deg * pi / 180.0;
+    d_anticipate_m = R_turn_m * tan(turn_angle_rad / 2.0);  % 转弯提前量 (m)
+    turn_arc_length_m = R_turn_m * turn_angle_rad;  % 弧长 (m)
+    turn_duration_sec = turn_angle_deg / turn_rate_deg_per_sec;  % 转弯持续时间 (s)
+
+    % ---- 第4步：计算第1段（W1 → 入弯点）的距离和时长 ----
+    dist_W1_W2_m = sphere_utils_haversine_distance(W1(1), W1(2), W2(1), W2(2));
+    seg1_dist_m = dist_W1_W2_m - d_anticipate_m;
+    if seg1_dist_m < 0
+        warning('create_gradual_turn: 转弯提前量超过W1→W2距离，截断为0');
+        seg1_dist_m = 0;
+    end
+    seg1_dur_sec = seg1_dist_m / speed_ms;
+
+    % ---- 第5步：计算第3段（出弯点 → W3）的距离和时长 ----
+    dist_W2_W3_m = sphere_utils_haversine_distance(W2(1), W2(2), W3(1), W3(2));
+    seg3_dist_m = dist_W2_W3_m - d_anticipate_m;
+    if seg3_dist_m < 0
+        warning('create_gradual_turn: 转弯提前量超过W2→W3距离，截断为0');
+        seg3_dist_m = 0;
+    end
+    seg3_dur_sec = seg3_dist_m / speed_ms;
+
+    % ---- 第6步：生成入弯点坐标（从W1沿bearing_in走seg1_dist_m） ----
+    [turn_start_lon, turn_start_lat] = haversine_forward(W1(1), W1(2), ...
+        bearing_in, seg1_dist_m);
+
+    % ---- 第7步：生成转弯弧段点迹（以dt_sec采样） ----
+    % 从入弯点开始，每dt_sec改变航向 turn_rate_deg_per_sec × dt_sec 度
+    % 在每个dt_sec微段内，航向从段首线性变化到段尾
+    arc_points = {};
+    current_lon = turn_start_lon;
+    current_lat = turn_start_lat;
+    current_bearing = bearing_in;
+    t_in_arc = 0;
+    arc_step = 1.0;  % 弧段内部采样步长 (s)，小于dt时细化
+
+    while t_in_arc < turn_duration_sec - 1e-6
+        step_sec = min(arc_step, turn_duration_sec - t_in_arc);
+        % 该微段内的平均航向（首尾航向的中间值）
+        heading_start = current_bearing;
+        heading_end = bearing_in + turn_sign * turn_rate_deg_per_sec * (t_in_arc + step_sec);
+        heading_mid = (heading_start + heading_end) / 2.0;
+        if abs(heading_end - heading_start) > 180
+            % 跨越360°边界
+            if heading_start < heading_end
+                heading_mid = heading_start + (heading_end - heading_start - 360) / 2.0;
+            else
+                heading_mid = heading_start + (heading_end - heading_start + 360) / 2.0;
+            end
+            if heading_mid < 0, heading_mid = heading_mid + 360; end
+            if heading_mid >= 360, heading_mid = heading_mid - 360; end
+        end
+        % 沿平均航向移动 step_sec × speed_ms
+        [next_lon, next_lat] = haversine_forward(current_lon, current_lat, ...
+            heading_mid, speed_ms * step_sec);
+        arc_points{end+1} = struct('lon', next_lon, 'lat', next_lat);
+        current_lon = next_lon;
+        current_lat = next_lat;
+        current_bearing = heading_end;
+        % 标准化 current_bearing
+        if current_bearing >= 360, current_bearing = current_bearing - 360; end
+        if current_bearing < 0, current_bearing = current_bearing + 360; end
+        t_in_arc = t_in_arc + step_sec;
+    end
+    turn_end_lon = current_lon;
+    turn_end_lat = current_lat;
+    bearing_out_actual = current_bearing;
+
+    % ---- 第8步：确认出弯点可直接飞向W3 ----
+    % 出弯航向应已等于或接近 bearing_out
+    % 出弯点到W3的方位用于第3段
+    bearing_to_W3 = sphere_utils_azimuth(turn_end_lon, turn_end_lat, W3(1), W3(2));
+    seg3_dist_actual_m = sphere_utils_haversine_distance(turn_end_lon, turn_end_lat, W3(1), W3(2));
+
+    % ---- 第9步：构建航迹结构体（兼容 aircraft_trajectory_interpolate） ----
+    traj.speed  = speed_ms;
+    traj.dt_sec = dt;
+
+    % 构建航段cell数组
+    segments = {};
+
+    % 航段1：直线入弯（W1 → 入弯点）
+    if seg1_dur_sec > 1e-6
+        dur1 = seg1_dur_sec;
+        lon_rate1 = (turn_start_lon - W1(1)) / dur1;
+        lat_rate1 = (turn_start_lat - W1(2)) / dur1;
+        segments{end+1} = struct('start', [W1(1), W1(2)], ...
+            'end', [turn_start_lon, turn_start_lat], ...
+            'lon_rate', lon_rate1, 'lat_rate', lat_rate1, ...
+            'dur', dur1, 't_start', 0);
+    end
+
+    % 航段2：转弯弧段（用弧段微段拼接）
+    % 将弧段按dt_sec分组打包成大航段
+    t_cum = seg1_dur_sec;  % 累计时间
+    prev_pt_lon = turn_start_lon;
+    prev_pt_lat = turn_start_lat;
+    n_arc = length(arc_points);
+    % 按dt_sec秒一组打包
+    pts_per_seg = max(1, round(dt / arc_step));
+    for i_start = 1:pts_per_seg:n_arc
+        i_end = min(i_start + pts_per_seg - 1, n_arc);
+        seg_start_lon = prev_pt_lon;
+        seg_start_lat = prev_pt_lat;
+        seg_end_lon = arc_points{i_end}.lon;
+        seg_end_lat = arc_points{i_end}.lat;
+        seg_dur = (i_end - i_start + 1) * arc_step;
+        if seg_dur < 1e-6, continue; end
+        lon_rate_s = (seg_end_lon - seg_start_lon) / seg_dur;
+        lat_rate_s = (seg_end_lat - seg_start_lat) / seg_dur;
+        segments{end+1} = struct('start', [seg_start_lon, seg_start_lat], ...
+            'end', [seg_end_lon, seg_end_lat], ...
+            'lon_rate', lon_rate_s, 'lat_rate', lat_rate_s, ...
+            'dur', seg_dur, 't_start', t_cum);
+        t_cum = t_cum + seg_dur;
+        prev_pt_lon = seg_end_lon;
+        prev_pt_lat = seg_end_lat;
+    end
+
+    % 航段3：直线出弯（出弯点 → W3）
+    if seg3_dist_actual_m > 1e-6
+        dur3 = seg3_dist_actual_m / speed_ms;
+        lon_rate3 = (W3(1) - turn_end_lon) / dur3;
+        lat_rate3 = (W3(2) - turn_end_lat) / dur3;
+        segments{end+1} = struct('start', [turn_end_lon, turn_end_lat], ...
+            'end', [W3(1), W3(2)], ...
+            'lon_rate', lon_rate3, 'lat_rate', lat_rate3, ...
+            'dur', dur3, 't_start', t_cum);
+        t_cum = t_cum + dur3;
+    end
+
+    traj.segments = segments';
+    traj.waypoints = waypoints(:, 1:2);
+    traj.duration_sec = t_cum;
+    traj.n_segments = length(segments);
+    traj.time_array = 0:dt:t_cum;
+    traj.n_steps = length(traj.time_array);
+
+    % ---- 第10步：打印轨迹信息 ----
+    fprintf('  渐进拐弯航迹生成:\n');
+    fprintf('    入向方位: %.1f°, 出向方位: %.1f°\n', bearing_in, bearing_out);
+    fprintf('    拐角: %.1f°, 转弯率: %.1f°/s\n', turn_angle_deg, turn_rate_deg_per_sec);
+    fprintf('    转弯半径: %.1f km, 转弯时长: %.1f s\n', R_turn_m/1000, turn_duration_sec);
+    fprintf('    总航程: %.1f km, 总时长: %.0f s\n', ...
+        (seg1_dist_m + turn_arc_length_m + seg3_dist_actual_m)/1000, t_cum);
+end
+
+% =========================================================================
+% haversine_forward — 球面正算（从起点沿方位角前进给定距离）
+% =========================================================================
+% 【输入】
+%   lon0, lat0 — 起点经纬度（度）
+%   bearing    — 方位角（度，真北为0，顺时针）
+%   dist_m     — 前进距离（米）
+% 【输出】
+%   lon1, lat1 — 终点经纬度（度）
+% 【公式】
+%   lat1 = asin(sin(lat0)*cos(d/R) + cos(lat0)*sin(d/R)*cos(bearing))
+%   lon1 = lon0 + atan2(sin(bearing)*sin(d/R)*cos(lat0), cos(d/R)-sin(lat0)*sin(lat1))
+% =========================================================================
+function [lon1, lat1] = haversine_forward(lon0, lat0, bearing, dist_m)
+    R = 6371000.0;  % 地球平均半径 (m)
+    lat0_rad = lat0 * pi / 180.0;
+    lon0_rad = lon0 * pi / 180.0;
+    bearing_rad = bearing * pi / 180.0;
+    dR = dist_m / R;
+
+    lat1_rad = asin(sin(lat0_rad) * cos(dR) + ...
+        cos(lat0_rad) * sin(dR) * cos(bearing_rad));
+    lon1_rad = lon0_rad + atan2(sin(bearing_rad) * sin(dR) * cos(lat0_rad), ...
+        cos(dR) - sin(lat0_rad) * sin(lat1_rad));
+
+    lat1 = lat1_rad * 180.0 / pi;
+    lon1 = lon1_rad * 180.0 / pi;
 end
 % ========================================================================
 % 文件结束

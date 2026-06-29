@@ -84,7 +84,11 @@ function ukf = create_ukf(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
     ukf.x = zeros(4, 1);
     ukf.initialized = false;
 
-    % 第8部分：常量
+    % 第8部分：运动模型配置（默认CV，IMM场景可覆盖为CT）
+    ukf.model_type = 'CV';
+    ukf.turn_rate_rad_per_sec = 0.0;
+
+    % 第9部分：常量
     ukf.R_EARTH = 6371000.0;
 end
 
@@ -223,10 +227,16 @@ function [x_pred, P_pred, X_pred, ukf] = predict_step_ukf(ukf)
     % 子步骤1：生成 Sigma 点
     X = sigma_points_ukf(ukf.x, ukf.P, ukf.n, ukf.lam);
 
-    % 子步骤2：传播每个 Sigma 点通过状态转移函数
+    % 子步骤2：传播每个 Sigma 点通过状态转移函数（根据运动模型分发）
     X_pred = zeros(ukf.n, 2 * ukf.n + 1);
-    for i = 1:(2 * ukf.n + 1)
-        X_pred(:, i) = state_transition_ukf(X(:, i), ukf.dt);
+    if strcmp(ukf.model_type, 'CT') && abs(ukf.turn_rate_rad_per_sec) > 1e-12
+        for i = 1:(2 * ukf.n + 1)
+            X_pred(:, i) = state_transition_ct_ukf(X(:, i), ukf.dt, ukf.turn_rate_rad_per_sec);
+        end
+    else
+        for i = 1:(2 * ukf.n + 1)
+            X_pred(:, i) = state_transition_ukf(X(:, i), ukf.dt);
+        end
     end
 
     % 子步骤3：计算预测状态均值 x_pred
@@ -312,6 +322,35 @@ function x_next = state_transition_ukf(x, dt)
          0.0, 1.0, 0.0, 0.0; ...
          0.0, 0.0, 1.0, dt;  ...
          0.0, 0.0, 0.0, 1.0];
+    x_next = F * x;
+end
+
+% =========================================================================
+% state_transition_ct_ukf — CT 协调转弯模型状态转移（已知转弯率 ω）
+%
+% 状态 x = [lon, lon_dot, lat, lat_dot]'
+% 对右转 ω>0，对左转 ω<0
+%
+% F_CT(Δt, ω) = [
+%   1,  sin(ωΔt)/ω,          0,  -(1-cos(ωΔt))/ω;
+%   0,  cos(ωΔt),            0,  -sin(ωΔt);
+%   0,  (1-cos(ωΔt))/ω,      1,  sin(ωΔt)/ω;
+%   0,  sin(ωΔt),            0,  cos(ωΔt)
+% ]
+%
+% 当 ω→0 时，F_CT 退化为 F_CV（用泰勒展开验证）
+% =========================================================================
+function x_next = state_transition_ct_ukf(x, dt, omega)
+    wT = omega * dt;
+    cos_wT = cos(wT);
+    sin_wT = sin(wT);
+    one_m_cos = 1.0 - cos_wT;
+    inv_omega = 1.0 / omega;
+
+    F = [1.0, sin_wT * inv_omega,  0.0, -one_m_cos * inv_omega; ...
+         0.0, cos_wT,              0.0, -sin_wT; ...
+         0.0, one_m_cos * inv_omega, 1.0, sin_wT * inv_omega; ...
+         0.0, sin_wT,              0.0, cos_wT];
     x_next = F * x;
 end
 

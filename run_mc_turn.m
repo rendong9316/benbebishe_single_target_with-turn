@@ -386,11 +386,12 @@ function r = run_one(seed)
     dr2_est = mean(dr2_list);  da2_est = mean(da2_list);
 
     % ---- Phase 2: 原始点迹生成 ----
+    % 关键: 每部雷达仅设一次rng，帧间随机流连续推进，打破Toeplitz相关性
     detRaw_R1 = cell(n_frames, 1);
     detRaw_R2 = cell(n_frames, 1);
 
+    rng(params.random_seed + 1e7);  % R1: 独立随机流
     for k = 1:n_frames
-        rng(params.random_seed + k);
         [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
         detRaw_R1{k} = generate_frame_detections(params.radar1_lon, params.radar1_lat, ...
             params.radar1_tx_lon, params.radar1_tx_lat, ...
@@ -401,8 +402,10 @@ function r = run_one(seed)
         for d = 1:length(detRaw_R1{k})
             detRaw_R1{k}(d).aircraft_id = 1;
         end
+    end
 
-        rng(params.random_seed + 10000 + k);
+    rng(params.random_seed + 2e7);  % R2: 独立随机流，与R1完全隔离
+    for k = 1:n_frames
         [pos2, vel2] = aircraft_trajectory_interpolate(traj, t2_grid(k));
         detRaw_R2{k} = generate_frame_detections(params.radar2_lon, params.radar2_lat, ...
             params.radar2_tx_lon, params.radar2_tx_lat, ...
