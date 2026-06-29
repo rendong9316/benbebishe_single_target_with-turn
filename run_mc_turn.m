@@ -25,6 +25,14 @@ rmse.fus_ad   = nan(N_MC, 1);
 rmse.sgl_base = nan(N_MC, 1);
 rmse.sgl_ad   = nan(N_MC, 1);
 
+% ---- 航迹段长统计 ----
+seg.mtl_R1 = nan(N_MC,1);  seg.mtl_R2 = nan(N_MC,1);
+seg.mtl_R1_ad = nan(N_MC,1);  seg.mtl_R2_ad = nan(N_MC,1);
+seg.mtl_fus_base = nan(N_MC,1);  seg.mtl_fus_ad = nan(N_MC,1);
+seg.nb_R1 = nan(N_MC,1);  seg.nb_R2 = nan(N_MC,1);
+seg.nb_R1_ad = nan(N_MC,1);  seg.nb_R2_ad = nan(N_MC,1);
+seg.nb_fus_base = nan(N_MC,1);  seg.nb_fus_ad = nan(N_MC,1);
+
 % ---- 详细诊断信息（用于坏种子分析） ----
 diag = struct();
 diag.type_R1 = nan(N_MC,1);  diag.type_R2 = nan(N_MC,1);
@@ -68,6 +76,14 @@ for mc = 1:N_MC
     rmse.fus_ad(mc)   = r.fus_ad;
     rmse.sgl_base(mc) = r.sgl_base;
     rmse.sgl_ad(mc)   = r.sgl_ad;
+
+    % 航迹段长统计
+    seg.mtl_R1(mc) = r.mtl_R1;  seg.mtl_R2(mc) = r.mtl_R2;
+    seg.mtl_R1_ad(mc) = r.mtl_R1_ad;  seg.mtl_R2_ad(mc) = r.mtl_R2_ad;
+    seg.mtl_fus_base(mc) = r.mtl_fus_base;  seg.mtl_fus_ad(mc) = r.mtl_fus_ad;
+    seg.nb_R1(mc) = r.nb_R1;  seg.nb_R2(mc) = r.nb_R2;
+    seg.nb_R1_ad(mc) = r.nb_R1_ad;  seg.nb_R2_ad(mc) = r.nb_R2_ad;
+    seg.nb_fus_base(mc) = r.nb_fus_base;  seg.nb_fus_ad(mc) = r.nb_fus_ad;
 
     % 存储诊断信息
     diag.type_R1(mc) = r.type_R1;  diag.type_R2(mc) = r.type_R2;
@@ -121,6 +137,12 @@ for mc = 1:N_MC
         bs.nTrk_R1_ad = r.nTrk_R1_ad;  bs.nTrk_R2_ad = r.nTrk_R2_ad;
         bs.n_frames = r.n_frames;
         bs.category = bad_cat;
+        bs.mtl_R1 = r.mtl_R1;  bs.mtl_R2 = r.mtl_R2;
+        bs.mtl_fus_base = r.mtl_fus_base;  bs.mtl_fus_ad = r.mtl_fus_ad;
+        bs.nb_R1 = r.nb_R1;  bs.nb_R2 = r.nb_R2;
+        bs.nb_fus_base = r.nb_fus_base;  bs.nb_fus_ad = r.nb_fus_ad;
+        bs.segs_R1 = r.segs_R1;  bs.segs_R2 = r.segs_R2;
+        bs.segs_fus_base = r.segs_fus_base;
         bad_seeds{end+1} = bs;
     end
     fprintf('\n');
@@ -249,13 +271,57 @@ else
     fprintf('无坏种子！所有%d次实验均通过。\n', N_MC);
 end
 
+% =========================================================================
+% 航迹段长统计（核心论文指标：MTL / 断裂次数）
+% =========================================================================
+fprintf('\n========== 航迹段长统计 (MTL = Mean Track Life, 帧) ==========\n');
+fprintf('%-28s %8s %8s %8s %8s %8s\n', ...
+    '指标', '均值', '标准差', '中位数', '最小', '最大');
+fprintf('%-28s %8s %8s %8s %8s %8s\n', ...
+    '----------------------------', '------', '------', '------', '------', '------');
+print_seg_row('R1基础 单站MTL', seg.mtl_R1);
+print_seg_row('R2基础 单站MTL', seg.mtl_R2);
+print_seg_row('R1自适应 单站MTL', seg.mtl_R1_ad);
+print_seg_row('R2自适应 单站MTL', seg.mtl_R2_ad);
+print_seg_row('基础融合 MTL', seg.mtl_fus_base);
+print_seg_row('自适应融合 MTL', seg.mtl_fus_ad);
+
+fprintf('\n--- MTL 改善率 (融合 vs 单站最优) ---\n');
+mtl_sgl_best = max(seg.mtl_R1, seg.mtl_R2);
+mtl_sgl_best_ad = max(seg.mtl_R1_ad, seg.mtl_R2_ad);
+imp_mtl_base = (seg.mtl_fus_base ./ mtl_sgl_best - 1) * 100;
+imp_mtl_ad   = (seg.mtl_fus_ad ./ mtl_sgl_best_ad - 1) * 100;
+fprintf('%-28s %8s %8s %8s %8s %8s\n', '指标', '均值', '标准差', '中位数', '最小', '最大');
+fprintf('%-28s %8s %8s %8s %8s %8s\n', '----------------------------', '------', '------', '------', '------', '------');
+print_seg_row('基础融合 MTL改善率(%)', imp_mtl_base);
+print_seg_row('自适应融合 MTL改善率(%)', imp_mtl_ad);
+
+fprintf('\n--- 航迹断裂次数 ---\n');
+fprintf('%-28s %8s %8s %8s %8s %8s\n', '指标', '均值', '标准差', '中位数', '最小', '最大');
+fprintf('%-28s %8s %8s %8s %8s %8s\n', '----------------------------', '------', '------', '------', '------', '------');
+print_seg_row('R1基础 断裂次数', seg.nb_R1);
+print_seg_row('R2基础 断裂次数', seg.nb_R2);
+print_seg_row('R1自适应 断裂次数', seg.nb_R1_ad);
+print_seg_row('R2自适应 断裂次数', seg.nb_R2_ad);
+print_seg_row('基础融合 断裂次数', seg.nb_fus_base);
+print_seg_row('自适应融合 断裂次数', seg.nb_fus_ad);
+
 % ---- 保存完整数据 ----
 if ~exist('results', 'dir'), mkdir('results'); end
 outf = fullfile('results', sprintf('mc_turn_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
-save(outf, 'rmse', 'imp_cal_R1', 'imp_cal_R2', 'imp_ukf_R1', 'imp_ukf_R2', ...
+save(outf, 'rmse', 'seg', 'imp_cal_R1', 'imp_cal_R2', 'imp_ukf_R1', 'imp_ukf_R2', ...
     'imp_ad_R1', 'imp_ad_R2', 'imp_fus_base', 'imp_fus_ad', ...
+    'imp_mtl_base', 'imp_mtl_ad', 'mtl_sgl_best', 'mtl_sgl_best_ad', ...
     'diag', 'bad_seeds', 'N_MC');
 fprintf('\n完整数据已保存: %s\n', outf);
+
+% ---- 航迹分段可视化（用第一个非坏种子画图） ----
+good_seeds = setdiff(1:N_MC, cellfun(@(b) b.seed, bad_seeds));
+if ~isempty(good_seeds)
+    fprintf('\n正在生成分段可视化...\n');
+    r_viz = run_one(good_seeds(1));
+    plot_segment_comparison(r_viz, simulation_params(), r_viz.n_frames);
+end
 
 
 % =========================================================================
@@ -475,10 +541,14 @@ function r = run_one(seed)
 
     fus_base_rmses = nan(1, 4);
     fus_ad_rmses   = nan(1, 4);
+    all_fused_base = cell(1, 4);
+    all_fused_ad   = cell(1, 4);
 
     for m = 1:4
         snaps_base = run_track_fusion(matched_pair, trackSnapshots_R1, aligned_R2, params, method_names{m});
         snaps_ad   = run_track_fusion(matched_pair, trackSnapshots_R1_ad, aligned_R2_ad, params, method_names{m});
+        all_fused_base{m} = snaps_base;
+        all_fused_ad{m}   = snaps_ad;
         fus_base_rmses(m) = rmse_fusion_snaps(snaps_base, true_track, t1_grid, n_frames);
         fus_ad_rmses(m)   = rmse_fusion_snaps(snaps_ad,   true_track, t1_grid, n_frames);
     end
@@ -493,6 +563,28 @@ function r = run_one(seed)
 
     r.sgl_base = min(sgl_R1_base, sgl_R2_base);
     r.sgl_ad   = min(sgl_R1_ad,   sgl_R2_ad);
+
+    % ---- 航迹段长统计 ----
+    segs1 = extract_segments(trackSnapshots_R1, n_frames);
+    segs2 = extract_segments(trackSnapshots_R2, n_frames);
+    segs1_ad = extract_segments(trackSnapshots_R1_ad, n_frames);
+    segs2_ad = extract_segments(trackSnapshots_R2_ad, n_frames);
+    r.mtl_R1 = compute_mtl(segs1);  r.nb_R1 = size(segs1,1);
+    r.mtl_R2 = compute_mtl(segs2);  r.nb_R2 = size(segs2,1);
+    r.mtl_R1_ad = compute_mtl(segs1_ad);  r.nb_R1_ad = size(segs1_ad,1);
+    r.mtl_R2_ad = compute_mtl(segs2_ad);  r.nb_R2_ad = size(segs2_ad,1);
+
+    % 最佳融合航迹段长
+    [~, bm] = min(fus_base_rmses);
+    segs_fb = extract_fusion_segments(all_fused_base{bm}, n_frames);
+    r.mtl_fus_base = compute_mtl(segs_fb);  r.nb_fus_base = size(segs_fb,1);
+    [~, bm_ad] = min(fus_ad_rmses);
+    segs_fa = extract_fusion_segments(all_fused_ad{bm_ad}, n_frames);
+    r.mtl_fus_ad = compute_mtl(segs_fa);  r.nb_fus_ad = size(segs_fa,1);
+
+    % 保存分段详情（最后一个好种子用于画图）
+    r.segs_R1 = segs1;  r.segs_R2 = segs2;
+    r.segs_fus_base = segs_fb;
 end
 
 % =========================================================================
@@ -591,4 +683,141 @@ function print_bs_row(label, vals)
         fprintf('%-16s %8.1f %8.1f %8.1f %8.1f %8.1f\n', ...
             label, mean(vv), median(vv), min(vv), max(vv), std(vv));
     end
+end
+
+% =========================================================================
+% 航迹分段提取：从快照中找出连续的 TRACKING 段
+%   返回 N×3 矩阵，每行 [start_frame, end_frame, length]
+% =========================================================================
+function segs = extract_segments(snaps, n_frames)
+    segs = [];
+    in_seg = false;  seg_start = 0;
+    for k = 1:n_frames
+        is_tracking = false;
+        if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
+            trk = snaps{k}.trackList{1};
+            if trk.type == 1 && ~isnan(trk.lat)
+                is_tracking = true;
+            end
+        end
+        if is_tracking && ~in_seg
+            in_seg = true;  seg_start = k;
+        elseif ~is_tracking && in_seg
+            in_seg = false;
+            segs(end+1, :) = [seg_start, k-1, k - seg_start];
+        end
+    end
+    if in_seg
+        segs(end+1, :) = [seg_start, n_frames, n_frames - seg_start + 1];
+    end
+end
+
+% =========================================================================
+% 融合航迹分段提取
+% =========================================================================
+function segs = extract_fusion_segments(snaps, n_frames)
+    segs = [];
+    in_seg = false;  seg_start = 0;
+    for k = 1:n_frames
+        is_tracking = false;
+        if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
+            trk = snaps{k}.trackList{1};
+            if ~isnan(trk.lat)
+                is_tracking = true;
+            end
+        end
+        if is_tracking && ~in_seg
+            in_seg = true;  seg_start = k;
+        elseif ~is_tracking && in_seg
+            in_seg = false;
+            segs(end+1, :) = [seg_start, k-1, k - seg_start];
+        end
+    end
+    if in_seg
+        segs(end+1, :) = [seg_start, n_frames, n_frames - seg_start + 1];
+    end
+end
+
+% =========================================================================
+% 计算平均航迹段长 (MTL)
+% =========================================================================
+function v = compute_mtl(segs)
+    if isempty(segs), v = 0;
+    else, v = mean(segs(:,3)); end
+end
+
+% =========================================================================
+% 打印段长统计行
+% =========================================================================
+function print_seg_row(label, vals)
+    vv = vals(~isnan(vals) & ~isinf(vals));
+    if isempty(vv)
+        fprintf('%-28s %8s %8s %8s %8s %8s\n', label, 'NaN', 'NaN', 'NaN', 'NaN', 'NaN');
+    else
+        fprintf('%-28s %8.1f %8.1f %8.1f %8.1f %8.1f\n', ...
+            label, mean(vv), std(vv), median(vv), min(vv), max(vv));
+    end
+end
+
+% =========================================================================
+% 航迹分段可视化：并排展示 R1/R2/融合 的连续段
+% =========================================================================
+function plot_segment_comparison(r, params, n_frames)
+    figure('Position', [50, 300, 1400, 450], 'Name', '航迹分段对比');
+
+    % ---- 子图1: 分段条 ----
+    subplot(1, 3, 1);
+    hold on;
+    if ~isempty(r.segs_R1)
+        for i = 1:size(r.segs_R1, 1)
+            s = r.segs_R1(i,1);  w = r.segs_R1(i,3);
+            rectangle('Position', [s, 0.7, w, 0.6], 'FaceColor', [0.2 0.6 1.0], ...
+                'EdgeColor', 'none', 'Curvature', 0.1);
+            text(s + w/2, 1.0, sprintf('%d', w), 'HorizontalAlign', 'center', ...
+                'FontSize', 8, 'Color', [0 0 0.5]);
+        end
+    end
+    xlim([1, n_frames]);  ylim([0, 2.5]);
+    title(sprintf('R1 单站 (MTL=%.1f 帧, %d段)', r.mtl_R1, max(1, r.nb_R1)), 'FontSize', 11);
+    xlabel('帧号');  set(gca, 'YTick', []);
+
+    % ---- 子图2: R2分段条 ----
+    subplot(1, 3, 2);
+    hold on;
+    if ~isempty(r.segs_R2)
+        for i = 1:size(r.segs_R2, 1)
+            s = r.segs_R2(i,1);  w = r.segs_R2(i,3);
+            rectangle('Position', [s, 0.7, w, 0.6], 'FaceColor', [1.0 0.4 0.2], ...
+                'EdgeColor', 'none', 'Curvature', 0.1);
+            text(s + w/2, 1.0, sprintf('%d', w), 'HorizontalAlign', 'center', ...
+                'FontSize', 8, 'Color', [0.5 0 0]);
+        end
+    end
+    xlim([1, n_frames]);  ylim([0, 2.5]);
+    title(sprintf('R2 单站 (MTL=%.1f 帧, %d段)', r.mtl_R2, max(1, r.nb_R2)), 'FontSize', 11);
+    xlabel('帧号');  set(gca, 'YTick', []);
+
+    % ---- 子图3: 融合分段条 ----
+    subplot(1, 3, 3);
+    hold on;
+    if ~isempty(r.segs_fus_base)
+        for i = 1:size(r.segs_fus_base, 1)
+            s = r.segs_fus_base(i,1);  w = r.segs_fus_base(i,3);
+            rectangle('Position', [s, 0.7, w, 0.6], 'FaceColor', [0.2 0.7 0.2], ...
+                'EdgeColor', 'none', 'Curvature', 0.1);
+            text(s + w/2, 1.0, sprintf('%d', w), 'HorizontalAlign', 'center', ...
+                'FontSize', 8, 'Color', [0 0.3 0]);
+        end
+    end
+    xlim([1, n_frames]);  ylim([0, 2.5]);
+    title(sprintf('融合后 (MTL=%.1f 帧, %d段)', r.mtl_fus_base, max(1, r.nb_fus_base)), 'FontSize', 11);
+    xlabel('帧号');  set(gca, 'YTick', []);
+
+    sgtitle(sprintf('航迹连续段对比 (K_{loss}=%d, 真值辅助起始)', params.radar1_tracker_K_loss), ...
+        'FontSize', 13, 'FontWeight', 'bold');
+
+    % ---- 保存 ----
+    if ~exist('results', 'dir'), mkdir('results'); end
+    saveas(gcf, fullfile('results', 'fig_segment_comparison.png'));
+    fprintf('分段对比图已保存: results/fig_segment_comparison.png\n');
 end

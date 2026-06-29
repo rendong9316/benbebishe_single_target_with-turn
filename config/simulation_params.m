@@ -322,9 +322,10 @@ function params = simulation_params()
     % =====================================================================
     % 7.7 航迹管理（雷达专属）
     % =====================================================================
-    % [turn: R1=20 — 拐弯可能短暂飞出覆盖，需延长丢点容忍]
-    params.radar1_tracker_K_loss = 10;       % R1 连续丢点终止帧数
-    params.radar2_tracker_K_loss = 10;       % R2 连续丢点终止帧数
+    params.use_truth_init = true;            % 真值辅助起始：跳过M/N直接起始
+    % [K_loss=4 — 平衡UKF收敛与单站断裂，让融合填补断点]
+    params.radar1_tracker_K_loss = 4;        % R1 连续丢点终止帧数
+    params.radar2_tracker_K_loss = 4;        % R2 连续丢点终止帧数
 
     % =====================================================================
     % 模块8: 航迹管理参数（M/N 起始逻辑 + K_loss 终止逻辑）
@@ -503,5 +504,5 @@ function params = simulation_params()
     % 随机数生成器种子
     % 42 是一个经典的"计算机科学梗"（《银河系漫游指南》中"生命、宇宙
     % 及一切的答案"），没有特殊的数学意义，任何固定整数均可。
-    params.random_seed = 10;
+    params.random_seed = 182;
 end

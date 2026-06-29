@@ -34,6 +34,11 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang_adaptive(det
 
     point_history = {};
 
+    % ---- 真值辅助起始用持久变量 ----
+    init_det1 = [];
+    init_frame1 = 0;
+    init_det2 = [];
+
     for k = 1:n_frames
         snap = struct('frameID', k, 'trackList', {{}});
         dets = detList{k};
@@ -44,36 +49,74 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang_adaptive(det
 
         switch track_state
             case 'WAITING'
-                [init_state, det1, det2, success] = track_initiation('process', ...
-                    init_state, dets, params, k);
+                if isfield(params, 'use_truth_init') && params.use_truth_init
+                    % ---- 真值辅助起始：跳过M/N，直接用真实检测起始 ----
+                    real_det = [];
+                    for d = 1:length(dets)
+                        if ~dets(d).is_clutter
+                            real_det = dets(d);
+                            break;
+                        end
+                    end
+                    if ~isempty(real_det)
+                        if isempty(init_det1)
+                            init_det1 = real_det;
+                            init_frame1 = k;
+                        elseif isempty(init_det2) && (k - init_frame1) >= 3
+                            init_det2 = real_det;
+                            ukf = ukf_zishiying('init', ukf_tpl, init_det1, init_det2);
+                            ukf.dt = params.dt_sec;
+                            ukf.initialized = true;
+                            ukf.Q_base = ukf.Q;
+                            ukf.Q_ema = 1.0;
+                            ukf.maneuver_active = false;
+                            ukf.maneuver_counter = 0;
+                            ukf.maneuver_recovery = 0;
+                            ukf.suspect_counter = 0;
+                            ukf.life_count = 1;
+                            if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                            track_state = 'TRACKING';
+                            track_type = 1;
+                            life = 1;  missed = 0;
+                            snap.trackList{1} = make_snap_ad(1, 1, ...
+                                NaN, NaN, ukf, life, 0, init_det2);
+                            trackSnapshots{k} = snap;
+                            continue;
+                        end
+                    end
+                else
+                    % ---- 原始 M/N 起始 + 南阳验证 ----
+                    [init_state, det1, det2, success] = track_initiation('process', ...
+                        init_state, dets, params, k);
 
-                if success
-                    candidate = build_candidate_for_validation_ad(...
-                        init_state, det1, det2, k, point_history, params, curTime, ukf_tpl);
+                    if success
+                        candidate = build_candidate_for_validation_ad(...
+                            init_state, det1, det2, k, point_history, params, curTime, ukf_tpl);
 
-                    if ~isempty(candidate) && fun_check_track_validation(candidate)
-                        ukf = ukf_zishiying('init', ukf_tpl, det1, det2);
-                        ukf.dt = params.dt_sec;
-                        ukf.initialized = true;
-                        ukf.Q_base = ukf.Q;
-                        ukf.Q_ema = 1.0;
-                        ukf.maneuver_active = false;
-                        ukf.maneuver_counter = 0;
-                        ukf.maneuver_recovery = 0;
-                        ukf.suspect_counter = 0;
-                        ukf.life_count = 1;
-                        if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                        if ~isempty(candidate) && fun_check_track_validation(candidate)
+                            ukf = ukf_zishiying('init', ukf_tpl, det1, det2);
+                            ukf.dt = params.dt_sec;
+                            ukf.initialized = true;
+                            ukf.Q_base = ukf.Q;
+                            ukf.Q_ema = 1.0;
+                            ukf.maneuver_active = false;
+                            ukf.maneuver_counter = 0;
+                            ukf.maneuver_recovery = 0;
+                            ukf.suspect_counter = 0;
+                            ukf.life_count = 1;
+                            if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
 
-                        track_state = 'TRACKING';
-                        track_type = 1;
-                        life = 1;  missed = 0;
+                            track_state = 'TRACKING';
+                            track_type = 1;
+                            life = 1;  missed = 0;
 
-                        snap.trackList{1} = make_snap_ad(1, 1, ...
-                            NaN, NaN, ukf, life, 0, det2);
-                        trackSnapshots{k} = snap;
-                        continue;
-                    else
-                        init_state = track_initiation('reset', params);
+                            snap.trackList{1} = make_snap_ad(1, 1, ...
+                                NaN, NaN, ukf, life, 0, det2);
+                            trackSnapshots{k} = snap;
+                            continue;
+                        else
+                            init_state = track_initiation('reset', params);
+                        end
                     end
                 end
 
@@ -156,6 +199,7 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang_adaptive(det
             case 'LOST'
                 track_state = 'WAITING';
                 init_state = track_initiation('reset', params);
+                init_det1 = [];  init_frame1 = 0;  init_det2 = [];
                 life = 0;  missed = 0;
                 track_type = 7;
                 snap.trackList{1} = make_snap_ad(1, 7, ...
