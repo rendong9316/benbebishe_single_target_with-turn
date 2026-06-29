@@ -48,11 +48,19 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
     dt = params.dt_sec;
     K_loss = params.tracker_K_loss;
 
+    % ---- IMM-IPDA 检测参数（Musicki 2008, IEEE T-AES） ----
+    Pd = params.detection_probability;  % 单帧检测概率
+    Pg = params.pda_pd_gate;            % 门内概率
+    Pd_Pg = Pd * Pg;                    % 综合检测概率
+    % 无检测时的似然: (1 - Pd*Pg)，众模型共用常数
+    L_no_det = 1.0 - Pd_Pg;
+
     % ---- Markov 转移概率矩阵 ----
     % Π(i,j) = P{model=j at k+1 | model=i at k}
-    % 行：from，列：to；0.05 转移概率，对应平均驻留 20 帧
-    Pi = [0.95, 0.05;
-          0.05, 0.95];
+    % 行：from，列：to；0.10 转移概率，对应平均驻留 10 帧
+    % 文献依据: ATPM-ISIPDA (Musicki 2008) — 低数据率场景需加快模型切换
+    Pi = [0.90, 0.10;
+          0.10, 0.90];
 
     % ---- 模型概率初始值 ----
     mu = [0.5; 0.5];  % 初始各 50%
@@ -335,21 +343,22 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
                     quality = max(0, quality - 5);
                 end
 
-                % ---- 步骤6: 模型似然度 ----
-                % Λ_j = exp(-0.5 * ν_j' * S_j^{-1} * ν_j) / sqrt(det(2π*S_j))
-                % 对数值稳定性取 log
+                % ---- 步骤6: 模型似然度（IMM-IPDA 风格, Musicki 2008） ----
+                % 有检测: Λ_j = Pd*Pg * N(ν_j; 0, S_j)
+                % 无检测: Λ_j = 1 - Pd*Pg（常数，不冻结模型概率）
+                % 注意: Pd*Pg 因子在比值中抵消，但无检测时 Λ 的绝对值影响
+                %        模型概率向 Markov 先验的漂移速率
+                nz = ukf_cv.m;  % 量测维数 = 3
                 if ~isempty(assoc_det)
-                    % CV 似然度
-                    logL_cv = -0.5 * (2 * log(2*pi) + log(max(det(P_zz_cv), 1e-30)) + nis_cv_val);
-                    % CT 似然度
-                    logL_ct = -0.5 * (2 * log(2*pi) + log(max(det(P_zz_ct), 1e-30)) + nis_ct_val);
+                    log_norm = -0.5 * (nz * log(2*pi) + log(max(det(P_zz_cv), 1e-30)));
+                    L_cv = Pd_Pg * exp(log_norm - 0.5 * nis_cv_val);
 
-                    L_cv = exp(logL_cv);
-                    L_ct = exp(logL_ct);
+                    log_norm = -0.5 * (nz * log(2*pi) + log(max(det(P_zz_ct), 1e-30)));
+                    L_ct = Pd_Pg * exp(log_norm - 0.5 * nis_ct_val);
                 else
-                    % 无量测时，似然度不可计算，保持模型概率不变
-                    L_cv = 1.0;
-                    L_ct = 1.0;
+                    % 无检测: 模型概率向 Markov 先验漂移
+                    L_cv = L_no_det;
+                    L_ct = L_no_det;
                 end
 
                 % ---- 步骤7: 模型概率更新 ----
@@ -359,8 +368,8 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
                 else
                     mu_new = mu;  % 数值退化时保持不变
                 end
-                % 钳位：单模型概率不低于 1%
-                mu = max(0.01, min(0.99, mu_new));
+                % 钳位：单模型概率不低于 5%（文献建议防止锁死）
+                mu = max(0.05, min(0.95, mu_new));
                 mu = mu / sum(mu);
 
                 % ---- 步骤8: 状态组合 ----

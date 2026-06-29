@@ -329,8 +329,7 @@ ukf1_ct_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, 
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 ukf1_ct_tpl.model_type = 'CT';
 ukf1_ct_tpl.turn_rate_rad_per_sec = turn_rate_rad_per_sec;
-% CT模型：Q稍大，补偿转弯率的不确定性
-ukf1_ct_tpl.Q = ukf1_ct_tpl.Q * 1.5;
+% 文献依据: CT与CV使用相同Q，CT的优势来自F_CT矩阵而非不同的过程噪声
 
 % ---- R2 UKF 参数配置 ----
 params_r2 = params;
@@ -352,7 +351,7 @@ ukf2_ct_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_la
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 ukf2_ct_tpl.model_type = 'CT';
 ukf2_ct_tpl.turn_rate_rad_per_sec = turn_rate_rad_per_sec;
-ukf2_ct_tpl.Q = ukf2_ct_tpl.Q * 1.5;
+% CT与CV使用相同Q（与R1一致）
 
 % ---- IMM 跟踪 ----
 fprintf('--- IMM 跟踪 (CV + CT, ω=%.4f rad/s) ---\n', turn_rate_rad_per_sec);
