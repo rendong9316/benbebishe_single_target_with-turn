@@ -92,12 +92,14 @@ function plot_single_track_result(true_track, detList_R1, detList_R2, ...
     r1_tracks = collect_active_tracks_str(trackSnapshots_R1);
     for t = 1:length(r1_tracks)
         trk = r1_tracks{t};
-        if length(trk.lat_history) > 2
+        if length(trk.lat_history) > 1
+            seg_label = sprintf('R1 UKF#%d', trk.id);
+            if length(r1_tracks) > 1, seg_label = sprintf('R1 UKF#%d-段%d', trk.id, t); end
             h = geoplot(ax, trk.lat_history, trk.lon_history, 'b-o', ...
                 'LineWidth', 2.0, 'MarkerSize', 5, 'MarkerFaceColor', 'b', ...
-                'DisplayName', sprintf('R1 UKF#%d', trk.id));
+                'DisplayName', seg_label);
             h_all(end+1) = h;
-            layer_names{end+1} = sprintf('R1 UKF航迹#%d', trk.id);
+            layer_names{end+1} = seg_label;
         end
     end
 
@@ -122,12 +124,14 @@ function plot_single_track_result(true_track, detList_R1, detList_R2, ...
     r2_tracks = collect_active_tracks_str(trackSnapshots_R2);
     for t = 1:length(r2_tracks)
         trk = r2_tracks{t};
-        if length(trk.lat_history) > 2
+        if length(trk.lat_history) > 1
+            seg_label = sprintf('R2 UKF#%d', trk.id);
+            if length(r2_tracks) > 1, seg_label = sprintf('R2 UKF#%d-段%d', trk.id, t); end
             h = geoplot(ax, trk.lat_history, trk.lon_history, 'r-^', ...
                 'LineWidth', 2.0, 'MarkerSize', 5, 'MarkerFaceColor', 'r', ...
-                'DisplayName', sprintf('R2 UKF#%d', trk.id));
+                'DisplayName', seg_label);
             h_all(end+1) = h;
-            layer_names{end+1} = sprintf('R2 UKF航迹#%d', trk.id);
+            layer_names{end+1} = seg_label;
         end
     end
 
@@ -199,24 +203,42 @@ function [lats, lons] = extract_dets_str(detList, mode)
 end
 
 function tracks = collect_active_tracks_str(snapshots)
-    track_map = containers.Map('KeyType', 'int32', 'ValueType', 'any');
+    % 按连续帧自动分段，每段独立（支持断裂重起后的多段航迹分别绘制）
+    tracks = {};
+    seg_lats = []; seg_lons = [];
+    in_seg = false;
     for k = 1:length(snapshots)
         snap = snapshots{k};
-        if isempty(snap.trackList), continue; end
-        for t = 1:length(snap.trackList)
-            trk = snap.trackList{t};
-            if trk.type == 7, continue; end
-            tid = trk.id;
-            if ~track_map.isKey(tid)
-                track_map(tid) = struct('id', tid, 'lat_history', [], 'lon_history', []);
+        valid = false; lat_val = NaN; lon_val = NaN; tid = 0;
+        if ~isempty(snap.trackList)
+            trk = snap.trackList{1};
+            if trk.type ~= 7 && ~isnan(trk.lat)
+                valid = true;
+                lat_val = trk.lat;
+                lon_val = trk.lon;
+                tid = trk.id;
             end
-            rec = track_map(tid);
-            rec.lat_history(end+1) = trk.lat;
-            rec.lon_history(end+1) = trk.lon;
-            track_map(tid) = rec;
+        end
+        if valid
+            if ~in_seg
+                in_seg = true;
+                seg_lats = lat_val;
+                seg_lons = lon_val;
+            else
+                seg_lats(end+1) = lat_val;
+                seg_lons(end+1) = lon_val;
+            end
+        else
+            if in_seg
+                in_seg = false;
+                tracks{end+1} = struct('id', tid, 'lat_history', seg_lats, 'lon_history', seg_lons);
+                seg_lats = []; seg_lons = [];
+            end
         end
     end
-    tracks = values(track_map);
+    if in_seg
+        tracks{end+1} = struct('id', tid, 'lat_history', seg_lats, 'lon_history', seg_lons);
+    end
 end
 
 function try_set_visible_str(h, val)
@@ -276,22 +298,26 @@ function plot_single_fusion_result(true_track, trackSnapshots_R1, trackSnapshots
     r1_tracks = collect_positions_sfr(trackSnapshots_R1);
     for t = 1:length(r1_tracks)
         trk = r1_tracks{t};
-        if length(trk.lat_history) > 2
+        if length(trk.lat_history) > 1
+            seg_label = sprintf('R1 UKF#%d', trk.id);
+            if length(r1_tracks) > 1, seg_label = sprintf('R1 UKF#%d-段%d', trk.id, t); end
             h = geoplot(ax, trk.lat_history, trk.lon_history, 'b-o', ...
                 'LineWidth', 1.5, 'MarkerSize', 4, 'MarkerFaceColor', 'b', ...
-                'DisplayName', sprintf('R1 UKF#%d', trk.id));
-            h_all(end+1) = h; layer_names{end+1} = sprintf('R1 UKF#%d', trk.id);
+                'DisplayName', seg_label);
+            h_all(end+1) = h; layer_names{end+1} = seg_label;
         end
     end
 
     r2_tracks = collect_positions_sfr(trackSnapshots_R2);
     for t = 1:length(r2_tracks)
         trk = r2_tracks{t};
-        if length(trk.lat_history) > 2
+        if length(trk.lat_history) > 1
+            seg_label = sprintf('R2 UKF#%d', trk.id);
+            if length(r2_tracks) > 1, seg_label = sprintf('R2 UKF#%d-段%d', trk.id, t); end
             h = geoplot(ax, trk.lat_history, trk.lon_history, 'r-^', ...
                 'LineWidth', 1.5, 'MarkerSize', 4, 'MarkerFaceColor', 'r', ...
-                'DisplayName', sprintf('R2 UKF#%d', trk.id));
-            h_all(end+1) = h; layer_names{end+1} = sprintf('R2 UKF#%d', trk.id);
+                'DisplayName', seg_label);
+            h_all(end+1) = h; layer_names{end+1} = seg_label;
         end
     end
 
@@ -301,15 +327,17 @@ function plot_single_fusion_result(true_track, trackSnapshots_R1, trackSnapshots
         fused_pos = collect_fused_positions_sfr(snaps_m);
         for t = 1:length(fused_pos)
             ft = fused_pos{t};
-            if length(ft.lat_history) > 2
+            if length(ft.lat_history) > 1
                 lw = 3.0;
                 if m == best_idx, lw = 3.5; end
+                seg_label = sprintf('%s 融合', method_names{m});
+                if length(fused_pos) > 1, seg_label = sprintf('%s 融合-段%d', method_names{m}, t); end
                 h = geoplot(ax, ft.lat_history, ft.lon_history, '-d', ...
                     'Color', method_colors{m}, 'LineWidth', lw, ...
                     'MarkerSize', 5, 'MarkerFaceColor', method_colors{m}, ...
-                    'DisplayName', sprintf('%s 融合', method_names{m}));
+                    'DisplayName', seg_label);
                 h_all(end+1) = h;
-                layer_names{end+1} = sprintf('%s 融合航迹', method_names{m});
+                layer_names{end+1} = seg_label;
             end
         end
     end
@@ -438,44 +466,81 @@ function plot_single_fusion_result(true_track, trackSnapshots_R1, trackSnapshots
 end
 
 function tracks = collect_positions_sfr(snapshots)
-    track_map = containers.Map('KeyType', 'int32', 'ValueType', 'any');
+    % 按连续帧自动分段（与 collect_active_tracks_str 一致）
+    tracks = {};
+    seg_lats = []; seg_lons = [];
+    in_seg = false;
     for k = 1:length(snapshots)
         snap = snapshots{k};
-        if isempty(snap.trackList), continue; end
-        for t = 1:length(snap.trackList)
-            trk = snap.trackList{t};
-            if trk.type == 7, continue; end
-            tid = trk.id;
-            if ~track_map.isKey(tid)
-                track_map(tid) = struct('id', tid, 'lat_history', [], 'lon_history', []);
+        valid = false; lat_val = NaN; lon_val = NaN; tid = 0;
+        if ~isempty(snap.trackList)
+            trk = snap.trackList{1};
+            if trk.type ~= 7 && ~isnan(trk.lat)
+                valid = true;
+                lat_val = trk.lat;
+                lon_val = trk.lon;
+                tid = trk.id;
             end
-            rec = track_map(tid);
-            rec.lat_history(end+1) = trk.lat;
-            rec.lon_history(end+1) = trk.lon;
-            track_map(tid) = rec;
+        end
+        if valid
+            if ~in_seg
+                in_seg = true;
+                seg_lats = lat_val;
+                seg_lons = lon_val;
+            else
+                seg_lats(end+1) = lat_val;
+                seg_lons(end+1) = lon_val;
+            end
+        else
+            if in_seg
+                in_seg = false;
+                tracks{end+1} = struct('id', tid, 'lat_history', seg_lats, 'lon_history', seg_lons);
+                seg_lats = []; seg_lons = [];
+            end
         end
     end
-    tracks = values(track_map);
+    if in_seg
+        tracks{end+1} = struct('id', tid, 'lat_history', seg_lats, 'lon_history', seg_lons);
+    end
 end
 
 function tracks = collect_fused_positions_sfr(snapshots)
-    track_map = containers.Map('KeyType', 'int32', 'ValueType', 'any');
+    % 按连续帧自动分段
+    tracks = {};
+    seg_lats = []; seg_lons = [];
+    in_seg = false; seg_id = 0;
     for k = 1:length(snapshots)
         snap = snapshots{k};
-        if isempty(snap.trackList), continue; end
-        for t = 1:length(snap.trackList)
-            ft = snap.trackList{t};
-            pid = ft.id;
-            if ~track_map.isKey(pid)
-                track_map(pid) = struct('id', pid, 'lat_history', [], 'lon_history', []);
+        valid = false; lat_val = NaN; lon_val = NaN;
+        if ~isempty(snap.trackList)
+            ft = snap.trackList{1};
+            if ~isnan(ft.lat)
+                valid = true;
+                lat_val = ft.lat;
+                lon_val = ft.lon;
+                seg_id = ft.id;
             end
-            rec = track_map(pid);
-            rec.lat_history(end+1) = ft.lat;
-            rec.lon_history(end+1) = ft.lon;
-            track_map(pid) = rec;
+        end
+        if valid
+            if ~in_seg
+                in_seg = true;
+                seg_lats = lat_val;
+                seg_lons = lon_val;
+            else
+                seg_lats(end+1) = lat_val;
+                seg_lons(end+1) = lon_val;
+            end
+        else
+            if in_seg
+                in_seg = false;
+                tracks{end+1} = struct('id', seg_id, 'lat_history', seg_lats, 'lon_history', seg_lons);
+                seg_lats = []; seg_lons = [];
+            end
         end
     end
-    tracks = values(track_map);
+    if in_seg
+        tracks{end+1} = struct('id', seg_id, 'lat_history', seg_lats, 'lon_history', seg_lons);
+    end
 end
 
 function fe = build_frame_errors_sfr(fused_snaps, truth, frame_times)

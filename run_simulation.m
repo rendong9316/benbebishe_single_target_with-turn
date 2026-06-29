@@ -698,6 +698,7 @@ params.ukf_Q_scale     = params.radar1_ukf_Q_scale;
 params.ukf_P_pos_std   = params.radar1_ukf_P_pos_std;
 params.ukf_P_vel_std   = params.radar1_ukf_P_vel_std;
 params.gate_sigma      = params.radar1_gate_sigma;
+params.gate_vr_ms      = params.radar1_gate_vr_ms;
 params.tracker_K_loss  = params.radar1_tracker_K_loss;
 % ukf_jichu('create'): 创建UKF模板结构体
 %   内部初始化：state_dim(4) + sigma_points + weights + 坐标转换初始化
@@ -712,6 +713,7 @@ params_r2 = params;
 params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;
 params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
 params_r2.gate_sigma      = params.radar2_gate_sigma;
+params_r2.gate_vr_ms      = params.radar2_gate_vr_ms;
 params_r2.ukf_Q_scale     = params.radar2_ukf_Q_scale;
 params_r2.ukf_P_pos_std   = params.radar2_ukf_P_pos_std;
 params_r2.ukf_P_vel_std   = params.radar2_ukf_P_vel_std;
@@ -756,8 +758,8 @@ end
 %     .trackList: 当前活跃的航迹列表（cell数组）
 %       每条航迹结构体含: .id, .type, .life, .lon, .lat, .ukf, .assoc_det 等
 %   finalTrk: 最终的航迹结构体
-[trackSnapshots_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, params, n_frames);
-[trackSnapshots_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, params_r2, n_frames);
+[trackSnapshots_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, params, n_frames, true_track, t1_grid);
+[trackSnapshots_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, params_r2, n_frames, true_track, t2_grid);
 trackList_R1 = {finalTrk1};  % 单目标只有一条航迹
 trackList_R2 = {finalTrk2};
 

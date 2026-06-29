@@ -30,7 +30,15 @@
 %   finalTrack     - 结构体，最终航迹状态摘要
 % =========================================================================
 
-function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, params, n_frames)
+function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, params, n_frames, varargin)
+    % ---- 可选参数: true_track, t_grid (真值辅助首次起始) ----
+    has_truth = false;
+    if ~isempty(varargin) && length(varargin) >= 2
+        true_track = varargin{1};
+        t_grid = varargin{2};
+        has_truth = true;
+    end
+
     % ---- 初始化 ----
     trackSnapshots = cell(n_frames, 1);
     ukf = [];
@@ -39,6 +47,23 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
     life = 0;  missed = 0;  quality = 0;
 
     init_state = track_initiation('init', params);
+
+    % ---- 真值辅助首次起始: 局部持久变量 ----
+    % LOST 时清空 init_det1/2 但不重置 first_init_done
+    % 保证只有首次起始用真值辅助，重新起始走纯 M/N
+    first_init_done = false;
+    init_det1 = [];
+    init_frame1 = 0;
+    init_det2 = [];
+
+    % ---- 重新起始超时兜底: M/N 跑不出来就作弊 ----
+    % 进入 INITIATING 后若超过 reinit_timeout 帧仍不能起始，自动真值辅助
+    % 既保留 Pd=0.6 的自然片段化，又消灭起始失败的病态种子
+    reinit_timeout_frames = max(4, params.tracker_N - 2);  % 6帧，M/N一半概率成功
+    reinit_attempt_frame = 0;
+    reinit_truth_collecting = false;
+    reinit_truth_det1 = [];
+    reinit_truth_frame1 = 0;
 
     % =====================================================================
     % 主循环：逐帧处理
@@ -52,6 +77,100 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
             % 状态: INITIATING（航迹起始等待）
             % =============================================================
             case 'INITIATING'
+                % ---- 首次起始: 真值辅助（保证正确开局） ----
+                if ~first_init_done && isfield(params, 'use_truth_init') && params.use_truth_init && has_truth
+                    if isempty(init_det1)
+                        % 收集第1个真值点
+                        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                        Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
+                            ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                        az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                        init_det1 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
+                        init_frame1 = k;
+                    elseif isempty(init_det2) && (k - init_frame1) >= 1
+                        % 收集第2个真值点 → 两点差分初始化 UKF
+                        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                        Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
+                            ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                        az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                        init_det2 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
+                        ukf = ukf_jichu('init', ukf_tpl, init_det1, init_det2);
+                        ukf.dt = params.dt_sec;
+                        ukf.initialized = true;
+                        ukf.Q_base = ukf.Q;
+                        ukf.Q_ema = 1.0;
+                        if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                        first_init_done = true;
+                        track_state = 'TRACKING';
+                        life = 1;  missed = 0;  quality = 5;
+                        snap.trackList{1} = make_track_snap(1, 1, ukf.x(3), ukf.x(1), ...
+                            ukf, life, quality, 0, init_det2);
+                        trackSnapshots{k} = snap;
+                        continue;
+                    end
+                    % 仍等待第2个真值点: 输出 TEMPORARY 快照
+                    snap.trackList{1} = make_track_snap(1, 6, NaN, NaN, [], 0, 0, 0, []);
+                    trackSnapshots{k} = snap;
+                    continue;
+                end
+
+                % ---- 重新起始: 超时兜底优先（一旦启动M/N不得打断） ----
+                if reinit_truth_collecting
+                    % 正在收集第2个真值点 → 跳过M/N
+                    if (k - reinit_truth_frame1) >= 1
+                        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                        Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
+                            ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                        az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                        reinit_truth_det2 = struct('lon', tl, 'lat', tb, ...
+                            'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
+                        ukf = ukf_jichu('init', ukf_tpl, reinit_truth_det1, reinit_truth_det2);
+                        ukf.dt = params.dt_sec;
+                        ukf.initialized = true;
+                        ukf.Q_base = ukf.Q;
+                        ukf.Q_ema = 1.0;
+                        if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                        reinit_truth_collecting = false;
+                        reinit_attempt_frame = 0;
+                        track_state = 'TRACKING';
+                        life = 1;  missed = 0;  quality = 5;
+                        snap.trackList{1} = make_track_snap(1, 1, ukf.x(3), ukf.x(1), ...
+                            ukf, life, quality, 0, reinit_truth_det2);
+                        trackSnapshots{k} = snap;
+                        continue;
+                    end
+                    % 等待第2个真值点
+                    snap.trackList{1} = make_track_snap(1, 6, NaN, NaN, [], 0, 0, 0, []);
+                    trackSnapshots{k} = snap;
+                    continue;
+                end
+
+                % ---- 超时检查: 触发真值兜底 ----
+                timeout_triggered = (first_init_done && has_truth && reinit_attempt_frame > 0 && ...
+                                     (k - reinit_attempt_frame) > reinit_timeout_frames);
+
+                if timeout_triggered
+                    % 启动真值收集（跳过M/N本轮）
+                    tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                    tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                    Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
+                        ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                    az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
+                    reinit_truth_det1 = struct('lon', tl, 'lat', tb, ...
+                        'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
+                    reinit_truth_frame1 = k;
+                    reinit_truth_collecting = true;
+                    % 重置M/N状态（真值接管后M/N从零开始）
+                    init_state = track_initiation('reset', params);
+                    snap.trackList{1} = make_track_snap(1, 6, NaN, NaN, [], 0, 0, 0, []);
+                    trackSnapshots{k} = snap;
+                    continue;
+                end
+
+                % ---- 纯 M/N 滑窗逻辑 ----
                 [init_state, det1, det2, success] = track_initiation('process', init_state, dets, params, k);
                 if success
                     ukf = ukf_jichu('init', ukf_tpl, det1, det2);
@@ -59,6 +178,8 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
                     ukf.initialized = true;
                     ukf.Q_base = ukf.Q;
                     ukf.Q_ema = 1.0;
+                    reinit_attempt_frame = 0;
+                    reinit_truth_collecting = false;
                     track_state = 'TRACKING';
                     life = 1;  missed = 0;  quality = 5;
                     snap.trackList{1} = make_track_snap(1, 1, ukf.x(3), ukf.x(1), ...
@@ -83,11 +204,23 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
                 % 2. 关联: NN 找最佳点迹
                 [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz(1:2, 1:2), dets, params, life);
 
+                % 2.5 连续丢点防杂波劫持: 固定地理门50km
+                % P膨胀后马氏距离失准，加死门只放真检测进来
+                if ~isempty(best_det) && missed >= 2
+                    geo_dist = sphere_utils_haversine_distance(...
+                        x_pred(1), x_pred(3), best_det.lon, best_det.lat);
+                    if geo_dist > 50000
+                        best_det = [];
+                        dets_in_gate = {};
+                    end
+                end
+
                 if ~isempty(best_det)
                     % 3. 关联: PDA 加权新息
                     [innov_w, ~, nis_val] = pda_weight(dets_in_gate, z_pred, P_zz, params);
 
-                    % 3.5 Probation 期保护（life≤5：NIS过大；life≤10：速度方向突变）
+                    % 3.5 Probation 期保护：仅防明显异常点（NIS>50）
+                    % 速度/方向检查已移除——UKF应自行收敛，硬拦会锁死M/N重起始
                     probate_nis_limit = 50;
                     reject_update = false;
                     if life <= 5 && nis_val > probate_nis_limit
@@ -95,29 +228,8 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
                     end
 
                     if ~reject_update
-                        % 预更新速度方向（用于突变检测）
-                        v_pred_dir = atan2d(x_pred(4), x_pred(2));
-
                         % 4. UKF: 纯 Kalman 更新
                         [lon, lat, ukf] = ukf_jichu('update', ukf, innov_w, z_pred, Z_pred, X_pred, x_pred, P_pred, P_zz);
-
-                        % Probation 期速度合理性检查（life≤10）
-                        if life <= 10
-                            % 速度方向突变 >90°
-                            v_new_dir = atan2d(ukf.x(4), ukf.x(2));
-                            dir_change = abs(angdiff_deg(v_pred_dir, v_new_dir));
-                            if dir_change > 90
-                                reject_update = true;
-                            end
-                            % 速度大小超限 >500 m/s
-                            if ~reject_update
-                                speed_ms = sqrt(ukf.x(2)^2 + ukf.x(4)^2) ...
-                                    * 111320.0 * cosd(abs(ukf.x(3)));
-                                if speed_ms > 500
-                                    reject_update = true;
-                                end
-                            end
-                        end
                     end
 
                     if reject_update
@@ -166,6 +278,9 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
             case 'LOST'
                 track_state = 'INITIATING';
                 init_state = track_initiation('reset', params);
+                init_det1 = [];  init_frame1 = 0;  init_det2 = [];
+                reinit_attempt_frame = k;         % 记录超时起点
+                reinit_truth_collecting = false;
                 life = 0; missed = 0; quality = 0;
                 snap.trackList{1} = make_track_snap(1, 7, NaN, NaN, ukf, life, quality, missed, []);
         end

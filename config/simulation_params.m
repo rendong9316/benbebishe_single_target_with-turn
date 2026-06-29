@@ -301,11 +301,15 @@ function params = simulation_params()
     % =====================================================================
     % 7.4 关联波门（雷达专属）
     % =====================================================================
-    % gate_sigma — 马氏距离门控的 sigma 倍数（2D 量测）
-    %   门内概率：sigma=4 → ~99.97%，sigma=7 → ~>99.99%
-    %   [turn: R1=7.0, R2=7.0 — 拐弯预测偏差大，放宽门限]
+    % gate_sigma — 马氏距离门控 sigma 倍数（2D: range+az）
+    %   门限 = gate_sigma² × 2，自适应UKF预测不确定度
     params.radar1_gate_sigma = 6;
     params.radar2_gate_sigma = 6;
+    % gate_vr_ms — 硬Vr门 (m/s)，马氏距离外额外杂波过滤，雷达专属
+    %   杂波Vr随机均匀[-200,200]，真目标Vr帧间变化<5m/s
+    %   R2噪声2×R1，Vr门相应放宽
+    params.radar1_gate_vr_ms = 20;   % R1 精密站: 滤除~90%杂波
+    params.radar2_gate_vr_ms = 40;   % R2 标准站: 留足裕度
 
     % =====================================================================
     % 7.5 模糊自适应 Q（两雷达共用）
@@ -325,7 +329,7 @@ function params = simulation_params()
     params.use_truth_init = true;            % 真值辅助起始：跳过M/N直接起始
     % [K_loss=4 — 平衡RMSE与断裂频率]
     params.radar1_tracker_K_loss = 4;        % R1 连续丢点终止帧数
-    params.radar2_tracker_K_loss = 4;        % R2 连续丢点终止帧数
+    params.radar2_tracker_K_loss = 6;        % R2 连续丢点终止帧数（放宽以减少碎片化）
 
     % =====================================================================
     % 模块8: 航迹管理参数（M/N 起始逻辑 + K_loss 终止逻辑）
@@ -504,5 +508,5 @@ function params = simulation_params()
     % 随机数生成器种子
     % 42 是一个经典的"计算机科学梗"（《银河系漫游指南》中"生命、宇宙
     % 及一切的答案"），没有特殊的数学意义，任何固定整数均可。
-    params.random_seed = 182;
+    params.random_seed = 190;
 end

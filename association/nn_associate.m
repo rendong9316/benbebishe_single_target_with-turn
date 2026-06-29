@@ -1,16 +1,15 @@
 % =========================================================================
-% nn_associate.m
-% ===========================================================================
-% 功能概要：
-%   Nearest Neighbor (NN) 点迹-航迹关联 — 纯过程式函数。
-%   两步筛选：地理距离预筛 + 马氏距离精筛，返回最佳点迹和波门内所有点迹。
+% nn_associate.m — 最近邻点迹-航迹关联（马氏距离 + 硬Vr门）
+% =========================================================================
+% 两步筛选：地理距离预筛 → 2D马氏距离精筛 → 硬Vr门过滤杂波
+% 马氏距离自适应UKF不确定度，Vr硬门补强杂波抑制。
 %
 % 输入：
 %   x_pred    - 预测状态 [lon; lon_dot; lat; lat_dot] (4x1)
 %   z_pred    - 预测量测 [range; azimuth; radial_vel] (3x1)
 %   P_zz_2d   - 量测协方差 2D 子矩阵 (2x2)
 %   det_list  - 当前帧检测点迹结构体数组
-%   params    - 参数结构体（含 gate_sigma）
+%   params    - 参数结构体（含 gate_sigma, gate_vr_ms）
 %   track_life - 航迹生命期（帧数），用于地理波门自适应
 %
 % 输出：
@@ -20,25 +19,24 @@
 
 function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_list, params, track_life)
 
-    % ---- Step 1: 地理距离预筛选波门大小 ----
-    geo_gate_m = 120000;  % 初始阶段 120km 地理波门
+    % ---- Step 1: 地理距离预筛选波门 ----
+    geo_gate_m = 120000;
     if track_life > 15
-        geo_gate_m = 60000;  % UKF 收敛后缩小到 60km
+        geo_gate_m = 60000;
     end
 
-    % ---- Step 1.5: 马氏波门软启动倍率（起始后前3帧逐步收紧） ----
-    if track_life <= 1
-        gate_scale = 3.0;   % 等效 12σ（v=0 首帧预测误差极大）
-    elseif track_life == 2
-        gate_scale = 2.0;   % 等效 8σ
-    elseif track_life == 3
-        gate_scale = 1.5;   % 等效 6σ
-    else
-        gate_scale = 1.0;   % 正常 4σ
-    end
-    gate_threshold = (params.gate_sigma * gate_scale)^2 * 2;
+    % ---- Step 2: 马氏距离门（2D: range+az，自适应UKF不确定度） ----
+    gate_threshold = params.gate_sigma^2 * 2;
 
-    % ---- Step 2: NN 关联（地理预筛选 + 马氏距离精筛选） ----
+    % ---- Step 3: 硬Vr门（额外杂波过滤） ----
+    % probation期(life≤8)速度初值不可靠，Vr门放宽到200=不过滤
+    % UKF收敛后恢复收紧，滤除杂波Vr随机[-200,200]
+    gate_vr_ms = params.gate_vr_ms;
+    if track_life <= 8
+        gate_vr_ms = max(gate_vr_ms, 200);
+    end
+
+    % ---- Step 4: NN 关联 ----
     best_det = [];
     best_mahal = inf;
 
@@ -48,14 +46,20 @@ function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_li
             continue;
         end
 
-        % 第一阶段: 地理距离预筛选
+        % 4.1 地理距离预筛选
         geo_dist = sphere_utils_haversine_distance(...
             x_pred(1), x_pred(3), dp.lon, dp.lat);
         if geo_dist > geo_gate_m
             continue;
         end
 
-        % 第二阶段: 马氏距离精筛选
+        % 4.2 硬Vr门（杂波Vr随机[-200,200]，真目标帧间Vr变化<5m/s）
+        vr_diff = abs(dp.radial_vel_meas - z_pred(3));
+        if vr_diff > gate_vr_ms
+            continue;
+        end
+
+        % 4.3 2D马氏距离精筛（range + azimuth）
         z_m = [dp.drange; dp.daz];
         innov = z_m - z_pred(1:2);
         if innov(2) > 180
@@ -71,7 +75,7 @@ function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_li
         end
     end
 
-    % ---- Step 3: 收集波门内所有点迹（用于 PDA 多假设） ----
+    % ---- Step 5: 收集波门内所有点迹（用于 PDA） ----
     dets_in_gate = {};
     if ~isempty(best_det)
         dets_in_gate = {best_det};
@@ -84,6 +88,14 @@ function [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz_2d, det_li
         if ~isfield(dp, 'drange') || isnan(dp.drange)
             continue;
         end
+
+        geo_dist = sphere_utils_haversine_distance(...
+            x_pred(1), x_pred(3), dp.lon, dp.lat);
+        if geo_dist > geo_gate_m, continue; end
+
+        vr_diff = abs(dp.radial_vel_meas - z_pred(3));
+        if vr_diff > gate_vr_ms, continue; end
+
         z_m = [dp.drange; dp.daz];
         innov = z_m - z_pred(1:2);
         if innov(2) > 180

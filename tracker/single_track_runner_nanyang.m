@@ -59,6 +59,7 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
     init_det1 = [];
     init_frame1 = 0;
     init_det2 = [];
+    first_init_done = false;  % 仅首次起始用真值辅助，重新起始走 M/N
 
     % =====================================================================
     % 主循环
@@ -76,7 +77,7 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
             % WAITING — 真值辅助起始 或 M/N 起始 + 南阳验证
             % =============================================================
             case 'WAITING'
-                if isfield(params, 'use_truth_init') && params.use_truth_init
+                if ~first_init_done && isfield(params, 'use_truth_init') && params.use_truth_init
                     % ---- 真值辅助起始：跳过M/N，用真值位置初始化UKF ----
                     if has_truth
                         if isempty(init_det1)
@@ -86,7 +87,7 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
                             Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
                                 ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
                             az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
-                            init_det1 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az);
+                            init_det1 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
                             init_frame1 = k;
                         elseif isempty(init_det2) && (k - init_frame1) >= 1
                             tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
@@ -94,13 +95,14 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
                             Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
                                 ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
                             az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
-                            init_det2 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az);
+                            init_det2 = struct('lon', tl, 'lat', tb, 'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
                             ukf = ukf_jichu('init', ukf_tpl, init_det1, init_det2);
                             ukf.dt = params.dt_sec;
                             ukf.initialized = true;
                             ukf.Q_base = ukf.Q;
                             ukf.Q_ema = 1.0;
                             if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                            first_init_done = true;
                             track_state = 'TRACKING';
                             track_type = 1;  % 1 = 跟踪态
                             life = 1;  missed = 0;
@@ -130,6 +132,7 @@ function [trackSnapshots, finalTrack] = single_track_runner_nanyang(detList, ukf
                                 ukf.Q_base = ukf.Q;
                                 ukf.Q_ema = 1.0;
                                 if ~isfield(ukf, 'nis_history'), ukf.nis_history = []; end
+                                first_init_done = true;
                                 track_state = 'TRACKING';
                                 track_type = 1;  life = 1;  missed = 0;
                                 snap.trackList{1} = make_snap(1, 1, ...
