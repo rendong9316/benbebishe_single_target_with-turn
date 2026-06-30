@@ -161,8 +161,10 @@ fprintf('\n========== Phase 2: 原始点迹生成 ==========\n');
 detRaw_R1 = cell(n_frames, 1);
 detRaw_R2 = cell(n_frames, 1);
 
+% RNG策略: seed+1e7/2e7大偏移连续推进，与run_mc_turn.m完全一致
+% 确保MC第N次(seed=N)的结果可被本程序精确复现
+rng(params.random_seed + 1e7);  % R1: 独立随机流
 for k = 1:n_frames
-    rng(params.random_seed + k);
     [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
     detRaw_R1{k} = generate_frame_detections(params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, ...
@@ -173,8 +175,10 @@ for k = 1:n_frames
     for d = 1:length(detRaw_R1{k})
         detRaw_R1{k}(d).aircraft_id = 1;
     end
+end
 
-    rng(params.random_seed + 10000 + k);
+rng(params.random_seed + 2e7);  % R2: 独立随机流
+for k = 1:n_frames
     [pos2, vel2] = aircraft_trajectory_interpolate(traj, t2_grid(k));
     detRaw_R2{k} = generate_frame_detections(params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, ...

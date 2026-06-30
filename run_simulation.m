@@ -382,37 +382,24 @@ fprintf('\n========== Phase 2: 原始点迹生成 ==========\n');
 detRaw_R1 = cell(n_frames, 1);  % R1原始点迹（含系统偏差+随机噪声）
 detRaw_R2 = cell(n_frames, 1);  % R2原始点迹（含系统偏差+随机噪声）
 
+% RNG策略: seed+1e7/2e7大偏移连续推进，与run_mc_straight.m完全一致
+% 每部雷达仅调用rng一次，帧间随机流连续推进，打破旧rng(seed+k)的Toeplitz对角线相关性
+rng(params.random_seed + 1e7);  % R1: 独立随机流
 for k = 1:n_frames
-    % ---- R1（精密站）：第k帧原始点迹生成 ----
-    % 设置R1第k帧的随机种子 = base_seed + k
-    rng(params.random_seed + k);
-    % aircraft_trajectory_interpolate: 在时间 t1_grid(k) 处插值得到目标和速度
-    % pos(1)=经度(deg), pos(2)=纬度(deg)
-    % vel(1)=经度变化率(deg/s), vel(2)=纬度变化率(deg/s)
     [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
-    % generate_frame_detections: 生成含偏差+噪声+杂波的原始点迹
-    % 参数依次: Rx经度, Rx纬度, Tx经度, Tx纬度,
-    %           目标经度, 目标纬度, 目标经度率, 目标纬度率,
-    %           帧号, 当前时刻, 距离偏差, 方位偏差, 波束中心, 全局参数,
-    %           距离噪声标准差, 方位噪声标准差
     detRaw_R1{k} = generate_frame_detections(params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, ...
         pos(1), pos(2), vel(1), vel(2), k, t1_grid(k), ...
         params.radar1_range_bias_m, params.radar1_azimuth_bias_deg, ...
         params.radar1_beam_center_deg, params, ...
         params.radar1_range_noise_std_m, params.radar1_azimuth_noise_std_deg);
-    % 为所有点迹（含杂波）打上 aircraft_id=1（单目标场景标记）
-    % 注意：杂波点迹的 aircraft_id 也设为1，但 is_clutter=true 可区分
     for d = 1:length(detRaw_R1{k})
         detRaw_R1{k}(d).aircraft_id = 1;
     end
+end
 
-    % ---- R2（普通站）：第k帧原始点迹生成 ----
-    % 设置R2第k帧的随机种子 = base_seed + 10000 + k
-    % +10000偏移量确保R2的随机数序列与R1完全独立
-    % 即使 n_frames=1000, R1种子范围 [seed+1, seed+1000],
-    % R2种子范围 [seed+10001, seed+11000], 两者完全不交叉
-    rng(params.random_seed + 10000 + k);
+rng(params.random_seed + 2e7);  % R2: 独立随机流
+for k = 1:n_frames
     [pos2, vel2] = aircraft_trajectory_interpolate(traj, t2_grid(k));
     detRaw_R2{k} = generate_frame_detections(params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, ...

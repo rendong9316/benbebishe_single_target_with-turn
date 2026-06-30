@@ -10,7 +10,7 @@ clear; close all; clc;
 addpath(genpath('.'));
 
 %% ---- 配置 ----
-N_MC = 500;
+N_MC = 200;
 SEED_BASE = 1;  % 种子 = SEED_BASE + (mc-1)
 
 % 预分配统计数组
@@ -66,7 +66,7 @@ fprintf('拐弯几何: 入向%.1f° → 出向%.1f°, 拐角%.1f°, ω=%.4f rad/
 fprintf('╔══════════════════════════════════════════════════════════════╗\n');
 fprintf('║   拐弯场景蒙特卡洛仿真  N=%d  IMM:CV+CT(Pd-IPDA,Pi=[.90 .10])  ║\n', N_MC);
 fprintf('╠══════════════════════════════════════════════════════════════╣\n');
-fprintf('║ Pd=0.6  Pfa=0.001  R1_Kloss=8 R2_Kloss=6  dt=30s  n_frames≈81  ║\n');
+fprintf('║ Pd=0.6  Pfa=0.001  R1_Kloss=8 R2_Kloss=8  dt=30s  n_frames≈81  ║\n');
 fprintf('║ 转弯: 1°/s渐进, 47s/46.7°, 约在帧28-30                       ║\n');
 fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
 
@@ -135,6 +135,8 @@ for mc = 1:N_MC
     dr2_est = mean(dr2_list);  da2_est = mean(da2_list);
 
     %% ---------- Phase 2+4: 点迹生成 + 偏差校正 ----------
+    % RNG策略: seed+1e7/2e7大偏移连续推进，与run_simulation_turn.m一致
+    % 保证MC第N次(seed=N)可被单次仿真精确复现
     detList_R1 = cell(n_frames, 1);  detList_R2 = cell(n_frames, 1);
 
     rng(params.random_seed + 1e7);  % R1: 独立随机流
@@ -589,7 +591,8 @@ function [assoc_rate, nis_mean, nis_gate, n_assoc, n_pred, init_frame] = diagnos
             else
                 n_pred = n_pred + 1;
             end
-            if isfield(trk.ukf, 'nis_history')
+            if isfield(trk, 'ukf') && ~isempty(trk.ukf) && isstruct(trk.ukf) && ...
+                    isfield(trk.ukf, 'nis_history')
                 nis_vals = [nis_vals, trk.ukf.nis_history];
             end
         elseif trk.type == 7
