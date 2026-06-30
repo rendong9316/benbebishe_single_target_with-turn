@@ -57,13 +57,24 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
 
     % ---- Markov 转移概率矩阵 ----
     % Π(i,j) = P{model=j at k+1 | model=i at k}
-    % 行：from，列：to；0.10 转移概率，对应平均驻留 10 帧
-    % 文献依据: ATPM-ISIPDA (Musicki 2008) — 低数据率场景需加快模型切换
-    Pi = [0.90, 0.10;
-          0.10, 0.90];
+    % 可通过 params.imm_Pi_CV_to_CT 和 params.imm_Pi_CT_to_CV 覆盖
+    if isfield(params, 'imm_Pi_CV_to_CT') && isfield(params, 'imm_Pi_CT_to_CV')
+        p_cv_ct = params.imm_Pi_CV_to_CT;
+        p_ct_cv = params.imm_Pi_CT_to_CV;
+        Pi = [1-p_cv_ct, p_cv_ct;
+              p_ct_cv, 1-p_ct_cv];
+    else
+        Pi = [0.90, 0.10;
+              0.10, 0.90];
+    end
 
     % ---- 模型概率初始值 ----
-    mu = [0.5; 0.5];  % 初始各 50%
+    if isfield(params, 'imm_mu_init_CV')
+        mu_cv = params.imm_mu_init_CV;
+        mu = [mu_cv; 1 - mu_cv];
+    else
+        mu = [0.5; 0.5];  % 初始各 50%
+    end
 
     % ---- 初始化 ----
     trackSnapshots = cell(n_frames, 1);
@@ -193,73 +204,69 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
                     continue;
                 end
 
-                % ---- 超时检测 ----
-                if ~first_init_done && ~reinit_truth_collecting
-                    if reinit_attempt_frame == 0
-                        reinit_attempt_frame = k;
-                    elseif (k - reinit_attempt_frame) >= reinit_timeout_frames && has_truth
-                        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
-                        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
-                        Rg = skywave_geometry('group_range', ukf_cv_tpl.tx_lon, ukf_cv_tpl.tx_lat, ...
-                            ukf_cv_tpl.radar_lon, ukf_cv_tpl.radar_lat, tl, tb);
-                        az = sphere_utils_azimuth(ukf_cv_tpl.radar_lon, ukf_cv_tpl.radar_lat, tl, tb);
-                        reinit_truth_det1 = struct('lon', tl, 'lat', tb, ...
-                            'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
-                        reinit_truth_frame1 = k;
-                        reinit_truth_collecting = true;
-                        snap.trackList{1} = make_track_snap_imm(1, 6, NaN, NaN, [], [], mu, 0, 0, 0, []);
-                        trackSnapshots{k} = snap;
-                        continue;
-                    end
+                % ---- 超时检测（对标 single_track_runner: first_init_done=true 时才触发） ----
+                timeout_triggered = (first_init_done && has_truth && reinit_attempt_frame > 0 && ...
+                                     (k - reinit_attempt_frame) > reinit_timeout_frames);
+                if timeout_triggered
+                    tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
+                    tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+                    Rg = skywave_geometry('group_range', ukf_cv_tpl.tx_lon, ukf_cv_tpl.tx_lat, ...
+                        ukf_cv_tpl.radar_lon, ukf_cv_tpl.radar_lat, tl, tb);
+                    az = sphere_utils_azimuth(ukf_cv_tpl.radar_lon, ukf_cv_tpl.radar_lat, tl, tb);
+                    reinit_truth_det1 = struct('lon', tl, 'lat', tb, ...
+                        'range_meas', Rg, 'azimuth_meas', az, 'frameID', k);
+                    reinit_truth_frame1 = k;
+                    reinit_truth_collecting = true;
+                    init_state = track_initiation('reset', params);
+                    snap.trackList{1} = make_track_snap_imm(1, 6, NaN, NaN, [], [], mu, 0, 0, 0, []);
+                    trackSnapshots{k} = snap;
+                    continue;
                 end
 
-                % ---- M/N 滑窗起始（复用 track_initiation 逻辑） ----
-                init_state = track_initiation('update', init_state, dets, k, params);
-                if init_state.ready
-                    det_pair = track_initiation('result', init_state);
-                    if ~isempty(det_pair)
-                        ukf_cv = ukf_jichu('init', ukf_cv_tpl, det_pair.det1, det_pair.det2);
-                        ukf_cv.dt = dt;  ukf_cv.initialized = true;
-                        ukf_cv.Q_base = ukf_cv.Q;  ukf_cv.Q_ema = 1.0;
-                        if ~isfield(ukf_cv, 'nis_history'), ukf_cv.nis_history = []; end
+                % ---- 纯 M/N 滑窗逻辑（对标 single_track_runner） ----
+                [init_state, det1, det2, success] = track_initiation('process', init_state, dets, params, k);
+                if success
+                    ukf_cv = ukf_jichu('init', ukf_cv_tpl, det1, det2);
+                    ukf_cv.dt = dt;  ukf_cv.initialized = true;
+                    ukf_cv.Q_base = ukf_cv.Q;  ukf_cv.Q_ema = 1.0;
+                    if ~isfield(ukf_cv, 'nis_history'), ukf_cv.nis_history = []; end
 
-                        ukf_ct = ukf_jichu('init', ukf_ct_tpl, det_pair.det1, det_pair.det2);
-                        ukf_ct.dt = dt;  ukf_ct.initialized = true;
-                        ukf_ct.Q_base = ukf_ct.Q;  ukf_ct.Q_ema = 1.0;
-                        if ~isfield(ukf_ct, 'nis_history'), ukf_ct.nis_history = []; end
+                    ukf_ct = ukf_jichu('init', ukf_ct_tpl, det1, det2);
+                    ukf_ct.dt = dt;  ukf_ct.initialized = true;
+                    ukf_ct.Q_base = ukf_ct.Q;  ukf_ct.Q_ema = 1.0;
+                    if ~isfield(ukf_ct, 'nis_history'), ukf_ct.nis_history = []; end
 
-                        track_state = 'TRACKING';
-                        life = 1;  missed = 0;  quality = 5;
-                        mu = [0.5; 0.5];
+                    reinit_attempt_frame = 0;
+                    reinit_truth_collecting = false;
+                    track_state = 'TRACKING';
+                    life = 1;  missed = 0;  quality = 5;
+                    mu = [0.5; 0.5];
 
-                        x_comb = 0.5 * ukf_cv.x + 0.5 * ukf_ct.x;
-                        snap.trackList{1} = make_track_snap_imm(1, 1, x_comb(3), x_comb(1), ...
-                            ukf_cv, ukf_ct, mu, life, quality, 0, det_pair.det2);
-                        trackSnapshots{k} = snap;
-                        continue;
-                    end
+                    x_comb = 0.5 * ukf_cv.x + 0.5 * ukf_ct.x;
+                    snap.trackList{1} = make_track_snap_imm(1, 1, x_comb(3), x_comb(1), ...
+                        ukf_cv, ukf_ct, mu, life, quality, 0, det2);
+                    trackSnapshots{k} = snap;
+                    continue;
                 end
                 snap.trackList{1} = make_track_snap_imm(1, 6, NaN, NaN, [], [], mu, 0, 0, 0, []);
                 trackSnapshots{k} = snap;
 
             % =============================================================
-            % 状态: TRACKING（IMM 核心循环）
+            % 状态: TRACKING（对标 single_track_runner + IMM特有步骤）
+            % ═══ 直线逻辑 + 仅四处IMM插入: 混合/双预测/双更新/似然+组合 ═══
             % =============================================================
             case 'TRACKING'
                 life = life + 1;
+                ukf_cv.dt = dt;  ukf_ct.dt = dt;
 
-                % ---- 步骤1: 模型混合（Mixing） ----
-                % 混合概率 μ_{j|i} = π_{ji} * μ_j / c_i
-                c_bar = Pi' * mu;  % c_i = Σ_j π_{ji} * μ_j
-                % mu_mix(i,j) = P{model i was active at k-1 | model j is active at k}
+                % ── IMM特有①: 模型混合 ──
+                c_bar = Pi' * mu;
                 mu_mix = zeros(M, M);
                 for i = 1:M
                     for j = 1:M
                         mu_mix(i, j) = Pi(i, j) * mu(i) / max(c_bar(j), 1e-12);
                     end
                 end
-
-                % 混合状态和协方差
                 x_mix = {zeros(4,1), zeros(4,1)};
                 P_mix = {zeros(4,4), zeros(4,4)};
                 ukf_models = {ukf_cv, ukf_ct};
@@ -272,131 +279,155 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
                         P_mix{j} = P_mix{j} + mu_mix(i, j) * (ukf_models{i}.P + dx * dx');
                     end
                 end
-
-                % 设置混合后的初始状态
                 ukf_cv.x = x_mix{1};  ukf_cv.P = P_mix{1};
                 ukf_ct.x = x_mix{2};  ukf_ct.P = P_mix{2};
 
-                % ---- 步骤2: 各模型独立预测 ----
+                % ── IMM特有②: 各模型独立预测 ──
                 [x_pred_cv, P_pred_cv, X_pred_cv, z_pred_cv, Z_pred_cv, P_zz_cv, ukf_cv] = ...
                     ukf_jichu('prepare', ukf_cv);
                 [x_pred_ct, P_pred_ct, X_pred_ct, z_pred_ct, Z_pred_ct, P_zz_ct, ukf_ct] = ...
                     ukf_jichu('prepare', ukf_ct);
 
-                % ---- 步骤3: NN 关联（用 CV 模型预测做公共关联） ----
-                % 筛选非杂波点迹
-                ac_dets = [];
+                % ════════════════════════════════════════════════════════════
+                % 以下对标 single_track_runner TRACKING 状态
+                % 差异: IMM需预筛is_clutter（双模型交互放大杂波污染，PDA无法弥补）
+                % ════════════════════════════════════════════════════════════
+
+                % 预筛非杂波点迹
+                clean_dets = [];
                 for d = 1:length(dets)
                     if ~dets(d).is_clutter
-                        ac_dets = [ac_dets, dets(d)];
+                        clean_dets = [clean_dets, dets(d)];
                     end
                 end
 
-                % NN 关联：在 CV 的预测量测空间中找最近邻
-                [best_det, best_nis, innov_common] = imm_nn_associate(...
-                    ac_dets, z_pred_cv, P_zz_cv, ukf_cv, params);
+                % 1. NN关联（与直线版一致: 地理预筛+马氏距离）
+                % Vr门在IMM中必须禁用: is_clutter已过滤杂波, CV预测Vr在转弯时不准
+                saved_vr = params.gate_vr_ms;
+                params.gate_vr_ms = 9999;
+                [best_det, dets_in_gate] = nn_associate(x_pred_cv, z_pred_cv, ...
+                    P_zz_cv(1:2,1:2), clean_dets, params, life);
+                params.gate_vr_ms = saved_vr;
 
-                % 若 NN 未找到，尝试 PDA 加权
-                assoc_det = [];
+                % 2. 连续丢点防杂波劫持: 固定地理门50km（与直线版一致）
+                if ~isempty(best_det) && missed >= 2
+                    geo_dist = sphere_utils_haversine_distance(...
+                        x_pred_cv(1), x_pred_cv(3), best_det.lon, best_det.lat);
+                    if geo_dist > 50000
+                        best_det = [];
+                        dets_in_gate = {};
+                    end
+                end
+
                 if ~isempty(best_det)
-                    assoc_det = best_det;
-                end
+                    % 3. PDA 加权新息（与直线版一致）
+                    [innov_w, ~, nis_val] = pda_weight(dets_in_gate, z_pred_cv, P_zz_cv, params);
 
-                % ---- 步骤4-5: 各模型更新（共用关联结果） ----
-                innov_cv_val = 0;  innov_ct_val = 0;
-                nis_cv_val = 0;    nis_ct_val = 0;
-
-                if ~isempty(assoc_det)
-                    % 对 CV 模型计算新息
-                    z_meas = [assoc_det.range_meas; assoc_det.azimuth_meas; assoc_det.pvr];
-                    innov_cv = z_meas - z_pred_cv;
-                    innov_ct = z_meas - z_pred_ct;
-
-                    innov_cv_val = innov_cv(1)^2 + innov_cv(2)^2;
-                    innov_ct_val = innov_ct(1)^2 + innov_ct(2)^2;
-
-                    % CV 模型更新
-                    [~, ~, ukf_cv] = ukf_jichu('update', ukf_cv, innov_cv, ...
-                        z_pred_cv, Z_pred_cv, X_pred_cv, x_pred_cv, P_pred_cv, P_zz_cv);
-
-                    % CT 模型更新
-                    [~, ~, ukf_ct] = ukf_jichu('update', ukf_ct, innov_ct, ...
-                        z_pred_ct, Z_pred_ct, X_pred_ct, x_pred_ct, P_pred_ct, P_zz_ct);
-
-                    % 记录 NIS
-                    nis_cv_val = innov_cv' * (P_zz_cv \ innov_cv);
-                    nis_ct_val = innov_ct' * (P_zz_ct \ innov_ct);
-                    if ~isnan(nis_cv_val)
-                        ukf_cv.nis_history(end+1) = nis_cv_val;
-                    end
-                    if ~isnan(nis_ct_val)
-                        ukf_ct.nis_history(end+1) = nis_ct_val;
+                    % 4. Probation 期保护（与直线版一致）
+                    probate_nis_limit = 50;
+                    reject_update = false;
+                    if life <= 5 && nis_val > probate_nis_limit
+                        reject_update = true;
                     end
 
-                    missed = 0;
-                    quality = min(100, quality + 2);
+                    if ~reject_update
+                        % ── IMM特有③: 重建加权量测 → 各模型独立更新 ──
+                        z_weighted = innov_w + z_pred_cv;
+                        innov_cv = z_weighted - z_pred_cv;
+                        innov_ct = z_weighted - z_pred_ct;
+                        if abs(innov_cv(2)) > 180
+                            innov_cv(2) = innov_cv(2) - 360 * round(innov_cv(2) / 360);
+                        end
+                        if abs(innov_ct(2)) > 180
+                            innov_ct(2) = innov_ct(2) - 360 * round(innov_ct(2) / 360);
+                        end
+
+                        [~, ~, ukf_cv] = ukf_jichu('update', ukf_cv, innov_cv, ...
+                            z_pred_cv, Z_pred_cv, X_pred_cv, x_pred_cv, P_pred_cv, P_zz_cv);
+                        [~, ~, ukf_ct] = ukf_jichu('update', ukf_ct, innov_ct, ...
+                            z_pred_ct, Z_pred_ct, X_pred_ct, x_pred_ct, P_pred_ct, P_zz_ct);
+
+                        % NIS 记录
+                        nis_cv_val = innov_cv' * (P_zz_cv \ innov_cv);
+                        nis_ct_val = innov_ct' * (P_zz_ct \ innov_ct);
+                        if ~isnan(nis_cv_val)
+                            ukf_cv.nis_history(end+1) = nis_cv_val;
+                        end
+                        if ~isnan(nis_ct_val)
+                            ukf_ct.nis_history(end+1) = nis_ct_val;
+                        end
+
+                        % 航迹维护（与直线版一致）
+                        missed = 0;
+                        quality = min(quality + 1, 15);
+                    else
+                        % 拒绝更新（与直线版一致）
+                        ukf_cv.x = x_pred_cv;  ukf_cv.P = P_pred_cv;
+                        ukf_ct.x = x_pred_ct;  ukf_ct.P = P_pred_ct;
+                        missed = missed + 1;
+                        quality = max(quality - 1, 0);
+                        best_det = [];
+                    end
                 else
-                    % 纯预测（无量测关联）
+                    % 纯预测（与直线版一致）
                     ukf_cv.x = x_pred_cv;  ukf_cv.P = P_pred_cv;
                     ukf_ct.x = x_pred_ct;  ukf_ct.P = P_pred_ct;
                     missed = missed + 1;
-                    quality = max(0, quality - 5);
+                    quality = max(quality - 1, 0);
+                    best_det = [];
                 end
 
-                % ---- 步骤6: 模型似然度（IMM-IPDA 风格, Musicki 2008） ----
-                % 有检测: Λ_j = Pd*Pg * N(ν_j; 0, S_j)
-                % 无检测: Λ_j = 1 - Pd*Pg（常数，不冻结模型概率）
-                % 注意: Pd*Pg 因子在比值中抵消，但无检测时 Λ 的绝对值影响
-                %        模型概率向 Markov 先验的漂移速率
-                nz = ukf_cv.m;  % 量测维数 = 3
-                if ~isempty(assoc_det)
+                % ── IMM特有④: 模型似然度 + 概率更新 + 状态组合 ──
+                nz = ukf_cv.m;
+                if ~isempty(best_det)
+                    nis_cv_val = (innov_cv' * (P_zz_cv \ innov_cv));
+                    nis_ct_val = (innov_ct' * (P_zz_ct \ innov_ct));
                     log_norm = -0.5 * (nz * log(2*pi) + log(max(det(P_zz_cv), 1e-30)));
                     L_cv = Pd_Pg * exp(log_norm - 0.5 * nis_cv_val);
-
                     log_norm = -0.5 * (nz * log(2*pi) + log(max(det(P_zz_ct), 1e-30)));
                     L_ct = Pd_Pg * exp(log_norm - 0.5 * nis_ct_val);
                 else
-                    % 无检测: 模型概率向 Markov 先验漂移
                     L_cv = L_no_det;
                     L_ct = L_no_det;
                 end
 
-                % ---- 步骤7: 模型概率更新 ----
                 c_total = L_cv * c_bar(1) + L_ct * c_bar(2);
                 if c_total > 1e-30
                     mu_new = [L_cv * c_bar(1); L_ct * c_bar(2)] / c_total;
                 else
-                    mu_new = mu;  % 数值退化时保持不变
+                    mu_new = mu;
                 end
-                % 钳位：单模型概率不低于 5%（文献建议防止锁死）
-                mu = max(0.05, min(0.95, mu_new));
+                mu = max(0.02, min(0.95, mu_new));
                 mu = mu / sum(mu);
 
-                % ---- 步骤8: 状态组合 ----
                 x_comb = mu(1) * ukf_cv.x + mu(2) * ukf_ct.x;
-                P_comb = mu(1) * (ukf_cv.P + (ukf_cv.x - x_comb)*(ukf_cv.x - x_comb)') + ...
-                         mu(2) * (ukf_ct.P + (ukf_ct.x - x_comb)*(ukf_ct.x - x_comb)');
 
-                % ---- 模糊自适应 Q（对 CV 模型） ----
-                if params.use_fuzzy_adaptive && ~isempty(assoc_det)
+                % ── 自适应 Q（与直线版一致: life>12）──
+                if params.use_fuzzy_adaptive && life > 12 && isfield(ukf_cv, 'nis_history')
                     ukf_cv = apply_fuzzy_adapt(ukf_cv, params);
                 end
 
-                % ---- 航迹快照 ----
+                % 航迹快照
                 snap.trackList{1} = make_track_snap_imm(1, 1, x_comb(3), x_comb(1), ...
-                    ukf_cv, ukf_ct, mu, life, quality, missed, assoc_det);
+                    ukf_cv, ukf_ct, mu, life, quality, missed, best_det);
                 trackSnapshots{k} = snap;
 
-                % ---- 丢点终止检测 ----
                 if missed >= K_loss
                     track_state = 'LOST';
                 end
 
             % =============================================================
-            % 状态: LOST
+            % 状态: LOST（对标 single_track_runner: 回到 INITIATING 重起始）
             % =============================================================
             case 'LOST'
-                snap.trackList{1} = make_track_snap_imm(1, 7, NaN, NaN, [], [], mu, life, quality, missed, []);
+                track_state = 'INITIATING';
+                init_state = track_initiation('reset', params);
+                init_det1 = [];  init_frame1 = 0;  init_det2 = [];
+                reinit_attempt_frame = k;
+                reinit_truth_collecting = false;
+                life = 0;  missed = 0;  quality = 0;
+                mu = [0.5; 0.5];
+                snap.trackList{1} = make_track_snap_imm(1, 7, NaN, NaN, ukf_cv, ukf_ct, mu, life, quality, missed, []);
                 trackSnapshots{k} = snap;
             otherwise
                 % pass
@@ -412,56 +443,6 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
     end
     % 保存模型概率历史供诊断
     finalTrack.mu_history = mu_history;
-end
-
-% =========================================================================
-% imm_nn_associate — IMM 最近邻关联（在 CV 预测空间）
-% =========================================================================
-function [best_det, best_nis, innov] = imm_nn_associate(ac_dets, z_pred, P_zz, ukf, params)
-    best_det = [];
-    best_nis = Inf;
-    innov = [];
-
-    if isempty(ac_dets)
-        return;
-    end
-
-    gate_sigma = params.gate_sigma;
-    gate_vr_ms = params.gate_vr_ms;
-    gate_threshold = gate_sigma^2 * 2;  % 2自由度卡方门限
-
-    for d = 1:length(ac_dets)
-        det = ac_dets(d);
-        z_meas = [det.range_meas; det.azimuth_meas; det.pvr];
-
-        % 硬 Vr 门：帧间径向速度差
-        if isfield(ukf, 'last_vr') && ~isempty(ukf.last_vr)
-            dvr = abs(det.pvr - ukf.last_vr);
-            if dvr > gate_vr_ms
-                continue;
-            end
-        end
-
-        nu = z_meas - z_pred;
-        % 方位角差值标准化到 [-180, 180]
-        if abs(nu(2)) > 180
-            nu(2) = nu(2) - 360 * round(nu(2) / 360);
-        end
-
-        % 马氏距离（仅用 range + az 2D）
-        nu_2d = nu(1:2);
-        try
-            nis_val = nu_2d' * (P_zz(1:2,1:2) \ nu_2d);
-        catch
-            nis_val = nu_2d' * pinv(P_zz(1:2,1:2)) * nu_2d;
-        end
-
-        if nis_val < gate_threshold && nis_val < best_nis
-            best_nis = nis_val;
-            best_det = det;
-            innov = nu;
-        end
-    end
 end
 
 % =========================================================================

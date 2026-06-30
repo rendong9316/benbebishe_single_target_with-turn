@@ -118,6 +118,8 @@ function varargout = aircraft_trajectory_create(varargin)
                 [varargout{1}, varargout{2}] = create_turn_trajectory(varargin{2});
             case 'gradual_turn'
                 [varargout{1}, varargout{2}] = create_gradual_turn_trajectory(varargin{2});
+            case 'uturn'
+                [varargout{1}, varargout{2}] = create_uturn_trajectory(varargin{2});
             otherwise
                 error('aircraft_trajectory_create: unknown action "%s"', varargin{1});
         end
@@ -289,6 +291,139 @@ function [traj, waypoints] = create_turn_trajectory(params)
     speed_ms = 140.0;
 
     traj = aircraft_trajectory_create(waypoints, speed_ms, params.dt_sec);
+end
+
+% =========================================================================
+% create_uturn_trajectory - 回头弯（180°）航迹生成器
+% =========================================================================
+% 【功能】生成180°回头弯航迹（1°/s转弯率，左转）
+%   航路点: W1(起点) 正东飞行 → 左转180°半圆 → 正西飞回W3
+%   转弯模型: 左转半圆，ω=+1°/s, R=v/ω
+%   航迹结构: ①W1→入弯点(直线东飞) ②入弯点→出弯点(180°左转半圆) ③出弯点→W3(直线西飞)
+%   全部航路点位于双雷达威力范围交汇区内（~127°E,33°N区域）
+%
+% 【输入】params — 参数结构体，使用 .aircraft_speed_ms, .dt_sec
+% 【输出】traj — 航迹结构体（与 aircraft_trajectory_interpolate 兼容）
+%         waypoints — 3×2 航路点矩阵 [lon, lat]（不含高度）
+% =========================================================================
+function [traj, waypoints] = create_uturn_trajectory(params)
+    speed_ms = params.aircraft_speed_ms;
+    dt = params.dt_sec;
+    omega_deg = 1.0;  % 1°/s 标准转弯率
+    omega_rad = omega_deg * pi / 180.0;
+    R_turn_m = speed_ms / omega_rad;  % 转弯半径 (m)
+    turn_dur_sec = 180.0;  % 180°转弯 = 180秒
+    arc_length_m = pi * R_turn_m;  % 半圆弧长
+
+    % ---- 几何参数（180°左转回头弯） ----
+    %  圆心固定，起终点经度固定，纬度由几何自动确定
+    bearing_in = 90.0;    % 入向：正东
+    turn_dir = +1;        % +1=左转(CCW)
+    bearing_out = mod(bearing_in + 180.0 * turn_dir, 360);  % 出向：正西(270°)
+
+    % 圆心（固定）
+    center_lon = 131.44;
+    center_lat = 31.75;
+
+    % 左转圆心在入向左侧：entry→center = bearing_in - 90° = 0° (正北)
+    center_bearing = bearing_in - 90.0 * turn_dir;  % = 0° (正北)
+
+    % 入弯点：圆心正南R处 (center→entry = center_bearing + 180° = 180°)
+    % 出弯点：圆心正北R处 (center→exit = center_bearing = 0°)
+    [entry_lon, entry_lat] = haversine_forward(center_lon, center_lat, ...
+        center_bearing + 180.0, R_turn_m);
+    [exit_lon, exit_lat] = haversine_forward(center_lon, center_lat, ...
+        center_bearing, R_turn_m);
+
+    % 起终点经度（沿用户指定），纬度 = 入弯/出弯纬度（在各自直线上）
+    W1_lon = 127.0284;  W1_lat = entry_lat;   % 起点：正东直飞到入弯点
+    W3_lon = 127.2735;  W3_lat = exit_lat;    % 终点：正西从出弯点飞来
+
+    % 直线段长度（从起点到入弯点，从出弯点到终点）
+    straight_approach_m = sphere_utils_haversine_distance(W1_lon, W1_lat, entry_lon, entry_lat);
+    straight_exit_m = sphere_utils_haversine_distance(exit_lon, exit_lat, W3_lon, W3_lat);
+
+    % ---- 构建航段 ----
+    segments = {};
+    t_cum = 0;
+
+    % 航段1：入弯直线
+    dur1 = straight_approach_m / speed_ms;
+    segments{1} = struct('start', [W1_lon, W1_lat], ...
+        'end', [entry_lon, entry_lat], ...
+        'lon_rate', (entry_lon - W1_lon) / dur1, ...
+        'lat_rate', (entry_lat - W1_lat) / dur1, ...
+        'dur', dur1, 't_start', 0);
+    t_cum = t_cum + dur1;
+
+    % 航段2：180°半圆（从圆心直接计算每个弧点，消除增量累积误差）
+    %  入弯点在圆心 center_bearing+180° 方向（即正南），t=0
+    %  t_arc秒后，飞机绕圆心转过 turn_dir*omega*t_arc 度
+    %  弧点方位 = center_bearing + 180° - turn_dir*omega*t_arc
+    arc_step = 1.0;
+    n_arc_pts = floor(turn_dur_sec / arc_step);
+    arc_pts = zeros(n_arc_pts, 2);
+    for i = 1:n_arc_pts
+        t_arc = i * arc_step;
+        bearing_from_center = center_bearing + 180.0 - turn_dir * omega_deg * t_arc;
+        if bearing_from_center >= 360, bearing_from_center = bearing_from_center - 360; end
+        if bearing_from_center < 0, bearing_from_center = bearing_from_center + 360; end
+        [arc_pts(i,1), arc_pts(i,2)] = haversine_forward(center_lon, center_lat, ...
+            bearing_from_center, R_turn_m);
+    end
+
+    % 按 dt 秒一组打包弧段
+    pts_per_seg = max(1, round(dt / arc_step));
+    seg_start_lon = entry_lon; seg_start_lat = entry_lat;
+    for i_start = 1:pts_per_seg:n_arc_pts
+        i_end = min(i_start + pts_per_seg - 1, n_arc_pts);
+        seg_end_lon = arc_pts(i_end, 1); seg_end_lat = arc_pts(i_end, 2);
+        seg_dur = (i_end - i_start + 1) * arc_step;
+        if seg_dur < 1e-6, continue; end
+        segments{end+1} = struct('start', [seg_start_lon, seg_start_lat], ...
+            'end', [seg_end_lon, seg_end_lat], ...
+            'lon_rate', (seg_end_lon - seg_start_lon) / seg_dur, ...
+            'lat_rate', (seg_end_lat - seg_start_lat) / seg_dur, ...
+            'dur', seg_dur, 't_start', t_cum);
+        t_cum = t_cum + seg_dur;
+        seg_start_lon = seg_end_lon; seg_start_lat = seg_end_lat;
+    end
+
+    % 航段3：出弯直线
+    dur3 = straight_exit_m / speed_ms;
+    segments{end+1} = struct('start', [exit_lon, exit_lat], ...
+        'end', [W3_lon, W3_lat], ...
+        'lon_rate', (W3_lon - exit_lon) / dur3, ...
+        'lat_rate', (W3_lat - exit_lat) / dur3, ...
+        'dur', dur3, 't_start', t_cum);
+    t_cum = t_cum + dur3;
+
+    % ---- 构建航迹结构体 ----
+    traj.speed = speed_ms;
+    traj.dt_sec = dt;
+    traj.segments = segments';
+    traj.waypoints = [W1_lon, W1_lat; NaN, NaN; W3_lon, W3_lat];
+    traj.duration_sec = t_cum;
+    traj.n_segments = length(segments);
+    traj.time_array = 0:dt:t_cum;
+    traj.n_steps = length(traj.time_array);
+
+    waypoints = [W1_lon, W1_lat, 0; NaN, NaN, 0; W3_lon, W3_lat, 0];
+
+    % ---- 打印 ----
+    fprintf('  回头弯航迹生成 (180度左转):\n');
+    fprintf('    圆心:  (%.2fE, %.2fN) 固定\n', center_lon, center_lat);
+    fprintf('    起点:  (%.2fE, %.2fN) 入弯点: (%.2fE, %.2fN)\n', ...
+        W1_lon, W1_lat, entry_lon, entry_lat);
+    fprintf('    终点:  (%.2fE, %.2fN) 出弯点: (%.2fE, %.2fN)\n', ...
+        W3_lon, W3_lat, exit_lon, exit_lat);
+    fprintf('    入向: %.0f度(正东) 出向: %.0f度(正西) 转弯率: %.1f度/s\n', ...
+        bearing_in, bearing_out, omega_deg);
+    fprintf('    转弯半径: %.1f km, 转弯时长: %.0f s, 弧长: %.1f km\n', ...
+        R_turn_m/1000, turn_dur_sec, arc_length_m/1000);
+    fprintf('    入弯直线: %.0f km, 出弯直线: %.0f km, 总航程: %.0f km, 总时长: %.0f s\n', ...
+        straight_approach_m/1000, straight_exit_m/1000, ...
+        (straight_approach_m + arc_length_m + straight_exit_m)/1000, t_cum);
 end
 
 % =========================================================================

@@ -512,5 +512,5 @@ function params = simulation_params()
     % 随机数生成器种子
     % 42 是一个经典的"计算机科学梗"（《银河系漫游指南》中"生命、宇宙
     % 及一切的答案"），没有特殊的数学意义，任何固定整数均可。
-    params.random_seed = 190;
+    params.random_seed = 49;
 end
