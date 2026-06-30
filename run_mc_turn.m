@@ -491,21 +491,28 @@ end
 
 % ---- 定位真值中的转弯帧 ----
 function frames = find_turn_frames(true_track, thresh_deg_per_s)
-    hdg = atan2d(true_track(2:end,1) - true_track(1:end-1,1), ...
-                 true_track(2:end,2) - true_track(1:end-1,2));
-    hdg(hdg < 0) = hdg(hdg < 0) + 360;
-    hdg_rate = abs(diff(hdg));
-    hdg_rate = [hdg_rate(1); hdg_rate];  % 保持长度
+    n = size(true_track, 1);
+    if n < 2, frames = []; return; end
+    lon = true_track(:,1);
+    lat = true_track(:,2);
+    dlon = diff(lon(1:n));
+    dlat = diff(lat(1:n));
+    hdg = atan2d(dlon, dlat);
+    hdg_diff = diff(hdg);
+    hdg_diff(hdg_diff > 180) = hdg_diff(hdg_diff > 180) - 360;
+    hdg_diff(hdg_diff < -180) = hdg_diff(hdg_diff < -180) + 360;
+    hdg_rate = abs(hdg_diff);
+    pad = [0; hdg_rate];
     dt_est = mean(diff(true_track(:,5)));
     if dt_est > 0
-        hdg_rate_per_s = hdg_rate / dt_est;
+        hdg_rate_per_s = pad / dt_est;
     else
-        hdg_rate_per_s = hdg_rate;
+        hdg_rate_per_s = pad;
     end
     frames = find(hdg_rate_per_s > thresh_deg_per_s);
     if isempty(frames)
-        [~, idx] = sort(hdg_rate_per_s, 'descend');
-        frames = idx(1:min(3, length(idx)));
+        [vals, idx] = sort(hdg_rate_per_s, 'descend');
+        frames = sort(idx(1:min(3, length(idx))));
     end
 end
 

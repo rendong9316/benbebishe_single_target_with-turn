@@ -1,8 +1,8 @@
 % =========================================================================
-% run_mc_turn_compare.m — 拐弯场景三体制 UKF 对比蒙特卡洛仿真
+% run_mc_turn_180deg_compare.m — 回头弯180度场景三体制 UKF 对比蒙特卡洛仿真
 % =========================================================================
 % 【定位】
-%   拐弯场景下，同一点迹数据，并行运行三种 UKF 后端（jichu / zishiying / imm），
+%   180度回头弯场景下，同一点迹数据，并行运行三种 UKF 后端（jichu / zishiying / imm），
 %   每种后端均经 R1/R2 单站跟踪 + 四种融合（SCC/BC/CI/FCI），
 %   逐种子输出对比，最终汇总统计。
 %
@@ -11,9 +11,8 @@
 %   ukf_zishiying — CV-UKF + 模糊自适应 Q + 机动检测
 %   ukf_imm       — CV+CT 双模型 IMM-UKF + Pd-IPDA 似然
 %
-% 【输出】
-%   每种子：三行对比（UKF RMSE / 关联率 / 融合最优）
-%   汇总：  分体制统计表 + 交叉对比改善率
+% 【航迹】
+%   正东入弯 → 左转180度半圆 → 正西出弯，转弯率 1度/s
 % =========================================================================
 
 clear; close all; clc;
@@ -32,7 +31,6 @@ FUSION_METHODS = {'SCC', 'BC', 'CI', 'FCI'};
 N_FUS = length(FUSION_METHODS);
 
 %% ---- 预分配统计结构 ----
-% 使用 struct 数组: s(u).field = nan(N_MC, 1) 或 nan(N_MC, 4)
 for u = 1:N_UKF
     s(u).name = UKF_NAMES{u};  %#ok<*SAGROW>
 
@@ -67,7 +65,6 @@ for u = 1:N_UKF
     s(u).bad_seed  = zeros(N_MC, 1);
     s(u).bad_reason = cell(N_MC, 1);
 
-    % IMM 专属
     if u == 3
         s(u).mu_ct_avg_R1  = nan(N_MC, 1);
         s(u).mu_ct_avg_R2  = nan(N_MC, 1);
@@ -85,16 +82,16 @@ rmse_raw_R1 = nan(N_MC, 1);
 rmse_raw_R2 = nan(N_MC, 1);
 n_frames_list = nan(N_MC, 1);
 
-%% ---- 预计算转弯信息（与种子无关） ----
+%% ---- 预计算转弯信息 ----
 params0 = simulation_params();
-[turn_waypoints, turn_angle_deg, turn_rate_rad_per_sec] = get_turn_info(params0);
+uturn_info = struct();  % uturn 不需要 get_turn_info，后续从航迹提取
+omega = pi / 180.0;  % 1度/s
 
-fprintf('╔══════════════════════════════════════════════════════════════════════════╗\n');
-fprintf('║     拐弯场景三体制 UKF 对比 MC  N=%d  (jichu × zishiying × imm)       ║\n', N_MC);
-fprintf('╠══════════════════════════════════════════════════════════════════════════╣\n');
-fprintf('║  转弯: %.1f°@%.4f rad/s  融合: SCC/BC/CI/FCI  dt=30s  ~81帧          ║\n', ...
-    turn_angle_deg, turn_rate_rad_per_sec);
-fprintf('╚══════════════════════════════════════════════════════════════════════════╝\n\n');
+fprintf('========================================================================\n');
+fprintf(' 回头弯180度: 直线(90度) -> 左转180度圆弧(1度/s) -> 直线(270度)\n');
+fprintf('========================================================================\n');
+fprintf('U  回头弯180度三体制对比MC  N=%d  IMM:CV+CT(Pd-IPDA,Pi=[.90 .10])  U\n', N_MC);
+fprintf('========================================================================\n\n');
 
 tic;
 
@@ -110,7 +107,7 @@ for mc = 1:N_MC
     params.random_seed = seed;
     rng(params.random_seed);
 
-    [traj, ~] = aircraft_trajectory_create('gradual_turn', params);
+    [traj, ~] = aircraft_trajectory_create('uturn', params);
     true_track = aircraft_trajectory_interpolate('generate', traj);
 
     t1_grid = params.time_offset_radar1_sec : params.dt_sec : traj.duration_sec;
@@ -234,8 +231,8 @@ for mc = 1:N_MC
         params_r1.gate_sigma        = params.radar1_gate_sigma;
         params_r1.gate_vr_ms        = params.radar1_gate_vr_ms;
         params_r1.tracker_K_loss    = params.radar1_tracker_K_loss;
-        if u == 3  % IMM 需要转弯率
-            params_r1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
+        if u == 3
+            params_r1.imm_turn_rate_rad_per_sec = omega;
         end
 
         % ===== 创建 UKF 模板 + R1 跟踪 =====
@@ -267,7 +264,7 @@ for mc = 1:N_MC
         params_r2.tracker_N         = 8;
         params_r2.tracker_K_loss    = params.radar2_tracker_K_loss;
         if u == 3
-            params_r2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
+            params_r2.imm_turn_rate_rad_per_sec = omega;
         end
 
         % ===== 创建 UKF 模板 + R2 跟踪 =====
@@ -346,7 +343,6 @@ for mc = 1:N_MC
         % ===== 航迹分段 =====
         segs1 = extract_segments(snaps_R1, n_frames);
         segs2 = extract_segments(snaps_R2, n_frames);
-        % 用最优融合方法的分段
         all_fused_best = run_track_fusion(matched_pair, snaps_R1, aligned_R2, params, FUSION_METHODS{best_m});
         segs_f = extract_fusion_segments(all_fused_best, n_frames);
         s(u).mtl_R1(mc)  = compute_mtl(segs1);
@@ -369,18 +365,19 @@ for mc = 1:N_MC
     end  % end UKF types loop
 
     %% ---------- 逐种子对比输出 ----------
-    fprintf('── MC #%d (seed=%d) ──\n', mc, seed);
+    fprintf('  MC #%d (seed=%d) -- R1=%.1fs R2=%.1fs n=%d\n', ...
+        mc, seed, t1_grid(1), t1_grid(end), n_frames);
     fprintf('  点迹: R1原始%.0f 校准%.1f | R2原始%.0f 校准%.1f km\n', ...
         rmse_raw_R1(mc), rmse_cal_R1(mc), rmse_raw_R2(mc), rmse_cal_R2(mc));
-    fprintf('  %-12s │ %8s %8s │ %7s %7s │ %8s %8s │ %6s\n', ...
+    fprintf('  %-12s | %8s %8s | %7s %7s | %8s %8s | %6s\n', ...
         'UKF', 'R1_UKF', 'R2_UKF', 'AssocR1', 'AssocR2', 'FusBest', 'FusRMSE', 'Method');
-    fprintf('  %-12s─┼%s─┼%s─┼%s─┼%s\n', ...
-        '────────────', '──────────────────', '────────────────', '───────────────────', '───────');
+    fprintf('  %-12s--%s--%s--%s--%s\n', ...
+        '------------', '----------', '----------', '----------', '------');
 
     for u = 1:N_UKF
         markers = '';
         if s(u).bad_seed(mc), markers = ' ***BAD***'; end
-        fprintf('  %-12s │ %6.1fkm %6.1fkm │ %5.0f%% %5.0f%% │ %6.1fkm %6s │ %s%s\n', ...
+        fprintf('  %-12s | %6.1fkm %6.1fkm | %5.0f%% %5.0f%% | %6.1fkm %6s | %s%s\n', ...
             s(u).name, ...
             s(u).rmse_ukf_R1(mc), s(u).rmse_ukf_R2(mc), ...
             s(u).assoc_R1(mc), s(u).assoc_R2(mc), ...
@@ -388,12 +385,10 @@ for mc = 1:N_MC
             s(u).name, markers);
     end
 
-    % 额外: 三体制融合最优交叉对比
     best_rmses = [s(1).rmse_fus_best(mc), s(2).rmse_fus_best(mc), s(3).rmse_fus_best(mc)];
     [~, best_u] = min(best_rmses);
-    fprintf('  → 最优体制: %s (融合RMSE=%.1fkm)\n', s(best_u).name, best_rmses(best_u));
+    fprintf('  -> 最优体制: %s (融合RMSE=%.1fkm)\n', s(best_u).name, best_rmses(best_u));
 
-    % IMM 模型概率（若可用）
     if ~isnan(s(3).mu_ct_avg_R1(mc))
         fprintf('  IMM CT概率: R1 avg=%.0f%% turn=%.0f%% dom=%d | R2 avg=%.0f%% turn=%.0f%% dom=%d\n', ...
             s(3).mu_ct_avg_R1(mc), s(3).mu_ct_turn_R1(mc), s(3).mu_ct_dom_R1(mc), ...
@@ -408,26 +403,22 @@ close all;
 %% ========================================================================
 %% 汇总统计
 %% ========================================================================
-fprintf('╔══════════════════════════════════════════════════════════════════════════╗\n');
-fprintf('║           %d 次蒙特卡洛统计汇总 (%.0f s)                                 ║\n', N_MC, elapsed);
-fprintf('╠══════════════════════════════════════════════════════════════════════════╣\n');
+fprintf('========================================================================\n');
+fprintf('          %d 次蒙特卡洛统计汇总 (%.0f s)\n', N_MC, elapsed);
+fprintf('========================================================================\n');
 
 %% ---- UKF RMSE 对比 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── UKF RMSE 三体制对比 (km) ───                                      ║\n');
-fprintf('║  %-18s │ %10s │ %10s │ %10s  ║\n', '指标', 'jichu', 'zishiying', 'imm');
-fprintf('║  %-18s─┼%s─┼%s─┼%s  ║\n', ...
-    '──────────────────', '────────────', '────────────', '────────────');
+fprintf('\n--- UKF RMSE 三体制对比 (km) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', '指标', 'jichu', 'zishiying', 'imm');
+fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 print_3way('R1 UKF RMSE', s(1).rmse_ukf_R1, s(2).rmse_ukf_R1, s(3).rmse_ukf_R1);
 print_3way('R2 UKF RMSE', s(1).rmse_ukf_R2, s(2).rmse_ukf_R2, s(3).rmse_ukf_R2);
 print_3way('R2对齐 RMSE', s(1).rmse_ukf_R2_alg, s(2).rmse_ukf_R2_alg, s(3).rmse_ukf_R2_alg);
 
 %% ---- 融合 RMSE 对比 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── 融合 RMSE 三体制对比 (km) ───                                     ║\n');
-fprintf('║  %-18s │ %10s │ %10s │ %10s  ║\n', '指标', 'jichu', 'zishiying', 'imm');
-fprintf('║  %-18s─┼%s─┼%s─┼%s  ║\n', ...
-    '──────────────────', '────────────', '────────────', '────────────');
+fprintf('\n--- 融合 RMSE 三体制对比 (km) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', '指标', 'jichu', 'zishiying', 'imm');
+fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 for m = 1:N_FUS
     print_3way(sprintf('融合 %s', FUSION_METHODS{m}), ...
         s(1).rmse_fus(:,m), s(2).rmse_fus(:,m), s(3).rmse_fus(:,m));
@@ -435,37 +426,31 @@ end
 print_3way('融合最优', s(1).rmse_fus_best, s(2).rmse_fus_best, s(3).rmse_fus_best);
 
 %% ---- 改善率对比 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── 改善率三体制对比 (%%) ───                                          ║\n');
-fprintf('║  %-18s │ %10s │ %10s │ %10s  ║\n', '指标', 'jichu', 'zishiying', 'imm');
-fprintf('║  %-18s─┼%s─┼%s─┼%s  ║\n', ...
-    '──────────────────', '────────────', '────────────', '────────────');
+fprintf('\n--- 改善率三体制对比 (%%) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', '指标', 'jichu', 'zishiying', 'imm');
+fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 print_3way('UKF改善 R1', s(1).imp_ukf_R1, s(2).imp_ukf_R1, s(3).imp_ukf_R1);
 print_3way('UKF改善 R2', s(1).imp_ukf_R2, s(2).imp_ukf_R2, s(3).imp_ukf_R2);
 print_3way('融合 vs R1', s(1).imp_fus_vs_R1, s(2).imp_fus_vs_R1, s(3).imp_fus_vs_R1);
 print_3way('融合 vs R2', s(1).imp_fus_vs_R2, s(2).imp_fus_vs_R2, s(3).imp_fus_vs_R2);
 
 %% ---- 关联 + NIS 对比 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── 关联诊断三体制对比 ───                                             ║\n');
-fprintf('║  %-18s │ %10s │ %10s │ %10s  ║\n', '指标', 'jichu', 'zishiying', 'imm');
-fprintf('║  %-18s─┼%s─┼%s─┼%s  ║\n', ...
-    '──────────────────', '────────────', '────────────', '────────────');
-print_3way_pct('关联率 R1(%)', s(1).assoc_R1, s(2).assoc_R1, s(3).assoc_R1);
-print_3way_pct('关联率 R2(%)', s(1).assoc_R2, s(2).assoc_R2, s(3).assoc_R2);
+fprintf('\n--- 关联诊断三体制对比 ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', '指标', 'jichu', 'zishiying', 'imm');
+fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
+print_3way_pct('关联率 R1(%%)', s(1).assoc_R1, s(2).assoc_R1, s(3).assoc_R1);
+print_3way_pct('关联率 R2(%%)', s(1).assoc_R2, s(2).assoc_R2, s(3).assoc_R2);
 print_3way('NIS均值 R1', s(1).nis_mean_R1, s(2).nis_mean_R1, s(3).nis_mean_R1);
 print_3way('NIS均值 R2', s(1).nis_mean_R2, s(2).nis_mean_R2, s(3).nis_mean_R2);
-print_3way_pct('NIS门内 R1(%)', s(1).nis_gate_R1, s(2).nis_gate_R1, s(3).nis_gate_R1);
-print_3way_pct('NIS门内 R2(%)', s(1).nis_gate_R2, s(2).nis_gate_R2, s(3).nis_gate_R2);
+print_3way_pct('NIS门内 R1(%%)', s(1).nis_gate_R1, s(2).nis_gate_R1, s(3).nis_gate_R1);
+print_3way_pct('NIS门内 R2(%%)', s(1).nis_gate_R2, s(2).nis_gate_R2, s(3).nis_gate_R2);
 print_3way('起始帧 R1', s(1).init_fr_R1, s(2).init_fr_R1, s(3).init_fr_R1);
 print_3way('起始帧 R2', s(1).init_fr_R2, s(2).init_fr_R2, s(3).init_fr_R2);
 
 %% ---- MTL + 断裂对比 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── MTL 航迹平均长度 (帧) ───                                          ║\n');
-fprintf('║  %-18s │ %10s │ %10s │ %10s  ║\n', '指标', 'jichu', 'zishiying', 'imm');
-fprintf('║  %-18s─┼%s─┼%s─┼%s  ║\n', ...
-    '──────────────────', '────────────', '────────────', '────────────');
+fprintf('\n--- MTL 航迹平均长度 (帧) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', '指标', 'jichu', 'zishiying', 'imm');
+fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 print_3way('MTL R1', s(1).mtl_R1, s(2).mtl_R1, s(3).mtl_R1);
 print_3way('MTL R2', s(1).mtl_R2, s(2).mtl_R2, s(3).mtl_R2);
 print_3way('MTL 融合', s(1).mtl_fus, s(2).mtl_fus, s(3).mtl_fus);
@@ -474,22 +459,19 @@ print_3way('断裂 R2', s(1).brk_R2, s(2).brk_R2, s(3).brk_R2);
 print_3way('断裂 融合', s(1).brk_fus, s(2).brk_fus, s(3).brk_fus);
 
 %% ---- 坏种子统计 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── 坏种子统计 ───                                                     ║\n');
+fprintf('\n--- 坏种子统计 ---\n');
 for u = 1:N_UKF
     n_bad = sum(s(u).bad_seed);
-    fprintf('║  %-10s: %d/%d (%.0f%%)                                              ║\n', ...
-        s(u).name, n_bad, N_MC, n_bad/N_MC*100);
+    fprintf('  %s: %d/%d (%.0f%%)\n', s(u).name, n_bad, N_MC, n_bad/N_MC*100);
 end
-% 列出所有体制下都坏的种子
 all_bad = s(1).bad_seed & s(2).bad_seed & s(3).bad_seed;
 n_all_bad = sum(all_bad);
-fprintf('║  三体制均坏: %d seeds                                                  ║\n', n_all_bad);
+fprintf('  三体制均坏: %d seeds\n', n_all_bad);
 if n_all_bad > 0
     bad_seeds_list = find(all_bad);
     for i = 1:length(bad_seeds_list)
         mc_idx = bad_seeds_list(i);
-        fprintf('║    seed=%d: R1=[%.0f,%.0f,%.0f] R2=[%.0f,%.0f,%.0f]               ║\n', ...
+        fprintf('    seed=%d: R1=[%.0f,%.0f,%.0f] R2=[%.0f,%.0f,%.0f]\n', ...
             SEED_BASE+mc_idx-1, ...
             s(1).rmse_ukf_R1(mc_idx), s(2).rmse_ukf_R1(mc_idx), s(3).rmse_ukf_R1(mc_idx), ...
             s(1).rmse_ukf_R2(mc_idx), s(2).rmse_ukf_R2(mc_idx), s(3).rmse_ukf_R2(mc_idx));
@@ -497,51 +479,45 @@ if n_all_bad > 0
 end
 
 %% ---- 融合算法分布 ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── 最优融合算法分布 ───                                               ║\n');
+fprintf('\n--- 最优融合算法分布 ---\n');
 for u = 1:N_UKF
-    fprintf('║  %s:', s(u).name);
+    fprintf('  %s:', s(u).name);
     for m = 1:N_FUS
         cnt = sum(strcmp(s(u).fus_best_method, FUSION_METHODS{m}));
         fprintf('  %s=%d(%.0f%%)', FUSION_METHODS{m}, cnt, cnt/N_MC*100);
     end
-    fprintf('  ║\n');
+    fprintf('\n');
 end
 
-%% ---- IMM 模型概率（仅 imm） ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── IMM 模型概率 (仅 imm 体制) ───                                     ║\n');
-print_imm_mu('CT均值 R1(%)', s(3).mu_ct_avg_R1);
-print_imm_mu('CT均值 R2(%)', s(3).mu_ct_avg_R2);
-print_imm_mu('CT转弯 R1(%)', s(3).mu_ct_turn_R1);
-print_imm_mu('CT转弯 R2(%)', s(3).mu_ct_turn_R2);
+%% ---- IMM 模型概率 ----
+fprintf('\n--- IMM 模型概率 (仅 imm 体制) ---\n');
+print_imm_mu('CT均值 R1(%%)', s(3).mu_ct_avg_R1);
+print_imm_mu('CT均值 R2(%%)', s(3).mu_ct_avg_R2);
+print_imm_mu('CT转弯 R1(%%)', s(3).mu_ct_turn_R1);
+print_imm_mu('CT转弯 R2(%%)', s(3).mu_ct_turn_R2);
 print_imm_mu('CT占优帧 R1', s(3).mu_ct_dom_R1);
 print_imm_mu('CT占优帧 R2', s(3).mu_ct_dom_R2);
 
-%% ---- 交叉对比: zishiying vs jichu, imm vs jichu ----
-fprintf('║                                                                          ║\n');
-fprintf('║  ─── 交叉对比: 体制间差异 (%%) ───                                      ║\n');
-fprintf('║  %-24s │ %10s │ %10s  ║\n', '指标', 'zishiying vs jichu', 'imm vs jichu');
-fprintf('║  %-24s─┼%s─┼%s  ║\n', ...
-    '────────────────────────', '────────────', '────────────');
+%% ---- 交叉对比 ----
+fprintf('\n--- 交叉对比: 体制间差异 (%%) ---\n');
+fprintf('%-24s | %10s | %10s\n', '指标', 'zishiying vs jichu', 'imm vs jichu');
+fprintf('%-24s-+%s-+%s\n', '------------------------', '----------', '----------');
 
-% 逐种子配对差异
 delta_z_vs_j_R1 = (s(2).rmse_ukf_R1 - s(1).rmse_ukf_R1) ./ s(1).rmse_ukf_R1 * 100;
 delta_i_vs_j_R1 = (s(3).rmse_ukf_R1 - s(1).rmse_ukf_R1) ./ s(1).rmse_ukf_R1 * 100;
 delta_z_vs_j_fus = (s(2).rmse_fus_best - s(1).rmse_fus_best) ./ s(1).rmse_fus_best * 100;
 delta_i_vs_j_fus = (s(3).rmse_fus_best - s(1).rmse_fus_best) ./ s(1).rmse_fus_best * 100;
 
-print_cross_row('Δ R1 UKF (%)', delta_z_vs_j_R1, delta_i_vs_j_R1);
-print_cross_row('Δ 融合最优 (%)', delta_z_vs_j_fus, delta_i_vs_j_fus);
+print_cross_row('Delta R1 UKF(%%)', delta_z_vs_j_R1, delta_i_vs_j_R1);
+print_cross_row('Delta 融合最优(%%)', delta_z_vs_j_fus, delta_i_vs_j_fus);
 
-% 胜率统计
 n_z_better_R1 = sum(s(2).rmse_ukf_R1 < s(1).rmse_ukf_R1);
 n_i_better_R1 = sum(s(3).rmse_ukf_R1 < s(1).rmse_ukf_R1);
 n_z_better_fus = sum(s(2).rmse_fus_best < s(1).rmse_fus_best);
 n_i_better_fus = sum(s(3).rmse_fus_best < s(1).rmse_fus_best);
-fprintf('║  胜率(R1): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)               ║\n', ...
+fprintf('  胜率(R1): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)\n', ...
     n_z_better_R1, N_MC, n_z_better_R1/N_MC*100, n_i_better_R1, N_MC, n_i_better_R1/N_MC*100);
-fprintf('║  胜率(融合): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)               ║\n', ...
+fprintf('  胜率(融合): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)\n', ...
     n_z_better_fus, N_MC, n_z_better_fus/N_MC*100, n_i_better_fus, N_MC, n_i_better_fus/N_MC*100);
 
 % 三体制终极PK
@@ -552,46 +528,28 @@ for mc_idx = 1:N_MC
     [~, best_ukf_for_seed(mc_idx)] = min(rmses);
     best_ukf_name{mc_idx} = UKF_NAMES{best_ukf_for_seed(mc_idx)};
 end
-fprintf('║                                                                          ║\n');
-fprintf('║  终极最优体制分布 (融合RMSE最小):                                       ║\n');
+fprintf('\n  终极最优体制分布 (融合RMSE最小):\n');
 for u = 1:N_UKF
     cnt = sum(best_ukf_for_seed == u);
-    fprintf('║    %s: %d/%d (%.0f%%)                                                ║\n', ...
-        UKF_NAMES{u}, cnt, N_MC, cnt/N_MC*100);
+    fprintf('    %s: %d/%d (%.0f%%)\n', UKF_NAMES{u}, cnt, N_MC, cnt/N_MC*100);
 end
 
-fprintf('╚══════════════════════════════════════════════════════════════════════════╝\n');
+fprintf('========================================================================\n');
 
 %% ---- 保存数据 ----
 if ~exist('results', 'dir'), mkdir('results'); end
-outf = fullfile('results', sprintf('mc_turn_compare_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
+outf = fullfile('results', sprintf('mc_turn180_compare_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
 save(outf, 's', 'rmse_cal_R1', 'rmse_cal_R2', 'rmse_raw_R1', 'rmse_raw_R2', ...
     'n_frames_list', 'N_MC', 'SEED_BASE', 'UKF_NAMES', 'FUSION_METHODS', ...
-    'turn_angle_deg', 'turn_rate_rad_per_sec', 'best_ukf_for_seed', 'best_ukf_name');
+    'omega', 'best_ukf_for_seed', 'best_ukf_name');
 fprintf('\n完整数据已保存: %s\n', outf);
 fprintf('Done.\n');
-
 
 %% ========================================================================
 %% 工具函数
 %% ========================================================================
 
-% ---- 转弯信息 ----
-function [wp, turn_angle_deg, omega] = get_turn_info(params)
-    W1 = [126.6685, 32.2184];
-    W2 = [128.2501, 31.0887];
-    W3 = [132.0502, 31.4379];
-    wp = [W1(1), W1(2); W2(1), W2(2); W3(1), W3(2)];
-    b_in  = sphere_utils_azimuth(W1(1), W1(2), W2(1), W2(2));
-    b_out = sphere_utils_azimuth(W2(1), W2(2), W3(1), W3(2));
-    dh = b_out - b_in;
-    if dh > 180, dh = dh - 360; elseif dh < -180, dh = dh + 360; end
-    turn_angle_deg = abs(dh);
-    sgn = sign(dh); if sgn == 0, sgn = 1; end
-    omega = sgn * 1.0 * pi / 180.0;
-end
-
-% ---- 定位转弯帧 ----
+% ---- 定位真值中的转弯帧 ----
 function frames = find_turn_frames(true_track, thresh_deg_per_s)
     n = size(true_track, 1);
     if n < 2, frames = []; return; end
@@ -697,8 +655,6 @@ function [assoc_rate, nis_mean, nis_gate, n_assoc, n_pred, init_frame] = diagnos
                     isfield(trk.ukf, 'nis_history')
                 nis_vals = [nis_vals, trk.ukf.nis_history];
             end
-        elseif trk.type == 7
-            % lost frame
         end
     end
     n_tracked = n_assoc + n_pred;
@@ -768,25 +724,25 @@ end
 
 % ---- 打印函数 ----
 function print_3way(label, v1, v2, v3)
-    fprintf('║  %-18s │ %7.1f±%4.1f │ %7.1f±%4.1f │ %7.1f±%4.1f  ║\n', ...
+    fprintf('%-18s | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f\n', ...
         label, nanmean(v1), nanstd(v1), nanmean(v2), nanstd(v2), nanmean(v3), nanstd(v3));
 end
 
 function print_3way_pct(label, v1, v2, v3)
-    fprintf('║  %-18s │ %7.1f±%4.1f │ %7.1f±%4.1f │ %7.1f±%4.1f  ║\n', ...
+    fprintf('%-18s | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f\n', ...
         label, nanmean(v1), nanstd(v1), nanmean(v2), nanstd(v2), nanmean(v3), nanstd(v3));
 end
 
 function print_imm_mu(label, v)
     if all(isnan(v))
-        fprintf('║  %-24s │ %10s                        ║\n', label, 'N/A');
+        fprintf('%-24s | %10s\n', label, 'N/A');
     else
-        fprintf('║  %-24s │ %7.1f±%4.1f                       ║\n', ...
+        fprintf('%-24s | %7.1f+-%4.1f\n', ...
             label, nanmean(v), nanstd(v));
     end
 end
 
 function print_cross_row(label, v1, v2)
-    fprintf('║  %-24s │ %+7.1f±%4.1f │ %+7.1f±%4.1f  ║\n', ...
+    fprintf('%-24s | %+7.1f+-%4.1f | %+7.1f+-%4.1f\n', ...
         label, nanmean(v1), nanstd(v1), nanmean(v2), nanstd(v2));
 end

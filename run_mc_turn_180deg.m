@@ -88,7 +88,7 @@ for mc = 1:N_MC
     n_frames_list(mc) = n_frames;
 
     % 转弯帧定位（回头弯: t=522~702s对应帧19~25）
-    turn_frames = find_turn_frames(traj, params);
+    turn_frames = find_turn_frames(true_track, 0.5);
 
     %% ---------- Phase 1: ADS-B 标定 ----------
     rng(params.random_seed);
@@ -480,16 +480,30 @@ function [wp, turn_angle_deg, omega] = get_turn_info(params)
 end
 
 % ---- 定位真值中的转弯帧 ----
-function frames = find_turn_frames(traj, params)
-    % 回头弯: approach=120km@230m/s≈522s, turn=180s, 总转弯段 t=522~702s
-    approach_dur = 120e3 / params.aircraft_speed_ms;
-    turn_dur = 180.0;
-    t1_grid = params.time_offset_radar1_sec : params.dt_sec : traj.duration_sec;
-    tf_start = find(t1_grid >= approach_dur, 1);
-    tf_end = find(t1_grid >= (approach_dur + turn_dur), 1);
-    if isempty(tf_start), tf_start = 1; end
-    if isempty(tf_end), tf_end = length(t1_grid); end
-    frames = (tf_start:tf_end)';
+function frames = find_turn_frames(true_track, thresh_deg_per_s)
+    n = size(true_track, 1);
+    if n < 2, frames = []; return; end
+    lon = true_track(:,1);
+    lat = true_track(:,2);
+    dlon = diff(lon(1:n));
+    dlat = diff(lat(1:n));
+    hdg = atan2d(dlon, dlat);
+    hdg_diff = diff(hdg);
+    hdg_diff(hdg_diff > 180) = hdg_diff(hdg_diff > 180) - 360;
+    hdg_diff(hdg_diff < -180) = hdg_diff(hdg_diff < -180) + 360;
+    hdg_rate = abs(hdg_diff);
+    pad = [0; hdg_rate];
+    dt_est = mean(diff(true_track(:,5)));
+    if dt_est > 0
+        hdg_rate_per_s = pad / dt_est;
+    else
+        hdg_rate_per_s = pad;
+    end
+    frames = find(hdg_rate_per_s > thresh_deg_per_s);
+    if isempty(frames)
+        [vals, idx] = sort(hdg_rate_per_s, 'descend');
+        frames = sort(idx(1:min(3, length(idx))));
+    end
 end
 
 % ---- 点迹RMSE ----
