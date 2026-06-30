@@ -199,16 +199,12 @@ for mc = 1:N_MC
     params.gate_sigma = params.radar1_gate_sigma;
     params.gate_vr_ms = params.radar1_gate_vr_ms;
     params.tracker_K_loss = params.radar1_tracker_K_loss;
+    params.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
 
-    ukf1_cv_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
+    ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-    ukf1_ct_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
-        params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-    ukf1_ct_tpl.model_type = 'CT';
-    ukf1_ct_tpl.turn_rate_rad_per_sec = turn_rate_rad_per_sec;
-    % CT与CV使用相同Q（文献: IEEE T-AES 2006, ATPM-ISIPDA）
 
-    [snaps_R1, finalTrk1] = imm_tracker(detList_R1, ukf1_cv_tpl, ukf1_ct_tpl, ...
+    [snaps_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, ...
         params, n_frames, true_track, t1_grid);
 
     % ---- R2 ----
@@ -222,15 +218,12 @@ for mc = 1:N_MC
     params_r2.ukf_P_vel_std = params.radar2_ukf_P_vel_std;
     params_r2.tracker_M = 4;  params_r2.tracker_N = 8;
     params_r2.tracker_K_loss = params.radar2_tracker_K_loss;
+    params_r2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
 
-    ukf2_cv_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
+    ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-    ukf2_ct_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
-        params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-    ukf2_ct_tpl.model_type = 'CT';
-    ukf2_ct_tpl.turn_rate_rad_per_sec = turn_rate_rad_per_sec;
 
-    [snaps_R2, finalTrk2] = imm_tracker(detList_R2, ukf2_cv_tpl, ukf2_ct_tpl, ...
+    [snaps_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, ...
         params_r2, n_frames, true_track, t2_grid);
 
     % RMSE

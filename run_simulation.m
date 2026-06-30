@@ -691,7 +691,7 @@ params.tracker_K_loss  = params.radar1_tracker_K_loss;
 %   内部初始化：state_dim(4) + sigma_points + weights + 坐标转换初始化
 %   R矩阵 = diag([σ_range², σ_az²]) （量测噪声协方差）
 %   radar_lon/lat, tx_lon/lat: 用于极坐标↔经纬度转换
-ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
+ukf1_tpl = ukf_zishiying('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
 % ---- R2 UKF 参数配置（普通站，V2调优后） ----
@@ -708,7 +708,7 @@ params_r2.tracker_M       = 4;
 params_r2.tracker_N       = 8;
 params_r2.tracker_K_loss  = params.radar2_tracker_K_loss;
 % 创建R2的UKF模板
-ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
+ukf2_tpl = ukf_zishiying('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
 % 航迹存储变量初始化

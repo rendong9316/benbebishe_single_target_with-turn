@@ -17,13 +17,30 @@
 function varargout = ukf_zishiying(action, varargin)
     switch action
         case 'create'
-            varargout{1} = ukf_jichu('create', varargin{:});
+            ukf = ukf_jichu('create', varargin{:});
+            ukf.filter_type = 'zishiying';  % 标记，供 ukf_dispatch 路由
+            varargout{1} = ukf;
         case 'init'
-            varargout{1} = ukf_jichu('init', varargin{:});
+            ukf = ukf_jichu('init', varargin{:});
+            % 初始化机动检测字段
+            ukf.maneuver_active = false;
+            ukf.maneuver_counter = 0;
+            ukf.maneuver_recovery = 0;
+            ukf.suspect_counter = 0;
+            ukf.innov_history = {};
+            ukf.last_det_list = [];
+            varargout{1} = ukf;
+        case 'prepare'
+            % 委托 ukf_jichu，prepare 不含机动逻辑
+            [varargout{1}, varargout{2}, varargout{3}, varargout{4}, ...
+             varargout{5}, varargout{6}, varargout{7}] = ukf_jichu('prepare', varargin{:});
         case 'update'
-            % varargin = {ukf, innov, z_pred, Z_pred, X_pred, x_pred, P_pred, P_zz, params}
-            [lon, lat, ukf] = ukf_jichu('update', varargin{1:8});
-            ukf = apply_maneuver_adapt_post(ukf, varargin{9});
+            % varargin = {ukf, innov_w} — innov_w=[] 表示纯预测
+            [lon, lat, ukf] = ukf_jichu('update', varargin{1}, varargin{2});
+            if ~isempty(varargin{2})
+                ukf.last_innov = varargin{2};  % 记录本帧新息供下帧机动检测
+                ukf = apply_maneuver_adapt_post(ukf);
+            end
             varargout = {lon, lat, ukf};
         otherwise
             error('ukf_zishiying: unknown action ''%s''', action);
@@ -34,8 +51,10 @@ end
 % =========================================================================
 % apply_maneuver_adapt_post — 机动自适应后处理
 % 综合: 机动预检测(suspect_counter/渐进波门) + 机动自适应 Q 更新
+% 从 ukf.cache 读取预测统计量，从 ukf.params 读取阈值
 % =========================================================================
-function ukf = apply_maneuver_adapt_post(ukf, params)
+function ukf = apply_maneuver_adapt_post(ukf)
+    params = ukf.params;
     % 航迹未成熟 → 不处理
     mature_frames = 12;
     if isfield(params, 'maneuver_mature_frames')
@@ -117,14 +136,14 @@ function ukf = apply_maneuver_adapt_post(ukf, params)
     if isfield(params, 'maneuver_wide_gate_mult'), wide_gate_mult = params.maneuver_wide_gate_mult; end
     if isfield(params, 'maneuver_suspect_thresh'), suspect_thresh = params.maneuver_suspect_thresh; end
 
-    if ~ukf.maneuver_active && isfield(ukf, 'last_x_pred') && isfield(ukf, 'last_z_pred') ...
-            && isfield(ukf, 'last_P_zz') && isfield(ukf, 'last_det_list')
+    if ~ukf.maneuver_active && isfield(ukf, 'cache') ...
+            && isfield(ukf, 'last_det_list')
         if ukf.suspect_counter < 0
             ukf.suspect_counter = 0;
         end
-        x_pred = ukf.last_x_pred;
-        z_pred = ukf.last_z_pred;
-        P_zz = ukf.last_P_zz;
+        x_pred = ukf.cache.x_pred;
+        z_pred = ukf.cache.z_pred;
+        P_zz = ukf.cache.P_zz;
         dets = ukf.last_det_list;
 
         wide_gate = (params.gate_sigma * wide_gate_mult)^2 * 2;

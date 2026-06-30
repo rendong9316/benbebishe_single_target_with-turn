@@ -10,8 +10,10 @@
 %   ukf = ukf_jichu('init', ukf, meas1, meas2)
 %   [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, ukf] = ukf_jichu('prepare', ukf)
 %      预测 + 量测统计（供上层关联模块使用）
-%   [lon, lat, ukf] = ukf_jichu('update', ukf, innov, z_pred, Z_pred, X_pred, x_pred, P_pred, P_zz)
+%   [lon, lat, ukf] = ukf_jichu('update', ukf, innov_w)
 %      纯 Kalman 数学：P_xz → K → x_new → P_new。不含任何检测/关联/门限。
+%      innov_w=[] 表示纯预测帧，跳过更新仅保留预测状态。
+%      所有中间量从 ukf.cache 内部读取（由 prepare 写入）。
 %   [x_pred, P_pred, X_pred, ukf] = ukf_jichu('predict', ukf)
 %   z = ukf_jichu('measurement', ukf, x)
 % =========================================================================
@@ -26,6 +28,7 @@ function varargout = ukf_jichu(action, varargin)
             [varargout{1}, varargout{2}, varargout{3}, varargout{4}, ...
              varargout{5}, varargout{6}, varargout{7}] = prepare_ukf(varargin{:});
         case 'update'
+            % varargin = {ukf, innov_w} — innov_w=[] 表示纯预测
             [varargout{1}, varargout{2}, varargout{3}] = update_with_innov(varargin{:});
         case 'predict'
             [varargout{1}, varargout{2}, varargout{3}, varargout{4}] = predict_step_ukf(varargin{:});
@@ -172,15 +175,38 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, ukf] = prepare_ukf(ukf)
     if any(isnan(P_zz(:)))
         P_zz = ukf.R;
     end
+
+    % ---- Step 3: 缓存中间结果供 update 使用 ----
+    ukf.cache = struct('x_pred', x_pred, 'P_pred', P_pred, 'X_pred', X_pred, ...
+                       'z_pred', z_pred, 'Z_pred', Z_pred, 'P_zz', P_zz);
 end
 
 
 % =========================================================================
 % update_with_innov — 纯 Kalman 更新数学
-% 输入：UKF 结构体 + 外部提供的加权新息及预测统计量
-% 输出：更新后的 lon, lat, ukf（ukf.x 和 ukf.P 已更新）
+% 输入：ukf + innov_w（PDA加权新息，[]=纯预测）
+% 所有中间量（x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz）从 ukf.cache 读取
+% 输出：更新后的 lon, lat, ukf
 % =========================================================================
-function [lon, lat, ukf] = update_with_innov(ukf, innov, z_pred, Z_pred, X_pred, x_pred, P_pred, P_zz)
+function [lon, lat, ukf] = update_with_innov(ukf, innov_w)
+    % ---- 读取缓存 ----
+    cache = ukf.cache;
+    x_pred = cache.x_pred;
+    P_pred = cache.P_pred;
+    X_pred = cache.X_pred;
+    z_pred = cache.z_pred;
+    Z_pred = cache.Z_pred;
+    P_zz  = cache.P_zz;
+
+    % ---- 纯预测帧：保留预测状态，不更新 ----
+    if isempty(innov_w)
+        ukf.x = x_pred;
+        ukf.P = P_pred;
+        lon = ukf.x(1);
+        lat = ukf.x(3);
+        return;
+    end
+
     % ---- Step 1: 计算互协方差 P_xz ----
     P_xz = zeros(ukf.n, ukf.m);
     for i = 1:(2 * ukf.n + 1)
@@ -197,7 +223,7 @@ function [lon, lat, ukf] = update_with_innov(ukf, innov, z_pred, Z_pred, X_pred,
     end
 
     % ---- Step 3: 状态更新（后验均值） ----
-    ukf.x = x_pred + K * innov;
+    ukf.x = x_pred + K * innov_w;
 
     % ---- Step 4: NaN 守卫 ----
     if any(isnan(ukf.x)) || any(isinf(ukf.x))

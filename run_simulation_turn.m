@@ -323,17 +323,13 @@ params.ukf_P_vel_std   = params.radar1_ukf_P_vel_std;
 params.gate_sigma      = params.radar1_gate_sigma;
 params.gate_vr_ms      = params.radar1_gate_vr_ms;
 params.tracker_K_loss  = params.radar1_tracker_K_loss;
+params.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
 
 % 创建 R1 CV UKF 模板
-ukf1_cv_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
+ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
-% 创建 R1 CT UKF 模板（model_type='CT', 转弯率=±1°/s）
-ukf1_ct_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
-    params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-ukf1_ct_tpl.model_type = 'CT';
-ukf1_ct_tpl.turn_rate_rad_per_sec = turn_rate_rad_per_sec;
-% 文献依据: CT与CV使用相同Q，CT的优势来自F_CT矩阵而非不同的过程噪声
+% IMM 统一模板已包含 CV+CT 双模型，无需分别创建
 
 % ---- R2 UKF 参数配置 ----
 params_r2 = params;
@@ -347,21 +343,16 @@ params_r2.ukf_P_vel_std   = params.radar2_ukf_P_vel_std;
 params_r2.tracker_M       = 4;
 params_r2.tracker_N       = 8;
 params_r2.tracker_K_loss  = params.radar2_tracker_K_loss;
+params_r2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
 
-ukf2_cv_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
+ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-
-ukf2_ct_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
-    params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-ukf2_ct_tpl.model_type = 'CT';
-ukf2_ct_tpl.turn_rate_rad_per_sec = turn_rate_rad_per_sec;
-% CT与CV使用相同Q（与R1一致）
 
 % ---- IMM 跟踪 ----
 fprintf('--- IMM 跟踪 (CV + CT, ω=%.4f rad/s) ---\n', turn_rate_rad_per_sec);
-[trackSnapshots_R1, finalTrk1] = imm_tracker(detList_R1, ukf1_cv_tpl, ukf1_ct_tpl, ...
+[trackSnapshots_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, ...
     params, n_frames, true_track, t1_grid);
-[trackSnapshots_R2, finalTrk2] = imm_tracker(detList_R2, ukf2_cv_tpl, ukf2_ct_tpl, ...
+[trackSnapshots_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, ...
     params_r2, n_frames, true_track, t2_grid);
 
 fprintf('R1 IMM: type=%s quality=%d life=%d\n', ...

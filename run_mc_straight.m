@@ -10,7 +10,7 @@ clear; close all; clc;
 addpath(genpath('.'));
 
 %% ---- 配置 ----
-N_MC = 200;
+N_MC = 500;
 SEED_BASE = 1;  % 种子 = SEED_BASE + (mc-1)
 
 % 预分配统计数组
@@ -187,7 +187,7 @@ for mc = 1:N_MC
     params.gate_sigma = params.radar1_gate_sigma;
     params.gate_vr_ms = params.radar1_gate_vr_ms;
     params.tracker_K_loss = params.radar1_tracker_K_loss;
-    ukf1_tpl = ukf_jichu('create', params, params.radar1_lon, params.radar1_lat, ...
+    ukf1_tpl = ukf_zishiying('create', params, params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
     [snaps_R1, ~] = single_track_runner(detList_R1, ukf1_tpl, params, n_frames, true_track, t1_grid);
 
@@ -201,7 +201,7 @@ for mc = 1:N_MC
     params_r2.ukf_P_vel_std = params.radar2_ukf_P_vel_std;
     params_r2.tracker_M = 4;  params_r2.tracker_N = 8;
     params_r2.tracker_K_loss = params.radar2_tracker_K_loss;
-    ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, params.radar2_lat, ...
+    ukf2_tpl = ukf_zishiying('create', params_r2, params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
     [snaps_R2, ~] = single_track_runner(detList_R2, ukf2_tpl, params_r2, n_frames, true_track, t2_grid);
 
