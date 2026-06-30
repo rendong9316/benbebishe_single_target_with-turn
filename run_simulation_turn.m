@@ -1,10 +1,10 @@
 % =========================================================================
-% run_simulation_turn.m — 双基地OTH-SWR单目标渐进拐弯航迹IMM仿真主程序
+% run_simulation_turn.m — 双基地OTH-SWR单目标渐进拐弯三体制对比仿真主程序
 % =========================================================================
 % 【程序定位】
 %   本程序是本仿真系统的拐弯场景主入口。与 run_simulation.m（直线航迹）
-%   不同，本程序专门验证渐进拐弯机动场景下 IMM（交互多模型）跟踪相对于
-%   单模型 UKF 的性能提升。核心对比：CV-UKF（单模型）× IMM（CV+CT双模型）
+%   不同，本程序专门验证渐进拐弯机动场景下三种 UKF 后端的性能对比：
+%   jichu (CV-UKF) / zishiying (自适应UKF) / imm (CV+CT双模型IMM)
 %
 % 【渐进拐弯航迹设计】
 %   三个航路点，以民航标准 1°/s 转弯率渐进转弯（非突变）：
@@ -14,28 +14,22 @@
 %   转弯模型：协调转弯 R = v/ω，转弯提前量 d = R·tan(θ/2)
 %   航迹结构：直线入弯 → 圆弧转弯（1°/s）→ 直线出弯
 %
-% 【IMM（交互多模型）】
-%   模型1 — CV（匀速直线）：F_CV = [1 Δt 0 0; 0 1 0 0; 0 0 1 Δt; 0 0 0 1]
-%   模型2 — CT（协调转弯）：F_CT(ω=±1°/s) 含sin/cos项的4×4矩阵
-%   Markov转移矩阵 Π = [0.95, 0.05; 0.05, 0.95]（缓慢切换）
-%   混合→预测→关联→更新→概率更新→组合，逐帧循环
+% 【三体制 UKF 后端】
+%   ukf_jichu     — 基础 CV-UKF，固定 Q
+%   ukf_zishiying — CV-UKF + 模糊自适应 Q + 机动检测
+%   ukf_imm       — CV+CT 双模型 IMM-UKF + Pd-IPDA 似然
 %
-% 【9-Phase 流水线总览】
+% 【9-Phase 流水线总览（三体制并行）】
 %   Phase 0: 场景初始化（渐进拐弯航迹 + 覆盖检查 + 时间网格）
 %   Phase 1: ADS-B系统偏差标定
 %   Phase 2: 原始点迹生成
 %   Phase 3: 时间对齐策略
 %   Phase 4: 偏差校正 + 几何反解
-%   Phase 5: 航迹跟踪（IMM: CV+CT双模型）
-%   Phase 6: 航迹级时间对齐
-%   Phase 7: 航迹融合（SCC/BC/CI/FCI）
-%   Phase 8: 定量误差评估
-%   Phase 9: 可视化 + 数据保存
-%
-% 【与 run_simulation.m 的关键区别】
-%   1. 航迹：渐进拐弯（1°/s）vs 匀速直线
-%   2. 跟踪器：IMM（CV+CT） vs 单模型 CV-UKF
-%   3. 新增 IMM 模型概率诊断输出
+%   Phase 5: 三体制航迹跟踪（jichu / zishiying / imm 并行）
+%   Phase 6: 航迹级时间对齐（每体制独立）
+%   Phase 7: 航迹融合（每体制独立 SCC/BC/CI/FCI）
+%   Phase 8: 定量误差评估（每体制独立）
+%   Phase 9: 可视化 + 数据保存（每体制各两图）
 % =========================================================================
 
 clear; close all; clc;
@@ -48,17 +42,12 @@ params = simulation_params();
 rng(params.random_seed);
 
 % ---- 渐进拐弯航迹生成 ----
-% aircraft_trajectory_create('gradual_turn') 内部：
-%   1. 定义三个航路点 W1→W2→W3
-%   2. 计算入向/出向方位角、转弯角、转弯半径、提前量
-%   3. 以1°/s转弯率生成圆弧段点迹
-%   4. 构建兼容 traj 结构体
 [traj, turn_waypoints] = aircraft_trajectory_create('gradual_turn', params);
 true_track = aircraft_trajectory_interpolate('generate', traj);
 fprintf('真实航迹 (渐进拐弯): %d 点, 总时长 %.0f s, 速度 %.0f m/s\n', ...
     size(true_track,1), traj.duration_sec, params.aircraft_speed_ms);
 
-% ---- 计算转弯方向和角速率（用于CT模型） ----
+% ---- 计算转弯方向和角速率 ----
 bearing_in  = sphere_utils_azimuth(turn_waypoints(1,1), turn_waypoints(1,2), ...
     turn_waypoints(2,1), turn_waypoints(2,2));
 bearing_out = sphere_utils_azimuth(turn_waypoints(2,1), turn_waypoints(2,2), ...
@@ -161,8 +150,6 @@ fprintf('\n========== Phase 2: 原始点迹生成 ==========\n');
 detRaw_R1 = cell(n_frames, 1);
 detRaw_R2 = cell(n_frames, 1);
 
-% RNG策略: seed+1e7/2e7大偏移连续推进，与run_mc_turn.m完全一致
-% 确保MC第N次(seed=N)的结果可被本程序精确复现
 rng(params.random_seed + 1e7);  % R1: 独立随机流
 for k = 1:n_frames
     [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
@@ -197,7 +184,7 @@ fprintf('原始点迹生成完成: R1共%d帧, R2共%d帧\n', n_frames, n_frames
 fprintf('\n========== Phase 3: 时间对齐策略 ==========\n');
 fprintf('R1采样: 0s/30s/60s/...  R2采样: 13s/43s/73s/...  偏移=%ds\n', ...
     params.time_offset_radar2_sec);
-fprintf('策略: 点迹不做对齐, 两部雷达各自在原时间网格上滤波跟踪\n');
+fprintf('策略: 点迹不做对齐, 三部雷达各自在原时间网格上滤波跟踪\n');
 fprintf('      航迹级对齐延后到 Phase 6 融合前, 用 CV 模型全状态外推\n');
 
 %% ==================== Phase 4: 偏差校正 + 几何反解 ====================
@@ -311,291 +298,309 @@ for k = 1:n_frames
 end
 fprintf('R2 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
 
-%% ==================== Phase 5: 航迹跟踪（IMM: CV + CT 双模型） ====================
-fprintf('\n========== Phase 5: 航迹跟踪（IMM: CV+CT双模型） ==========\n');
+%% ==================== Phase 5: 三体制航迹跟踪 ====================
+fprintf('\n========== Phase 5: 三体制航迹跟踪（jichu × zishiying × imm） ==========\n');
 
-% ---- R1 UKF 参数配置 ----
-params.ukf_range_std_m = params.radar1_range_noise_std_m;
-params.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
-params.ukf_Q_scale     = params.radar1_ukf_Q_scale;
-params.ukf_P_pos_std   = params.radar1_ukf_P_pos_std;
-params.ukf_P_vel_std   = params.radar1_ukf_P_vel_std;
-params.gate_sigma      = params.radar1_gate_sigma;
-params.gate_vr_ms      = params.radar1_gate_vr_ms;
-params.tracker_K_loss  = params.radar1_tracker_K_loss;
-params.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
+UKF_TYPES = {'jichu', 'zishiying', 'imm'};
+N_UKF = 3;
 
-% 创建 R1 CV UKF 模板
-ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
-    params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+% 预分配: ukf_snaps{u}{radar} = cell(n_frames,1), finalTrks{u} = struct
+ukf_snaps_R1 = cell(N_UKF, 1);
+ukf_snaps_R2 = cell(N_UKF, 1);
+finalTrks = cell(N_UKF, 1);
 
-% IMM 统一模板已包含 CV+CT 双模型，无需分别创建
+for u = 1:N_UKF
+    ukf_type = UKF_NAMES{u};
 
-% ---- R2 UKF 参数配置 ----
-params_r2 = params;
-params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;
-params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
-params_r2.gate_sigma      = params.radar2_gate_sigma;
-params_r2.gate_vr_ms      = params.radar2_gate_vr_ms;
-params_r2.ukf_Q_scale     = params.radar2_ukf_Q_scale;
-params_r2.ukf_P_pos_std   = params.radar2_ukf_P_pos_std;
-params_r2.ukf_P_vel_std   = params.radar2_ukf_P_vel_std;
-params_r2.tracker_M       = 4;
-params_r2.tracker_N       = 8;
-params_r2.tracker_K_loss  = params.radar2_tracker_K_loss;
-params_r2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec;
+    % ---- R1 参数配置 ----
+    pr1 = params;
+    pr1.ukf_range_std_m = params.radar1_range_noise_std_m;
+    pr1.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
+    pr1.ukf_Q_scale = params.radar1_ukf_Q_scale;
+    pr1.ukf_P_pos_std = params.radar1_ukf_P_pos_std;
+    pr1.ukf_P_vel_std = params.radar1_ukf_P_vel_std;
+    pr1.gate_sigma = params.radar1_gate_sigma;
+    pr1.gate_vr_ms = params.radar1_gate_vr_ms;
+    pr1.tracker_K_loss = params.radar1_tracker_K_loss;
+    if u == 3, pr1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
-ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
-    params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+    % ---- 创建 UKF 模板 ----
+    switch ukf_type
+        case 'jichu'
+            tpl1 = ukf_jichu('create', pr1, params.radar1_lon, ...
+                params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+        case 'zishiying'
+            tpl1 = ukf_zishiying('create', pr1, params.radar1_lon, ...
+                params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+        case 'imm'
+            tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
+                params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+    end
 
-% ---- IMM 跟踪 ----
-fprintf('--- IMM 跟踪 (CV + CT, ω=%.4f rad/s) ---\n', turn_rate_rad_per_sec);
-[trackSnapshots_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, ...
-    params, n_frames, true_track, t1_grid);
-[trackSnapshots_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, ...
-    params_r2, n_frames, true_track, t2_grid);
+    % ---- R1 跟踪 ----
+    fprintf('  [%s] R1 跟踪中...', ukf_type);
+    [ukf_snaps_R1{u}, finalTrks{u}] = single_track_runner(detList_R1, tpl1, ...
+        pr1, n_frames, true_track, t1_grid);
+    fprintf('type=%s quality=%d life=%d\n', ...
+        get_type_str(finalTrks{u}.type), finalTrks{u}.quality, finalTrks{u}.life);
 
-fprintf('R1 IMM: type=%s quality=%d life=%d\n', ...
-    get_type_str(finalTrk1.type), finalTrk1.quality, finalTrk1.life);
-fprintf('R2 IMM: type=%s quality=%d life=%d\n', ...
-    get_type_str(finalTrk2.type), finalTrk2.quality, finalTrk2.life);
+    % ---- R2 参数配置 ----
+    pr2 = params;
+    pr2.ukf_range_std_m = params.radar2_range_noise_std_m;
+    pr2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
+    pr2.gate_sigma = params.radar2_gate_sigma;
+    pr2.gate_vr_ms = params.radar2_gate_vr_ms;
+    pr2.ukf_Q_scale = params.radar2_ukf_Q_scale;
+    pr2.ukf_P_pos_std = params.radar2_ukf_P_pos_std;
+    pr2.ukf_P_vel_std = params.radar2_ukf_P_vel_std;
+    pr2.tracker_M = 4;
+    pr2.tracker_N = 8;
+    pr2.tracker_K_loss = params.radar2_tracker_K_loss;
+    if u == 3, pr2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
-% ---- 关联诊断 ----
-for radar_label = {'R1', 'R2'}
-    snaps = trackSnapshots_R1;
-    if strcmp(radar_label{1}, 'R2'), snaps = trackSnapshots_R2; end
-    n_assoc = 0; n_predict = 0; n_init = 0; n_lost = 0;
-    init_frame = 0; nis_vals = [];
-    for k = 1:length(snaps)
-        if isempty(snaps{k}.trackList), continue; end
-        trk = snaps{k}.trackList{1};
-        if trk.type == 6
-            n_init = n_init + 1;
-        elseif trk.type == 1
-            if ~isempty(trk.assoc_det) && isstruct(trk.assoc_det) && ...
-                    isfield(trk.assoc_det, 'prange') && ~isempty(trk.assoc_det.prange)
-                n_assoc = n_assoc + 1;
-            else
-                n_predict = n_predict + 1;
+    % ---- 创建 UKF 模板 ----
+    switch ukf_type
+        case 'jichu'
+            tpl2 = ukf_jichu('create', pr2, params.radar2_lon, ...
+                params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+        case 'zishiying'
+            tpl2 = ukf_zishiying('create', pr2, params.radar2_lon, ...
+                params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+        case 'imm'
+            tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
+                params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+    end
+
+    % ---- R2 跟踪 ----
+    fprintf('  [%s] R2 跟踪中...', ukf_type);
+    [ukf_snaps_R2{u}, finalTrks{u}] = single_track_runner(detList_R2, tpl2, ...
+        pr2, n_frames, true_track, t2_grid);
+    fprintf('type=%s quality=%d life=%d\n', ...
+        get_type_str(finalTrks{u}.type), finalTrks{u}.quality, finalTrks{u}.life);
+
+    % ---- 关联诊断 ----
+    for radar_label = {'R1', 'R2'}
+        snaps = ukf_snaps_R1{u};
+        if strcmp(radar_label{1}, 'R2'), snaps = ukf_snaps_R2{u}; end
+        n_assoc = 0; n_predict = 0; n_init = 0; n_lost = 0;
+        init_frame = 0; nis_vals = [];
+        for k = 1:length(snaps)
+            if isempty(snaps{k}.trackList), continue; end
+            trk = snaps{k}.trackList{1};
+            if trk.type == 6
+                n_init = n_init + 1;
+            elseif trk.type == 1
+                if ~isempty(trk.assoc_det) && isstruct(trk.assoc_det) && ...
+                        isfield(trk.assoc_det, 'prange') && ~isempty(trk.assoc_det.prange)
+                    n_assoc = n_assoc + 1;
+                else
+                    n_predict = n_predict + 1;
+                end
+                if isfield(trk, 'ukf') && ~isempty(trk.ukf) && isstruct(trk.ukf) && ...
+                        isfield(trk.ukf, 'nis_history')
+                    nis_vals = [nis_vals, trk.ukf.nis_history];
+                end
+            elseif trk.type == 7
+                n_lost = n_lost + 1;
             end
-            if isfield(trk, 'ukf') && ~isempty(trk.ukf) && isstruct(trk.ukf) && ...
-                    isfield(trk.ukf, 'nis_history')
-                nis_vals = [nis_vals, trk.ukf.nis_history];
-            end
-        elseif trk.type == 7
-            n_lost = n_lost + 1;
+            if init_frame == 0 && trk.type == 1, init_frame = k; end
         end
-        if init_frame == 0 && trk.type == 1, init_frame = k; end
+        n_tracked = n_assoc + n_predict;
+        fprintf('    %s[%s]: 起始帧=%d | 关联=%d 纯预测=%d (关联率=%.0f%%) | 起始中=%d 丢失=%d\n', ...
+            ukf_type, radar_label{1}, init_frame, n_assoc, n_predict, ...
+            n_assoc/max(1,n_tracked)*100, n_init, n_lost);
+        if ~isempty(nis_vals)
+            nis_in_gate = sum(nis_vals < 4*2);
+            fprintf('      NIS: 均值=%.2f 门内=%.0f%% (%d/%d)\n', ...
+                mean(nis_vals), nis_in_gate/length(nis_vals)*100, nis_in_gate, length(nis_vals));
+        end
     end
-    n_tracked = n_assoc + n_predict;
-    fprintf('%s: 起始帧=%d | 关联=%d 纯预测=%d (关联率=%.0f%%) | 起始中=%d 丢失=%d\n', ...
-        radar_label{1}, init_frame, n_assoc, n_predict, ...
-        n_assoc/max(1,n_tracked)*100, n_init, n_lost);
-    if ~isempty(nis_vals)
-        nis_in_gate = sum(nis_vals < 4*2);
-        fprintf('  NIS: 均值=%.2f 门内=%.0f%% (%d/%d)\n', ...
-            mean(nis_vals), nis_in_gate/length(nis_vals)*100, nis_in_gate, length(nis_vals));
+
+    % ---- IMM 模型概率诊断 ----
+    if u == 3 && isfield(finalTrks{u}, 'mu_history')
+        fprintf('  [%s] IMM 模型概率诊断:\n', ukf_type);
+        for r = 1:2
+            mu_hist = finalTrks{u}.mu_history;
+            n_ct_dominant = sum(mu_hist(:,2) > 0.5);
+            avg_mu_ct = mean(mu_hist(:,2)) * 100;
+            fprintf('    R%d: CT平均概率=%.0f%%, CT占优帧=%d/%d\n', ...
+                r, avg_mu_ct, n_ct_dominant, n_frames);
+        end
     end
 end
 
-% ---- IMM 模型概率诊断 ----
-fprintf('\n--- IMM 模型概率诊断 ---\n');
-for radar_label = {'R1', 'R2'}
-    if strcmp(radar_label{1}, 'R1')
-        mu_hist = finalTrk1.mu_history;
-    else
-        mu_hist = finalTrk2.mu_history;
-    end
-    % 统计CT模型概率 > 0.5 的帧数（转弯段CT占优）
-    n_ct_dominant = sum(mu_hist(:,2) > 0.5);
-    % 平均CT模型概率
-    avg_mu_ct = mean(mu_hist(:,2)) * 100;
-    fprintf('%s: CT模型平均概率=%.0f%%, CT占优帧=%d/%d\n', ...
-        radar_label{1}, avg_mu_ct, n_ct_dominant, n_frames);
-end
 fprintf('\n');
 
-%% ---- IMM UKF滤波RMSE统计 ----
-fprintf('\n--- IMM UKF滤波RMSE ---\n');
-
-errs = [];
-for k = 1:n_frames
-    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
-    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
-    snap = trackSnapshots_R1{k};
-    if ~isempty(snap.trackList)
-        trk = snap.trackList{1};
-        if trk.type ~= 7 && ~isnan(trk.lat)
-            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
-        end
-    end
-end
-fprintf('R1 IMM滤波             RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
-
-errs = [];
-for k = 1:n_frames
-    tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
-    tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
-    snap = trackSnapshots_R2{k};
-    if ~isempty(snap.trackList)
-        trk = snap.trackList{1};
-        if trk.type ~= 7 && ~isnan(trk.lat)
-            errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
-        end
-    end
-end
-fprintf('R2 IMM滤波             RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
-
-%% ==================== Phase 6: 航迹级时间对齐 ====================
-fprintf('\n========== Phase 6: 航迹级时间对齐 ==========\n');
-fprintf('将R2航迹 (t2_grid) 用CV模型全状态外推到R1时间网格 (t1_grid)\n');
-
-aligned_R2 = time_align_tracks(trackSnapshots_R2, params);
-fprintf('R2航迹时间对齐完成\n');
-
-%% ==================== Phase 7: 航迹融合（四种算法） ====================
-fprintf('\n========== Phase 7: 航迹融合 (四种算法) ==========\n');
-
-r1_id = 1; r2_id = 1;
-fprintf('融合对: R1#1 <-> R2#1 (直接1对1)\n');
-
-matched_pair = struct('R1_track_id', r1_id, 'R2_track_id', r2_id, ...
-    'match_count', 0, 'coexist_count', 0, 'match_ratio', 1.0, ...
-    'mean_dist_km', 0, 'quality', 100);
-
-method_names = {'SCC', 'BC', 'CI', 'FCI'};
-all_fused_snapshots = cell(length(method_names), 1);
-
-for m = 1:length(method_names)
-    method = method_names{m};
-    fprintf('  运行 %s 融合...\n', method);
-    all_fused_snapshots{m} = run_track_fusion(matched_pair, ...
-        trackSnapshots_R1, aligned_R2, params, method);
-end
-fprintf('融合完成: %d 种算法\n', length(method_names));
-
-%% ---- 融合RMSE统计 ----
-fprintf('\n--- 融合RMSE ---\n');
-for m = 1:length(method_names)
+%% ---- 三体制 UKF 滤波 RMSE ----
+fprintf('\n--- 三体制 UKF 滤波 RMSE ---\n');
+for u = 1:N_UKF
     errs = [];
-    snaps = all_fused_snapshots{m};
     for k = 1:n_frames
         tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
         tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
-        if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
-            trk = snaps{k}.trackList{1};
-            if ~isnan(trk.lat)
+        snap = ukf_snaps_R1{u}{k};
+        if ~isempty(snap.trackList)
+            trk = snap.trackList{1};
+            if trk.type ~= 7 && ~isnan(trk.lat)
                 errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
             end
         end
     end
-    fprintf('%s 融合                 RMSE: %6.1f km (n=%d)\n', method_names{m}, rms_km(errs), length(errs));
-end
-errs_r1 = [];
-for k = 1:n_frames
-    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
-    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
-    snap = trackSnapshots_R1{k};
-    if ~isempty(snap.trackList)
-        trk = snap.trackList{1};
-        if trk.type ~= 7 && ~isnan(trk.lat)
-            errs_r1(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
-        end
-    end
-end
-fprintf('R1 单站(对齐后)        RMSE: %6.1f km (n=%d)\n', rms_km(errs_r1), length(errs_r1));
+    fprintf('  %-12s R1滤波 RMSE: %6.1f km (n=%d)\n', UKF_NAMES{u}, rms_km(errs), length(errs));
 
-errs_r2 = [];
-for k = 1:n_frames
-    tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
-    tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
-    snap = aligned_R2{k};
-    if ~isempty(snap.trackList)
-        trk = snap.trackList{1};
-        if trk.type ~= 7 && ~isnan(trk.lat)
-            errs_r2(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
-        end
-    end
-end
-fprintf('R2 单站(对齐后)        RMSE: %6.1f km (n=%d)\n', rms_km(errs_r2), length(errs_r2));
-
-%% ==================== Phase 8: 定量误差评估 ====================
-fprintf('\n========== Phase 8: 定量误差评估 ==========\n');
-
-n_frames_val = n_frames;
-matcher_simple = struct();
-matcher_simple.matched_pairs = matched_pair;
-matcher_simple.aligned_R2 = aligned_R2;
-matcher_simple.r1_ids = r1_id;
-matcher_simple.r2_ids = r2_id;
-
-r1_pos = nan(1, n_frames, 2);
-for k = 1:n_frames
-    snap = trackSnapshots_R1{k};
-    if ~isempty(snap.trackList)
-        for t = 1:length(snap.trackList)
-            if snap.trackList{t}.id == r1_id
-                r1_pos(1, k, 1) = snap.trackList{t}.lon;
-                r1_pos(1, k, 2) = snap.trackList{t}.lat;
-                break;
+    errs = [];
+    for k = 1:n_frames
+        tl = interp1(true_track(:,5), true_track(:,1), t2_grid(k), 'linear', 'extrap');
+        tb = interp1(true_track(:,5), true_track(:,2), t2_grid(k), 'linear', 'extrap');
+        snap = ukf_snaps_R2{u}{k};
+        if ~isempty(snap.trackList)
+            trk = snap.trackList{1};
+            if trk.type ~= 7 && ~isnan(trk.lat)
+                errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
             end
         end
     end
+    fprintf('  %-12s R2滤波 RMSE: %6.1f km (n=%d)\n', UKF_NAMES{u}, rms_km(errs), length(errs));
 end
-matcher_simple.r1_pos = r1_pos;
 
-r2_pos = nan(1, n_frames, 2);
-for k = 1:n_frames
-    snap = aligned_R2{k};
-    if ~isempty(snap.trackList)
-        for t = 1:length(snap.trackList)
-            if snap.trackList{t}.id == r2_id
-                r2_pos(1, k, 1) = snap.trackList{t}.lon;
-                r2_pos(1, k, 2) = snap.trackList{t}.lat;
-                break;
+%% ==================== Phase 6+7+8: 每体制独立做对齐/融合/评估 ====================
+fprintf('\n========== Phase 6-8: 每体制独立对齐+融合+评估 ==========\n');
+
+method_names = {'SCC', 'BC', 'CI', 'FCI'};
+N_FUS = length(method_names);
+
+% 每体制的融合结果: fus_data{u}.snapshots{m}, .eval, .errors{...}
+fus_data = cell(N_UKF, 1);
+
+for u = 1:N_UKF
+    ukf_type = UKF_NAMES{u};
+    fprintf('\n--- [%s] Phase 6: 航迹级时间对齐 ---\n', ukf_type);
+
+    aligned_R2_u = time_align_tracks(ukf_snaps_R2{u}, params);
+    fprintf('  R2航迹时间对齐完成\n');
+
+    fprintf('--- [%s] Phase 7: 航迹融合 (四种算法) ---\n', ukf_type);
+
+    r1_id = 1; r2_id = 1;
+    matched_pair = struct('R1_track_id', r1_id, 'R2_track_id', r2_id, ...
+        'match_count', 0, 'coexist_count', 0, 'match_ratio', 1.0, ...
+        'mean_dist_km', 0, 'quality', 100);
+
+    all_fused_u = cell(N_FUS, 1);
+    for m = 1:N_FUS
+        fprintf('  [%s] 运行 %s 融合...\n', ukf_type, method_names{m});
+        all_fused_u{m} = run_track_fusion(matched_pair, ...
+            ukf_snaps_R1{u}, aligned_R2_u, params, method_names{m});
+    end
+    fprintf('  [%s] 融合完成: %d 种算法\n', ukf_type, N_FUS);
+
+    % ---- 融合RMSE统计 ----
+    fprintf('  [%s] --- 融合RMSE ---\n', ukf_type);
+    fus_rmse_u = zeros(N_FUS, 1);
+    for m = 1:N_FUS
+        errs = [];
+        snaps = all_fused_u{m};
+        for k = 1:n_frames
+            tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+            tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+            if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
+                trk = snaps{k}.trackList{1};
+                if ~isnan(trk.lat)
+                    errs(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+                end
+            end
+        end
+        fus_rmse_u(m) = rms_km(errs);
+        fprintf('  [%s] %s 融合 RMSE: %6.1f km (n=%d)\n', ukf_type, method_names{m}, fus_rmse_u(m), length(errs));
+    end
+
+    errs_r1 = [];
+    for k = 1:n_frames
+        tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+        tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+        snap = ukf_snaps_R1{u}{k};
+        if ~isempty(snap.trackList)
+            trk = snap.trackList{1};
+            if trk.type ~= 7 && ~isnan(trk.lat)
+                errs_r1(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
             end
         end
     end
-end
-matcher_simple.r2_pos = r2_pos;
+    fprintf('  [%s] R1 单站(对齐后) RMSE: %6.1f km\n', ukf_type, rms_km(errs_r1));
 
-truthTrajs = {truthTraj};
-fusion_eval = evaluate_all('fusion', all_fused_snapshots, method_names, ...
-    matched_pair, trackSnapshots_R1, trackSnapshots_R2, ...
-    truthTrajs, n_frames, params.dt_sec, matcher_simple);
+    errs_r2 = [];
+    for k = 1:n_frames
+        tl = interp1(true_track(:,5), true_track(:,1), t1_grid(k), 'linear', 'extrap');
+        tb = interp1(true_track(:,5), true_track(:,2), t1_grid(k), 'linear', 'extrap');
+        snap = aligned_R2_u{k};
+        if ~isempty(snap.trackList)
+            trk = snap.trackList{1};
+            if trk.type ~= 7 && ~isnan(trk.lat)
+                errs_r2(end+1) = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+            end
+        end
+    end
+    fprintf('  [%s] R2 单站(对齐后) RMSE: %6.1f km\n', ukf_type, rms_km(errs_r2));
 
-fprintf('\n--- 融合误差对比 (RMSE km) ---\n');
-fprintf('%-8s %8s %8s\n', '算法', 'RMSE', '中位');
-fprintf('%-8s %8s %8s\n', '------', '------', '------');
-all_method_labels = [method_names, {'R1_only', 'R2_only'}];
-for m = 1:length(all_method_labels)
-    s = fusion_eval.overall(m).s;
-    fprintf('%-8s %8.1f %8.1f\n', all_method_labels{m}, s.rms, s.median);
-end
+    % ---- Phase 8: 定量误差评估 ----
+    fprintf('  [%s] Phase 8: 定量误差评估\n', ukf_type);
 
-rms_vals = arrayfun(@(x) x.s.rms, fusion_eval.overall(1:4));
-[best_fusion_rmse, best_m] = min(rms_vals);
-r1_rmse = fusion_eval.overall(5).s.rms;
-r2_rmse = fusion_eval.overall(6).s.rms;
-fprintf('\n最佳融合算法: %s (RMSE=%.1fkm)\n', method_names{best_m}, best_fusion_rmse);
-fprintf('融合 vs R1(精密站): %+.1f%%\n', (1 - best_fusion_rmse/r1_rmse)*100);
-fprintf('融合 vs R2(普通站): %+.1f%% 改善\n', (1 - best_fusion_rmse/r2_rmse)*100);
+    matcher_u = struct();
+    matcher_u.matched_pairs = matched_pair;
+    matcher_u.aligned_R2 = aligned_R2_u;
+    matcher_u.r1_ids = r1_id;
+    matcher_u.r2_ids = r2_id;
 
-aligned_R2_eval = time_align_tracks(trackSnapshots_R2, params);
-errorStats_R1 = evaluate_all('tracking_errors', trackSnapshots_R1, detList_R1, ...
-    truthTrajs, n_frames, params.dt_sec, 'R1');
-errorStats_R2 = evaluate_all('tracking_errors', aligned_R2_eval, detList_R2, ...
-    truthTrajs, n_frames, params.dt_sec, 'R2');
+    r1_pos = nan(1, n_frames, 2);
+    for k = 1:n_frames
+        snap = ukf_snaps_R1{u}{k};
+        if ~isempty(snap.trackList)
+            for t = 1:length(snap.trackList)
+                if snap.trackList{t}.id == r1_id
+                    r1_pos(1, k, 1) = snap.trackList{t}.lon;
+                    r1_pos(1, k, 2) = snap.trackList{t}.lat;
+                    break;
+                end
+            end
+        end
+    end
+    matcher_u.r1_pos = r1_pos;
 
-for es = {errorStats_R1, errorStats_R2}
-    e = es{1};
-    fprintf('\n--- %s UKF滤波误差 ---\n', e.radar);
-    fprintf('%-6s %6s %8s %8s %8s %8s %8s\n', ...
-        '飞机', '点数', '中位(km)', '均值(km)', 'RMSE(km)', '95%(km)', 'vs检测');
-    s_u = e.summary(1).ukf;
-    fprintf('飞机A   %6d %8.1f %8.1f %8.1f %8.1f %7.0f%%\n', ...
-        s_u.n, s_u.median, s_u.mean, s_u.rms, s_u.pct95, ...
-        e.summary(1).ukf_vs_det_pct);
+    r2_pos = nan(1, n_frames, 2);
+    for k = 1:n_frames
+        snap = aligned_R2_u{k};
+        if ~isempty(snap.trackList)
+            for t = 1:length(snap.trackList)
+                if snap.trackList{t}.id == r2_id
+                    r2_pos(1, k, 1) = snap.trackList{t}.lon;
+                    r2_pos(1, k, 2) = snap.trackList{t}.lat;
+                    break;
+                end
+            end
+        end
+    end
+    matcher_u.r2_pos = r2_pos;
+
+    truthTrajs = {truthTraj};
+    eval_u = evaluate_all('fusion', all_fused_u, method_names, ...
+        matched_pair, ukf_snaps_R1{u}, ukf_snaps_R2{u}, ...
+        truthTrajs, n_frames, params.dt_sec, matcher_u);
+
+    rms_vals = arrayfun(@(x) x.s.rms, eval_u.overall(1:N_FUS));
+    [best_fus_rmse, best_m] = min(rms_vals);
+    r1_rmse = eval_u.overall(end-1).s.rms;
+    r2_rmse = eval_u.overall(end).s.rms;
+    fprintf('  [%s] 最佳融合算法: %s (RMSE=%.1fkm)\n', ukf_type, method_names{best_m}, best_fus_rmse);
+    fprintf('  [%s] 融合 vs R1: %+.1f%%  vs R2: %+.1f%%\n', ...
+        ukf_type, (1-best_fus_rmse/r1_rmse)*100, (1-best_fus_rmse/r2_rmse)*100);
+
+    % 保存体制数据
+    fus_data{u}.snapshots = all_fused_u;
+    fus_data{u}.eval = eval_u;
+    fus_data{u}.best_m = best_m;
+    fus_data{u}.best_rmse = best_fus_rmse;
+    fus_data{u}.aligned_R2 = aligned_R2_u;
+    fus_data{u}.matcher = matcher_u;
 end
 
 %% ==================== Phase 9: 可视化 + 数据保存 ====================
@@ -604,20 +609,21 @@ if ~exist('results', 'dir'), mkdir('results'); end
 
 warn_state = warning('off', 'all');
 
-% 图1: 场景总览（拐弯航迹 + 雷达覆盖）
-plot_scene_overview(true_track, params, 'results');
+for u = 1:N_UKF
+    ukf_type = UKF_NAMES{u};
+    fprintf('  [%s] 绘图中...', ukf_type);
 
-% 图2a/2b: R1和R2原始点迹3D点云
-plot_point_cloud_3d(detList_R1, 'R1', 'results/fig2a_R1_point_cloud.png');
-plot_point_cloud_3d(detList_R2, 'R2', 'results/fig2b_R2_point_cloud.png');
+    % 图1: 地图叠加（跟踪航迹）
+    plot_results('single_track', true_track, detList_R1, detList_R2, ...
+        ukf_snaps_R1{u}, ukf_snaps_R2{u}, params, 'results');
 
-% 图3: 单目标跟踪综合图（IMM版）
-plot_results('single_track', true_track, detList_R1, detList_R2, ...
-    trackSnapshots_R1, trackSnapshots_R2, params, 'results');
+    % 图2: 融合可视化
+    plot_results('single_fusion', true_track, ukf_snaps_R1{u}, ukf_snaps_R2{u}, ...
+        fus_data{u}.snapshots, method_names, fus_data{u}.best_m, ...
+        fus_data{u}.eval, truthTraj, params, 'results');
 
-% 图4: 融合可视化
-plot_results('single_fusion', true_track, trackSnapshots_R1, trackSnapshots_R2, ...
-    all_fused_snapshots, method_names, best_m, fusion_eval, truthTraj, params, 'results');
+    fprintf('done\n');
+end
 
 warning(warn_state);
 
@@ -663,17 +669,21 @@ for k = 1:n_frames
     end
 end
 
-R1 = struct('detRaw', {detRaw_R1}, 'detList', {detList_R1}, ...
-    'trackSnapshots', {trackSnapshots_R1}, 'finalTrack', finalTrk1, ...
-    'targetDetCount', ac_det_count_r1);
-R2 = struct('detRaw', {detRaw_R2}, 'detList', {detList_R2}, ...
-    'trackSnapshots', {trackSnapshots_R2}, 'finalTrack', finalTrk2, ...
-    'targetDetCount', ac_det_count_r2);
+% 保存三体制数据
+R1_all = cell(N_UKF, 1);
+R2_all = cell(N_UKF, 1);
+for u = 1:N_UKF
+    R1_all{u} = struct('detRaw', {detRaw_R1}, 'detList', {detList_R1}, ...
+        'trackSnapshots', {ukf_snaps_R1{u}}, 'finalTrack', finalTrks{u}, ...
+        'targetDetCount', ac_det_count_r1);
+    R2_all{u} = struct('detRaw', {detRaw_R2}, 'detList', {detList_R2}, ...
+        'trackSnapshots', {ukf_snaps_R2{u}}, 'finalTrack', finalTrks{u}, ...
+        'targetDetCount', ac_det_count_r2);
+end
 
 outf = fullfile('results', sprintf('simulation_turn_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
-save(outf, 'sysPara', 'calibResult', 'truthTraj', 'R1', 'R2', 'params', ...
-    'errorStats_R1', 'errorStats_R2', 'fusion_eval', ...
-    'all_fused_snapshots', 'method_names', ...
+save(outf, 'sysPara', 'calibResult', 'truthTraj', 'R1_all', 'R2_all', 'params', ...
+    'fus_data', 'UKF_NAMES', 'method_names', ...
     'turn_waypoints', 'turn_angle_deg', 'turn_rate_rad_per_sec');
 fprintf('数据已保存: %s\n', outf);
 fprintf('\nDone.\n');
@@ -689,24 +699,6 @@ function s = get_type_str(t)
         case 6, s = 'TEMPORARY';
         case 7, s = 'HISTORY';
         otherwise, s = 'UNKNOWN';
-    end
-end
-
-function idx = find_active_tracks(trackList)
-    idx = [];
-    for t = 1:length(trackList)
-        if trackList{t}.type ~= 7
-            idx(end+1) = t;
-        end
-    end
-end
-
-function idx = find_reliable(trackList)
-    idx = [];
-    for t = 1:length(trackList)
-        if trackList{t}.type == 1
-            idx(end+1) = t;
-        end
     end
 end
 
