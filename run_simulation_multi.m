@@ -673,6 +673,9 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
     gate_threshold = params.gate_sigma^2 * 2;
     geo_gate_m = 60000;  % 60km 地理门（放宽）
 
+    % 诊断：打印每条航迹的门内检测数
+    diag_gate_counts = zeros(length(active_idx), 1);
+
     for i = 1:length(active_idx)
         t = active_idx(i);
         trk = trackList{t};
