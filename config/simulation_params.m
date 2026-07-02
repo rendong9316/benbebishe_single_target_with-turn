@@ -494,33 +494,33 @@ params.adsb_csv_path = '2026-04-27 09-30-00.csv';
 
 % =====================================================================
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.001;
-params.imm_Pi_CT_to_CV = 0.001;
+params.imm_Pi_CV_to_CT = 0.005;
+params.imm_Pi_CT_to_CV = 0.005;
 
 
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.001;
-params.imm_Pi_CT_to_CV = 0.001;
+params.imm_Pi_CV_to_CT = 0.005;
+params.imm_Pi_CT_to_CV = 0.005;
 
 
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.001;
-params.imm_Pi_CT_to_CV = 0.001;
+params.imm_Pi_CV_to_CT = 0.005;
+params.imm_Pi_CT_to_CV = 0.005;
 
 
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.001;
-params.imm_Pi_CT_to_CV = 0.001;
+params.imm_Pi_CV_to_CT = 0.005;
+params.imm_Pi_CT_to_CV = 0.005;
 
 
 % IMM Pi transfer
-params.imm_Pi_CV_to_CT = 0.001;
-params.imm_Pi_CT_to_CV = 0.001;
+params.imm_Pi_CV_to_CT = 0.005;
+params.imm_Pi_CT_to_CV = 0.005;
 
 
 % IMM Pi transfer
-params.imm_Pi_CV_to_CT = 0.001;
-params.imm_Pi_CT_to_CV = 0.001;
+params.imm_Pi_CV_to_CT = 0.005;
+params.imm_Pi_CT_to_CV = 0.005;
 
 
 % 模块13: 随机种子
