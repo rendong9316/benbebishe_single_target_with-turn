@@ -284,11 +284,11 @@ params.ukf_kappa = 0.0;
 %
 % R1（精密站，量测噪声低，Q 可适度大）
 %   [turn: 1 — 依赖机动自适应 Q 提升]
-params.radar1_ukf_Q_scale = 30000;
+params.radar1_ukf_Q_scale = 1e5;
 %
 % R2（标准站，噪声约 2x R1，需要更大 Q 补偿）
 %   [turn: 1e4]
-params.radar2_ukf_Q_scale = 30000;
+params.radar2_ukf_Q_scale = 2e5;
 
 % =====================================================================
 % 7.3 初始状态协方差 P（雷达专属，地理坐标，度）

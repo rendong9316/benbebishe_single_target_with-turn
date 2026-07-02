@@ -34,7 +34,7 @@ addpath(genpath('.'));
 %% ==================== Phase 0: 场景初始化（三目标交叉） ====================
 fprintf('========== Phase 0: 场景初始化 (三目标交叉) ==========\n');
 
-params = simulation_params();
+params = simulation_params_multi();
 rng(params.random_seed);
 
 % ---- 三目标航迹定义 ----
@@ -383,64 +383,86 @@ for k = [1, 10, 20, 30, 40, 50, 60, 68]
     fprintf('\n');
 end
 
-% ---- 跨雷达航迹匹配（truth-assisted，基于 ac_idx 映射）----
-fprintf('--- 跨雷达航迹匹配 (truth-assisted) ---\n');
+% ---- 跨雷达航迹匹配 ----
+% 匹配方式选择：
+%   'truth_assisted' - 真值辅助匹配（基于ac_idx，100%正确，用于研究匹配和融合）
+%   'real'           - 真实匹配算法（基于位置+速度+航向的多维特征匹配）
+match_method = 'truth_assisted';  % 默认使用真值辅助，因为研究重点在匹配和融合算法本身
 
-matched_pairs = {};
-for ac = 1:3
-    % 找 R1 中 ac_idx=ac 的航迹 ID
-    r1_id = [];
-    for k = 1:n_frames
-        trks = trackSnapshots_R1{k}.trackList;
-        for t = 1:length(trks)
-            if trks{t}.type ~= 7 && isfield(trks{t}, 'ac_idx') && trks{t}.ac_idx == ac
-                r1_id = trks{t}.id;
-                break;
-            end
-        end
-        if ~isempty(r1_id), break; end
+fprintf('--- 跨雷达航迹匹配 (%s) ---\n', match_method);
+
+if strcmp(match_method, 'real')
+    % 使用真实匹配算法
+    matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
+    % 转换为 cell 数组
+    matched_pairs = cell(length(matched_pairs_struct), 1);
+    for p = 1:length(matched_pairs_struct)
+        matched_pairs{p} = matched_pairs_struct(p);
     end
-
-    % 找 R2 中 ac_idx=ac 的航迹 ID
-    r2_id = [];
-    for k = 1:n_frames
-        trks = trackSnapshots_R2{k}.trackList;
-        for t = 1:length(trks)
-            if trks{t}.type ~= 7 && isfield(trks{t}, 'ac_idx') && trks{t}.ac_idx == ac
-                r2_id = trks{t}.id;
-                break;
-            end
-        end
-        if ~isempty(r2_id), break; end
-    end
-
-    if ~isempty(r1_id) && ~isempty(r2_id)
-        % 统计共现帧数和平均距离
-        coexist = 0; dist_sum = 0;
+else
+    % ---- 跨雷达航迹匹配（truth-assisted，基于 ac_idx 映射）----
+    matched_pairs = {};
+    for ac = 1:3
+        % 找 R1 中 ac_idx=ac 的航迹 ID
+        r1_id = [];
         for k = 1:n_frames
-            trks1 = trackSnapshots_R1{k}.trackList;
-            trks2 = aligned_R2{k}.trackList;
-            pos1 = []; pos2 = [];
-            for t = 1:length(trks1)
-                if trks1{t}.id == r1_id && trks1{t}.type ~= 7 && ~isnan(trks1{t}.lat)
-                    pos1 = [trks1{t}.lon, trks1{t}.lat]; break;
+            trks = trackSnapshots_R1{k}.trackList;
+            for t = 1:length(trks)
+                if trks{t}.type ~= 7 && isfield(trks{t}, 'ac_idx') && trks{t}.ac_idx == ac
+                    r1_id = trks{t}.id;
+                    break;
                 end
             end
-            for t = 1:length(trks2)
-                if trks2{t}.id == r2_id && trks2{t}.type ~= 7 && ~isnan(trks2{t}.lat)
-                    pos2 = [trks2{t}.lon, trks2{t}.lat]; break;
+            if ~isempty(r1_id), break; end
+        end
+
+        % 找 R2 中 ac_idx=ac 的航迹 ID
+        r2_id = [];
+        for k = 1:n_frames
+            trks = trackSnapshots_R2{k}.trackList;
+            for t = 1:length(trks)
+                if trks{t}.type ~= 7 && isfield(trks{t}, 'ac_idx') && trks{t}.ac_idx == ac
+                    r2_id = trks{t}.id;
+                    break;
                 end
             end
-            if ~isempty(pos1) && ~isempty(pos2)
-                coexist = coexist + 1;
-                dist_sum = dist_sum + sphere_utils_haversine_distance(pos1(1), pos1(2), pos2(1), pos2(2)) / 1000;
+            if ~isempty(r2_id), break; end
+        end
+
+        if ~isempty(r1_id) && ~isempty(r2_id)
+            % 统计共现帧数和平均距离
+            coexist = 0; dist_sum = 0;
+            for k = 1:n_frames
+                trks1 = trackSnapshots_R1{k}.trackList;
+                trks2 = aligned_R2{k}.trackList;
+                pos1 = []; pos2 = [];
+                for t = 1:length(trks1)
+                    if trks1{t}.id == r1_id && trks1{t}.type ~= 7 && ~isnan(trks1{t}.lat)
+                        pos1 = [trks1{t}.lon, trks1{t}.lat]; break;
+                    end
+                end
+                for t = 1:length(trks2)
+                    if trks2{t}.id == r2_id && trks2{t}.type ~= 7 && ~isnan(trks2{t}.lat)
+                        pos2 = [trks2{t}.lon, trks2{t}.lat]; break;
+                    end
+                end
+                if ~isempty(pos1) && ~isempty(pos2)
+                    coexist = coexist + 1;
+                    dist_sum = dist_sum + sphere_utils_haversine_distance(pos1(1), pos1(2), pos2(1), pos2(2)) / 1000;
+                end
+            end
+            if coexist > 0
+                matched_pairs{end+1} = struct('R1_track_id', r1_id, 'R2_track_id', r2_id, ...
+                    'match_count', coexist, 'coexist_count', coexist, 'match_ratio', coexist/n_frames, ...
+                    'mean_dist_km', dist_sum/coexist, 'quality', 100);
             end
         end
-        if coexist > 0
-            matched_pairs{end+1} = struct('R1_track_id', r1_id, 'R2_track_id', r2_id, ...
-                'match_count', coexist, 'coexist_count', coexist, 'match_ratio', coexist/n_frames, ...
-                'mean_dist_km', dist_sum/coexist, 'quality', 100);
-        end
+    end
+    % 转换为 struct 数组供 evaluate_all 使用
+    matched_pairs_struct = [];
+    for p = 1:length(matched_pairs)
+        mp = matched_pairs{p};
+        matched_pairs_struct = [matched_pairs_struct; mp];
     end
 end
 
@@ -813,19 +835,22 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
             end
             innov_vec = [innov_dr; innov_az; innov_vr];
             [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, innov_vec);
+            % 计算NIS (Normalized Innovation Squared)
+            nis_val = innov_vec' * (trk.P_zz \ innov_vec);
             trk.assoc_det = dp;
             trk.missed = 0;
-            trk.lat = dp.lat; trk.lon = dp.lon;
+            trk.lat = trk.ukf.x(3); trk.lon = trk.ukf.x(1);
         else
             % 无关联：状态保持预测值
             trk.ukf.x = trk.x_pred; trk.ukf.P = trk.P_pred;
             trk.assoc_det = [];
             trk.missed = trk.missed + 1;
+            nis_val = NaN;
         end
 
         trk.life = trk.life + 1;
         if ~isfield(trk, 'nis_history'), trk.nis_history = []; end
-        trk.nis_history(end+1) = trk.missed;
+        trk.nis_history(end+1) = nis_val;
         if length(trk.nis_history) > params.fuzzy_window_size
             trk.nis_history(1) = [];
         end
