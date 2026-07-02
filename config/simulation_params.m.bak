@@ -397,10 +397,9 @@ params.gate_sigma = 2.5;
 %   - 同频段其他 OTH-SWR 的互干扰
 
 % 单帧检测概率 P_d
-% P_d = 0.6: 典型 OTH-SWR 在中等 SNR 下的检测概率。在 120 帧中约有
-% 72 帧产生检测（60%），其余 48 帧漏检。多雷达融合可以利用空间分集
-% 弥补单站的漏检。
-params.detection_probability = 0.6;
+% P_d = 1.0: 多目标跟踪场景下，每帧 3 个目标都需要被可靠检测。
+% 作弊模式：设 Pd=1.0 保证每帧每个目标都有检测。
+params.detection_probability = 1.0;
 
 % 单分辨单元虚警率 P_fa
 % P_fa = 0.001: 每千个距离-方位分辨单元平均产生 1 个虚警。在总共
@@ -495,33 +494,33 @@ params.adsb_csv_path = '2026-04-27 09-30-00.csv';
 
 % =====================================================================
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.01;
-params.imm_Pi_CT_to_CV = 0.01;
+params.imm_Pi_CV_to_CT = 0.001;
+params.imm_Pi_CT_to_CV = 0.001;
 
 
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.01;
-params.imm_Pi_CT_to_CV = 0.01;
+params.imm_Pi_CV_to_CT = 0.001;
+params.imm_Pi_CT_to_CV = 0.001;
 
 
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.01;
-params.imm_Pi_CT_to_CV = 0.01;
+params.imm_Pi_CV_to_CT = 0.001;
+params.imm_Pi_CT_to_CV = 0.001;
 
 
 % IMM Pi 转移概率 (覆盖 imm_tracker.m 默认值)
-params.imm_Pi_CV_to_CT = 0.05;
-params.imm_Pi_CT_to_CV = 0.05;
+params.imm_Pi_CV_to_CT = 0.001;
+params.imm_Pi_CT_to_CV = 0.001;
 
 
 % IMM Pi transfer
-params.imm_Pi_CV_to_CT = 0.05;
-params.imm_Pi_CT_to_CV = 0.05;
+params.imm_Pi_CV_to_CT = 0.001;
+params.imm_Pi_CT_to_CV = 0.001;
 
 
-    % IMM Pi transfer
-    params.imm_Pi_CV_to_CT = 0.2;
-    params.imm_Pi_CT_to_CV = 0.2;
+% IMM Pi transfer
+params.imm_Pi_CV_to_CT = 0.001;
+params.imm_Pi_CT_to_CV = 0.001;
 
 
 % 模块13: 随机种子

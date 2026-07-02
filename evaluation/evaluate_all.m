@@ -130,25 +130,32 @@ function fusion_eval = evaluate_fusion(all_fused_snapshots, method_names, ...
 
     % Step 1: Map R1-R2 matched pairs to true aircraft
     pair_to_aircraft = zeros(length(matched_pairs), 1);
-    for p = 1:length(matched_pairs)
-        mp = matched_pairs(p);
-        r1_idx = find(matcher.r1_ids == mp.R1_track_id, 1);
-        if isempty(r1_idx), continue; end
-        r1_lons = squeeze(matcher.r1_pos(r1_idx, :, 1))';
-        r1_lats = squeeze(matcher.r1_pos(r1_idx, :, 2))';
-        best_ac = 0;
-        best_dist = inf;
-        for a = 1:n_ac
-            tt = truthTrajs{a};
-            t_lat = interp1(tt.time_sec, tt.lat, frame_times, 'linear', 'extrap');
-            t_lon = interp1(tt.time_sec, tt.lon, frame_times, 'linear', 'extrap');
-            mean_dist = nanmean(haversine_km_vec_eval(r1_lons, r1_lats, t_lon, t_lat));
-            if mean_dist < best_dist
-                best_dist = mean_dist;
-                best_ac = a;
+
+    % 优先使用 matcher 中已预计算的 pair_to_aircraft（多目标场景）
+    if isfield(matcher, 'pair_to_aircraft') && length(matcher.pair_to_aircraft) >= length(matched_pairs)
+        pair_to_aircraft = matcher.pair_to_aircraft(1:length(matched_pairs));
+    else
+        % 原来基于位置的猜测逻辑（单目标场景）
+        for p = 1:length(matched_pairs)
+            mp = matched_pairs(p);
+            r1_idx = find(matcher.r1_ids == mp.R1_track_id, 1);
+            if isempty(r1_idx), continue; end
+            r1_lons = squeeze(matcher.r1_pos(r1_idx, :, 1))';
+            r1_lats = squeeze(matcher.r1_pos(r1_idx, :, 2))';
+            best_ac = 0;
+            best_dist = inf;
+            for a = 1:n_ac
+                tt = truthTrajs{a};
+                t_lat = interp1(tt.time_sec, tt.lat, frame_times, 'linear', 'extrap');
+                t_lon = interp1(tt.time_sec, tt.lon, frame_times, 'linear', 'extrap');
+                mean_dist = nanmean(haversine_km_vec_eval(r1_lons, r1_lats, t_lon, t_lat));
+                if mean_dist < best_dist
+                    best_dist = mean_dist;
+                    best_ac = a;
+                end
             end
+            pair_to_aircraft(p) = best_ac;
         end
-        pair_to_aircraft(p) = best_ac;
     end
 
     fprintf('\n匹配对 -> 真值飞机映射:\n');
@@ -160,31 +167,43 @@ function fusion_eval = evaluate_fusion(all_fused_snapshots, method_names, ...
 
     % Step 2: Compute fusion track errors frame by frame
     fusion_errs = cell(n_methods, n_ac);
+    n_pairs = size(all_fused_snapshots, 1);
+    % 判断索引顺序: {method, pair} (单目标 4×1) vs {pair, method} (多目标 3×4)
+    is_multi = (n_pairs > 1);
+
     for m = 1:n_methods
-        fused_snaps = all_fused_snapshots{m};
         for a = 1:n_ac
             fusion_errs{m, a} = [];
         end
-        for k = 1:n_frames
-            t_true_lat_all = zeros(n_ac, 1);
-            t_true_lon_all = zeros(n_ac, 1);
-            for a = 1:n_ac
-                t_true_lat_all(a) = interp1(truthTrajs{a}.time_sec, ...
-                    truthTrajs{a}.lat, frame_times(k), 'linear', 'extrap');
-                t_true_lon_all(a) = interp1(truthTrajs{a}.time_sec, ...
-                    truthTrajs{a}.lon, frame_times(k), 'linear', 'extrap');
+        for p = 1:n_pairs
+            if is_multi
+                fused_snaps = all_fused_snapshots{p, m};
+            else
+                fused_snaps = all_fused_snapshots{m};
             end
-            snap = fused_snaps{k};
-            if isempty(snap.trackList), continue; end
-            for t = 1:length(snap.trackList)
-                ftrk = snap.trackList{t};
-                p_idx = ftrk.id;
-                if p_idx < 1 || p_idx > length(pair_to_aircraft), continue; end
-                ac = pair_to_aircraft(p_idx);
-                if ac == 0, continue; end
-                if isnan(ftrk.lon), continue; end
-                d = haversine_km_eval(ftrk.lon, ftrk.lat, t_true_lon_all(ac), t_true_lat_all(ac));
-                fusion_errs{m, ac}(end+1) = d;
+            % 多目标场景下，pair p 对应的 aircraft = pair_to_aircraft(p)
+            ac = 0;
+            if is_multi && p <= length(pair_to_aircraft)
+                ac = pair_to_aircraft(p);
+            end
+            if ac == 0, continue; end
+            for k = 1:n_frames
+                t_true_lat_all = zeros(n_ac, 1);
+                t_true_lon_all = zeros(n_ac, 1);
+                for a = 1:n_ac
+                    t_true_lat_all(a) = interp1(truthTrajs{a}.time_sec, ...
+                        truthTrajs{a}.lat, frame_times(k), 'linear', 'extrap');
+                    t_true_lon_all(a) = interp1(truthTrajs{a}.time_sec, ...
+                        truthTrajs{a}.lon, frame_times(k), 'linear', 'extrap');
+                end
+                snap = fused_snaps{k};
+                if isempty(snap.trackList), continue; end
+                for t = 1:length(snap.trackList)
+                    ftrk = snap.trackList{t};
+                    if isnan(ftrk.lon), continue; end
+                    d = haversine_km_eval(ftrk.lon, ftrk.lat, t_true_lon_all(ac), t_true_lat_all(ac));
+                    fusion_errs{m, ac}(end+1) = d;
+                end
             end
         end
     end

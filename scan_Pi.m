@@ -27,10 +27,10 @@ for pi_idx = 1:n_pi
     pi_val = Pi_values(pi_idx);
 
     % ---- 检查是否已完成 ----
-    pidir = sprintf('results/Piscan_%g', pi_val);
-    if exist(pidir, 'dir')
+    skip_file = fullfile('results', sprintf('scan_Pi_done_Pi%g.mat', pi_val));
+    if exist(skip_file, 'file')
         fprintf('\n============================================================\n');
-        fprintf('  [%d/%d] Pi = %g — 已存在结果目录，跳过\n', pi_idx, n_pi, pi_val);
+        fprintf('  [%d/%d] Pi = %g — 已存在结果，跳过\n', pi_idx, n_pi, pi_val);
         fprintf('============================================================\n');
         continue;
     end
@@ -79,8 +79,7 @@ for pi_idx = 1:n_pi
     run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, N_FUS, pi_val);
 
     % ---- 保存本轮结果标记 ----
-    if ~exist(pidir, 'dir'), mkdir(pidir); end
-    result_file = fullfile(pidir, 'scan_done.mat');
+    result_file = fullfile('results', sprintf('scan_Pi_done_Pi%g.mat', pi_val));
     save(result_file, 'pi_val');
     fprintf('  本轮结果已保存: %s\n', result_file);
 
@@ -393,7 +392,7 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
     end
 
     % 保存
-    outf = fullfile(pidir, sprintf('gradual_N%d_Pi%g.mat', N_MC, pi_val));
+    outf = fullfile('results', sprintf('gradual_N%d_Pi%g.mat', N_MC, pi_val));
     save(outf, 's', 'rmse_cal_R1', 'rmse_cal_R2', 'rmse_raw_R1', 'rmse_raw_R2', ...
         'N_MC', 'SEED_BASE', 'UKF_NAMES', 'FUSION_METHODS', ...
         'turn_angle_deg', 'turn_rate_rad_per_sec');
@@ -688,7 +687,7 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
             nanmean(s(u).rmse_fus_best));
     end
 
-    outf = fullfile(pidir, sprintf('uturn_N%d_Pi%g.mat', N_MC, pi_val));
+    outf = fullfile('results', sprintf('uturn_N%d_Pi%g.mat', N_MC, pi_val));
     save(outf, 's', 'rmse_cal_R1', 'rmse_cal_R2', 'rmse_raw_R1', 'rmse_raw_R2', ...
         'N_MC', 'SEED_BASE', 'UKF_NAMES', 'FUSION_METHODS', 'omega');
 end

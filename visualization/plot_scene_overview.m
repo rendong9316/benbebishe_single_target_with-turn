@@ -149,15 +149,15 @@ function draw_beam_sector(ax, rx_lat, rx_lon, center_az, width, r_min, r_max, co
             rx_lon, rx_lat, r_max, az_edges(i));
     end
 
-    % 绘制内弧 (虚线，透明度 0.8)
-    geoplot(ax, lats_inner, lons_inner, '--', 'Color', [color 0.8], 'LineWidth', 1);
-    % 绘制外弧 (虚线，透明度 0.8)
-    geoplot(ax, lats_outer, lons_outer, '--', 'Color', [color 0.8], 'LineWidth', 1);
+    % 绘制内弧 (虚线)
+    geoplot(ax, lats_inner, lons_inner, '--', 'Color', color, 'LineWidth', 1);
+    % 绘制外弧 (虚线)
+    geoplot(ax, lats_outer, lons_outer, '--', 'Color', color, 'LineWidth', 1);
 
     % 绘制两条径向边界线：内弧 → 外弧在波束起始和结束方位角处的连接线
     for az_edge = [center_az - width/2, center_az + width/2]
         [lon1, lat1] = sphere_utils_destination_point(rx_lon, rx_lat, r_min, az_edge);
         [lon2, lat2] = sphere_utils_destination_point(rx_lon, rx_lat, r_max, az_edge);
-        geoplot(ax, [lat1 lat2], [lon1 lon2], '-', 'Color', [color 0.5], 'LineWidth', 1);
+        geoplot(ax, [lat1 lat2], [lon1 lon2], '-', 'Color', color, 'LineWidth', 1);
     end
 end

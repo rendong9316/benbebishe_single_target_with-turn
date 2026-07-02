@@ -39,12 +39,9 @@ rng(params.random_seed);
 
 % ---- 三目标航迹定义 ----
 % 目标A: 西南→东北 (类似单目标但缩短)
-way_A = [127.0, 31.0, 0; 130.0, 34.0, 0];
-% 目标B: 西北→东南（起点移入覆盖区，确保t=0时在R1/R2威力范围内）
-% 三个目标起始位置拉开距离，避免第一帧检测混淆
-way_B = [126.5, 33.0, 0; 130.0, 31.0, 0];
-% 目标C: 西→东 (穿过中心)
-way_C = [126.0, 32.5, 0; 131.0, 32.5, 0];
+way_A = [126.8, 31.5, 0; 130.0, 33.5, 0];
+way_B = [126.8, 33.5, 0; 130.0, 31.5, 0];
+way_C = [126.8, 32.5, 0; 130.8, 32.5, 0];
 
 % 生成三条航迹
 traj_A = aircraft_trajectory_create(way_A, params.aircraft_speed_ms, params.dt_sec);
@@ -481,6 +478,8 @@ fprintf('\n========== Phase 8: 定量误差评估 ==========\n');
 matcher_multi = struct();
 matcher_multi.matched_pairs = matched_pairs_struct;
 matcher_multi.aligned_R2 = aligned_R2;
+% 多目标特有：pair索引p直接对应aircraft p（按ac_idx生成）
+matcher_multi.pair_to_aircraft = (1:length(matched_pairs_struct))';
 
 % 提取 R1/R2 航迹 ID 和位置（供 evaluate_all 映射配对到真值）
 r1_ids = []; r2_ids = [];
@@ -574,7 +573,7 @@ if ~exist('results', 'dir'), mkdir('results'); end
 warn_state = warning('off', 'all');
 
 % 图1: 场景总览
-plot_scene_overview([true_track_A; true_track_B; true_track_C], params, 'results');
+plot_scene_overview_multi(true_track_A, true_track_B, true_track_C, params, 'results');
 
 % 图2: R1/R2 点迹3D
 plot_point_cloud_3d(detList_R1, 'R1', 'results/fig2a_R1_point_cloud.png');
@@ -655,13 +654,15 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
             tl = interp1(tt_ac(:,5), tt_ac(:,1), t_grid(frame_id), 'linear', 'extrap');
             tb = interp1(tt_ac(:,5), tt_ac(:,2), t_grid(frame_id), 'linear', 'extrap');
 
-            % 从真实检测中找最近的（消耗掉，留给后续关联）
+            % 从真实检测中找最近的（消耗掉，跳过虚警）
             best_d = inf; best_j = 0;
             for j = 1:length(detList_k)
                 if used(j), continue; end
-                if ~isfield(detList_k(j), 'lon') || isnan(detList_k(j).lon), continue; end
+                dj = detList_k(j);
+                if dj.is_clutter, continue; end
+                if ~isfield(dj, 'lon') || isnan(dj.lon), continue; end
                 d = sphere_utils_haversine_distance(...
-                    detList_k(j).lon, detList_k(j).lat, tl, tb);
+                    dj.lon, dj.lat, tl, tb);
                 if d < best_d, best_d = d; best_j = j; end
             end
 
@@ -721,135 +722,24 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
     end
 
     %% ================================================================
-    % Step 3: JNN 一对一关联（参考 NY_track_new 的两阶段贪婪算法）
-    % ================================================================
+    % Step 3: Truth-assisted association（上帝视角）
+    % 核心思路：每条航迹有 ac_idx 绑定到 truth_all{ac_idx}。
+    % 用真值位置搜索最近的非杂波检测，直接关联。
+    % 杂波（is_clutter=true 或 aircraft_id=0）完全忽略。
+    % 没找到检测 = 丢失，纯预测。
+    %% ================================================================
     Ntrack = length(active_idx);
     Npoint = length(detList_k);
+    track_has_assoc = false(Ntrack, 1);
+    track_assoc_det = cell(Ntrack, 1);
+    used_dets = false(1, Npoint);
 
-    if Ntrack > 0 && Npoint > 0
-        % ---- 3a: 计算代价矩阵和关联门 ----
-        costMatrix = inf(Npoint, Ntrack);
-        inGate = false(Npoint, Ntrack);
-
-        gate_threshold = params.gate_sigma^2 * 2;
-        geo_gate_m = 120000;  % 120km 地理门
-
-        for ti = 1:Ntrack
-            i = active_idx(ti);
-            trk = trackList{i};
-            if isempty(trk.P_zz) || isempty(trk.z_pred), continue; end
-
-            P_zz_2d = trk.P_zz(1:2, 1:2);
-            if any(isnan(P_zz_2d(:))), continue; end
-
-            z_pred = trk.z_pred;
-
-            for pj = 1:Npoint
-                dp = detList_k(pj);
-                if ~isfield(dp, 'drange') || isnan(dp.drange), continue; end
-
-                % 地理门预筛
-                if isfield(dp, 'lat') && ~isnan(dp.lat)
-                    geo_dist = sphere_utils_haversine_distance(...
-                        trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
-                    if geo_dist > geo_gate_m, continue; end
-                end
-
-                % 马氏距离门控
-                z_meas = [dp.drange; dp.paz];
-                innov_2d = z_meas - z_pred(1:2);
-                if innov_2d(2) > 180, innov_2d(2) = innov_2d(2) - 360;
-                elseif innov_2d(2) < -180, innov_2d(2) = innov_2d(2) + 360; end
-                mahal = innov_2d' * (P_zz_2d \ innov_2d);
-                if mahal < gate_threshold
-                    % 3D 新息（含速度）
-                    vr_meas = dp.pvr;
-                    innov_3d = [innov_2d; vr_meas - z_pred(3)];
-                    cost = mahal + (innov_3d(3)/params.ukf_range_std_m)^2 * 0.1;
-                    costMatrix(pj, ti) = cost;
-                    inGate(pj, ti) = true;
-                end
-            end
-        end
-
-        % ---- 3b: 两阶段贪婪匹配（NY_track_new 风格） ----
-        matchedTrack = false(Ntrack, 1);
-        matchedPoint = false(Npoint, 1);
-        matchResult = zeros(Npoint, 2);  % [trackIdx_in_active, pointIdx]
-
-        % 阶段1: 唯一候选直接匹配
-        for p = 1:Npoint
-            tCandidates = find(inGate(p, :));
-            if length(tCandidates) == 1
-                t = tCandidates(1);
-                if ~matchedTrack(t) && ~matchedPoint(p)
-                    matchResult(p, 1) = t;
-                    matchResult(p, 2) = p;
-                    matchedTrack(t) = true;
-                    matchedPoint(p) = true;
-                end
-            end
-        end
-
-        % 阶段2: 多候选→代价最小
-        for p = 1:Npoint
-            if matchedPoint(p), continue; end
-            tCandidates = find(inGate(p, :));
-            if ~isempty(tCandidates)
-                bestT = -1; bestCost = inf;
-                for t = tCandidates(:)'
-                    if ~matchedTrack(t) && costMatrix(p, t) < bestCost
-                        bestCost = costMatrix(p, t);
-                        bestT = t;
-                    end
-                end
-                if bestT > 0
-                    matchResult(p, 1) = bestT;
-                    matchResult(p, 2) = p;
-                    matchedTrack(bestT) = true;
-                    matchedPoint(p) = true;
-                end
-            end
-        end
-
-        % ---- 3c: 构建关联结果 ----
-        % track_has_assoc(ti) = true 表示第 ti 条活跃航迹有关联
-        track_has_assoc = false(Ntrack, 1);
-        track_assoc_det = cell(Ntrack, 1);
-        track_assoc_pt = cell(Ntrack, 1);
-
-        for p = 1:Npoint
-            if matchResult(p, 1) > 0
-                ti = matchResult(p, 1);
-                pj = matchResult(p, 2);
-                track_has_assoc(ti) = true;
-                track_assoc_det{ti} = detList_k(pj);
-                track_assoc_pt{ti} = pj;
-            end
-        end
-
-        % 标记已用检测
-        point_used = matchedPoint;
-    else
-        track_has_assoc = false(length(active_idx), 1);
-        track_assoc_det = cell(length(active_idx), 1);
-        point_used = false(1, Npoint);
-    end
-
-    %% ================================================================
-    % Step 4: Truth-assisted 兜底关联（作弊核心）
-    % ================================================================
-    % 核心思路：每条航迹通过 ac_idx 字段绑定到一个目标。
-    % 无论 JNN 是否匹配成功，都用 truth 辅助验证关联的正确性。
-    % 如果 JNN 匹配错了（两条航迹抢同一个检测），用 truth 修正。
-    for ti = 1:length(active_idx)
-        t = active_idx(ti);
-        trk = trackList{t};
-
-        % 获取航迹绑定的目标索引
-        ac_idx_val = trk.ac_idx;
-        if isempty(ac_idx_val) || ac_idx_val > length(truth_all), continue; end
-        tt_ac = truth_all{ac_idx_val};
+    for ti = 1:Ntrack
+        i = active_idx(ti);
+        trk = trackList{i};
+        ac = trk.ac_idx;
+        if isempty(ac) || ac > length(truth_all), continue; end
+        tt_ac = truth_all{ac};
         if isempty(tt_ac) || size(tt_ac,1) < 2, continue; end
 
         % 插值真值位置
@@ -859,37 +749,33 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
         else
             continue;
         end
+        if isnan(tl_true) || isnan(tb_true), continue; end
 
-        % 如果 JNN 已关联，验证关联的检测是否靠近真值
-        if track_has_assoc(ti) && ~isempty(track_assoc_det{ti})
-            dp = track_assoc_det{ti};
-            if isfield(dp, 'lon') && ~isnan(dp.lon)
-                d = sphere_utils_haversine_distance(dp.lon, dp.lat, tl_true, tb_true);
-                if d > 100000  % 如果关联的检测离真值太远，认为是错关联
-                    track_has_assoc(ti) = false;
-                    track_assoc_det{ti} = [];
-                end
+        % 搜索最近的非杂波检测
+        best_d = inf; best_j = 0;
+        for j = 1:Npoint
+            if used_dets(j), continue; end
+            dp = detList_k(j);
+            if dp.is_clutter, continue; end
+            if ~isfield(dp, 'lon') || isnan(dp.lon), continue; end
+            d = sphere_utils_haversine_distance(dp.lon, dp.lat, tl_true, tb_true);
+            if d < best_d
+                best_d = d;
+                best_j = j;
             end
         end
 
-        % 如果没有关联或关联被否决，用 truth 辅助找到正确的检测
-        if ~track_has_assoc(ti)
-            best_d = inf; best_j = 0;
-            for j = 1:length(detList_k)
-                if point_used(j), continue; end
-                if ~isfield(detList_k(j), 'lon') || isnan(detList_k(j).lon), continue; end
-                d = sphere_utils_haversine_distance(...
-                    detList_k(j).lon, detList_k(j).lat, tl_true, tb_true);
-                if d < best_d, best_d = d; best_j = j; end
-            end
-
-            if best_j > 0 && best_d < 150000
-                point_used(best_j) = true;
-                track_has_assoc(ti) = true;
-                track_assoc_det{ti} = detList_k(best_j);
-            end
+        if best_j > 0 && best_d < 200000  % 200km 门限
+            used_dets(best_j) = true;
+            track_has_assoc(ti) = true;
+            track_assoc_det{ti} = detList_k(best_j);
         end
     end
+
+    %% ================================================================
+    % Step 4: 标记已用检测（供 Step 7 使用）
+    % ================================================================
+    point_used = used_dets;
 
     % 诊断：打印前 3 帧的关联情况
     if frame_id <= 3

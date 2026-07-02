@@ -27,10 +27,10 @@ for qi = 1:n_q
     q_val = Q_values(qi);
 
     % ---- 检查是否已完成 ----
-    qdir = sprintf('results/Qscan_%g', q_val);
-    if exist(qdir, 'dir')
+    skip_file = fullfile('results', sprintf('scan_Q_done_Q%g.mat', q_val));
+    if exist(skip_file, 'file')
         fprintf('\n============================================================\n');
-        fprintf('  [%d/%d] Q_scale = %g — 已存在结果目录，跳过\n', qi, n_q, q_val);
+        fprintf('  [%d/%d] Q_scale = %g — 已存在结果，跳过\n', qi, n_q, q_val);
         fprintf('============================================================\n');
         continue;
     end
@@ -79,8 +79,7 @@ for qi = 1:n_q
     run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, N_FUS, q_val);
 
     % ---- 保存本轮结果标记 ----
-    if ~exist(qdir, 'dir'), mkdir(qdir); end
-    result_file = fullfile(qdir, 'scan_done.mat');
+    result_file = fullfile('results', sprintf('scan_Q_done_Q%g.mat', q_val));
     save(result_file, 'q_val');
     fprintf('  本轮结果已保存: %s\n', result_file);
 
@@ -140,10 +139,13 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
     rmse_raw_R1 = nan(N_MC, 1);
     rmse_raw_R2 = nan(N_MC, 1);
 
-    % 预计算转弯信息
+    % 预计算转弯信息（轨迹不依赖 random_seed，只需一次）
     params0 = simulation_params();
     [turn_waypoints, turn_angle_deg, turn_rate_rad_per_sec] = get_turn_info(params0);
     fprintf('  转弯: %.1f deg @ %.4f rad/s\n', turn_angle_deg, turn_rate_rad_per_sec);
+
+    utraj = aircraft_trajectory_create('gradual_turn', params0);
+    utrue_track = aircraft_trajectory_interpolate('generate', utraj);
 
     tic;
     for mc = 1:N_MC
@@ -153,13 +155,11 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
         params.random_seed = seed;
         rng(params.random_seed);
 
-        [traj, ~] = aircraft_trajectory_create('gradual_turn', params);
-        true_track = aircraft_trajectory_interpolate('generate', traj);
-        t1_grid = params.time_offset_radar1_sec : params.dt_sec : traj.duration_sec;
-        t2_grid = params.time_offset_radar2_sec : params.dt_sec : traj.duration_sec;
+        t1_grid = params.time_offset_radar1_sec : params.dt_sec : utraj.duration_sec;
+        t2_grid = params.time_offset_radar2_sec : params.dt_sec : utraj.duration_sec;
         n_frames = min(length(t1_grid), length(t2_grid));
 
-        turn_frames = find_turn_frames_mc(true_track, 0.5);
+        turn_frames = find_turn_frames_mc(utrue_track, 0.5);
 
         % ADS-B 标定
         rng(params.random_seed);
@@ -206,7 +206,7 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
         detList_R2 = cell(n_frames, 1);
         rng(params.random_seed + 1e7);
         for k = 1:n_frames
-            [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
+            [pos, vel] = aircraft_trajectory_interpolate(utraj, t1_grid(k));
             detRaw = generate_frame_detections(params.radar1_lon, params.radar1_lat, ...
                 params.radar1_tx_lon, params.radar1_tx_lat, pos(1), pos(2), vel(1), vel(2), ...
                 k, t1_grid(k), params.radar1_range_bias_m, params.radar1_azimuth_bias_deg, ...
@@ -230,7 +230,7 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
         end
         rng(params.random_seed + 2e7);
         for k = 1:n_frames
-            [pos2, vel2] = aircraft_trajectory_interpolate(traj, t2_grid(k));
+            [pos2, vel2] = aircraft_trajectory_interpolate(utraj, t2_grid(k));
             detRaw2 = generate_frame_detections(params.radar2_lon, params.radar2_lat, ...
                 params.radar2_tx_lon, params.radar2_tx_lat, pos2(1), pos2(2), vel2(1), vel2(2), ...
                 k, t2_grid(k), params.radar2_range_bias_m, params.radar2_azimuth_bias_deg, ...
@@ -253,10 +253,10 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
             detList_R2{k} = detRaw2;
         end
 
-        rmse_raw_R1(mc) = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'raw');
-        rmse_raw_R2(mc) = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'raw');
-        rmse_cal_R1(mc) = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'cal');
-        rmse_cal_R2(mc) = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'cal');
+        rmse_raw_R1(mc) = rmse_detlist(detList_R1, utrue_track, t1_grid, n_frames, 'raw');
+        rmse_raw_R2(mc) = rmse_detlist(detList_R2, utrue_track, t2_grid, n_frames, 'raw');
+        rmse_cal_R1(mc) = rmse_detlist(detList_R1, utrue_track, t1_grid, n_frames, 'cal');
+        rmse_cal_R2(mc) = rmse_detlist(detList_R2, utrue_track, t2_grid, n_frames, 'cal');
 
         % 三体制跟踪
         for u = 1:N_UKF
@@ -281,7 +281,7 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
                     params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
             end
             [snaps_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, ...
-                params_r1, n_frames, true_track, t1_grid);
+                params_r1, n_frames, utrue_track, t1_grid);
 
             params_r2 = params;
             params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;
@@ -305,10 +305,10 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
                     params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
             end
             [snaps_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, ...
-                params_r2, n_frames, true_track, t2_grid);
+                params_r2, n_frames, utrue_track, t2_grid);
 
-            s(u).rmse_ukf_R1(mc) = rmse_tracks(snaps_R1, true_track, t1_grid, n_frames);
-            s(u).rmse_ukf_R2(mc) = rmse_tracks(snaps_R2, true_track, t2_grid, n_frames);
+            s(u).rmse_ukf_R1(mc) = rmse_tracks(snaps_R1, utrue_track, t1_grid, n_frames);
+            s(u).rmse_ukf_R2(mc) = rmse_tracks(snaps_R2, utrue_track, t2_grid, n_frames);
             s(u).imp_ukf_R1(mc) = (1 - s(u).rmse_ukf_R1(mc) / rmse_cal_R1(mc)) * 100;
             s(u).imp_ukf_R2(mc) = (1 - s(u).rmse_ukf_R2(mc) / rmse_cal_R2(mc)) * 100;
 
@@ -339,14 +339,14 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
             end
 
             aligned_R2 = time_align_tracks(snaps_R2, params);
-            s(u).rmse_ukf_R2_alg(mc) = rmse_tracks(aligned_R2, true_track, t1_grid, n_frames);
+            s(u).rmse_ukf_R2_alg(mc) = rmse_tracks(aligned_R2, utrue_track, t1_grid, n_frames);
 
             matched_pair = struct('R1_track_id', 1, 'R2_track_id', 1, ...
                 'match_count', 0, 'coexist_count', 0, 'match_ratio', 1.0, ...
                 'mean_dist_km', 0, 'quality', 100);
             for m = 1:N_FUS
                 all_fused = run_track_fusion(matched_pair, snaps_R1, aligned_R2, params, FUSION_METHODS{m});
-                s(u).rmse_fus(mc, m) = rmse_fusion_snaps(all_fused, true_track, t1_grid, n_frames);
+                s(u).rmse_fus(mc, m) = rmse_fusion_snaps(all_fused, utrue_track, t1_grid, n_frames);
             end
             [best_val, best_m] = min(s(u).rmse_fus(mc, :));
             s(u).rmse_fus_best(mc) = best_val;
@@ -393,7 +393,7 @@ function run_mc_gradual_turn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
     end
 
     % 保存
-    outf = fullfile(qdir, sprintf('gradual_N%d_Q%g.mat', N_MC, q_val));
+    outf = fullfile('results', sprintf('gradual_N%d_Q%g.mat', N_MC, q_val));
     save(outf, 's', 'rmse_cal_R1', 'rmse_cal_R2', 'rmse_raw_R1', 'rmse_raw_R2', ...
         'N_MC', 'SEED_BASE', 'UKF_NAMES', 'FUSION_METHODS', ...
         'turn_angle_deg', 'turn_rate_rad_per_sec');
@@ -445,6 +445,14 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
     omega = pi / 180.0;
     fprintf('  回头弯180度: 直线(90) -> 左转180度圆弧(1deg/s) -> 直线(270)\n');
 
+    % 预计算转弯信息（轨迹不依赖 random_seed，只需一次）
+    params0 = simulation_params();
+    [turn_waypoints, turn_angle_deg, turn_rate_rad_per_sec] = get_turn_info(params0);
+
+    % Precompute uturn trajectory (doesn't depend on random_seed)
+    utraj = aircraft_trajectory_create('uturn', params0);
+    utrue_track = aircraft_trajectory_interpolate('generate', utraj);
+
     tic;
     for mc = 1:N_MC
         seed = SEED_BASE + (mc - 1);
@@ -453,13 +461,11 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
         params.random_seed = seed;
         rng(params.random_seed);
 
-        [traj, ~] = aircraft_trajectory_create('uturn', params);
-        true_track = aircraft_trajectory_interpolate('generate', traj);
-        t1_grid = params.time_offset_radar1_sec : params.dt_sec : traj.duration_sec;
-        t2_grid = params.time_offset_radar2_sec : params.dt_sec : traj.duration_sec;
+        t1_grid = params.time_offset_radar1_sec : params.dt_sec : utraj.duration_sec;
+        t2_grid = params.time_offset_radar2_sec : params.dt_sec : utraj.duration_sec;
         n_frames = min(length(t1_grid), length(t2_grid));
 
-        turn_frames = find_turn_frames_mc(true_track, 0.5);
+        turn_frames = find_turn_frames_mc(utrue_track, 0.5);
 
         rng(params.random_seed);
         T_adsb = readtable(params.adsb_csv_path, 'ReadVariableNames', false);
@@ -504,7 +510,7 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
         detList_R2 = cell(n_frames, 1);
         rng(params.random_seed + 1e7);
         for k = 1:n_frames
-            [pos, vel] = aircraft_trajectory_interpolate(traj, t1_grid(k));
+            [pos, vel] = aircraft_trajectory_interpolate(utraj, t1_grid(k));
             detRaw = generate_frame_detections(params.radar1_lon, params.radar1_lat, ...
                 params.radar1_tx_lon, params.radar1_tx_lat, pos(1), pos(2), vel(1), vel(2), ...
                 k, t1_grid(k), params.radar1_range_bias_m, params.radar1_azimuth_bias_deg, ...
@@ -528,7 +534,7 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
         end
         rng(params.random_seed + 2e7);
         for k = 1:n_frames
-            [pos2, vel2] = aircraft_trajectory_interpolate(traj, t2_grid(k));
+            [pos2, vel2] = aircraft_trajectory_interpolate(utraj, t2_grid(k));
             detRaw2 = generate_frame_detections(params.radar2_lon, params.radar2_lat, ...
                 params.radar2_tx_lon, params.radar2_tx_lat, pos2(1), pos2(2), vel2(1), vel2(2), ...
                 k, t2_grid(k), params.radar2_range_bias_m, params.radar2_azimuth_bias_deg, ...
@@ -551,10 +557,10 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
             detList_R2{k} = detRaw2;
         end
 
-        rmse_raw_R1(mc) = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'raw');
-        rmse_raw_R2(mc) = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'raw');
-        rmse_cal_R1(mc) = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'cal');
-        rmse_cal_R2(mc) = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'cal');
+        rmse_raw_R1(mc) = rmse_detlist(detList_R1, utrue_track, t1_grid, n_frames, 'raw');
+        rmse_raw_R2(mc) = rmse_detlist(detList_R2, utrue_track, t2_grid, n_frames, 'raw');
+        rmse_cal_R1(mc) = rmse_detlist(detList_R1, utrue_track, t1_grid, n_frames, 'cal');
+        rmse_cal_R2(mc) = rmse_detlist(detList_R2, utrue_track, t2_grid, n_frames, 'cal');
 
         for u = 1:N_UKF
             ukf_type = UKF_NAMES{u};
@@ -578,7 +584,7 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
                     params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
             end
             [snaps_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, ...
-                params_r1, n_frames, true_track, t1_grid);
+                params_r1, n_frames, utrue_track, t1_grid);
 
             params_r2 = params;
             params_r2.ukf_range_std_m = params.radar2_range_noise_std_m;
@@ -602,10 +608,10 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
                     params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
             end
             [snaps_R2, finalTrk2] = single_track_runner(detList_R2, ukf2_tpl, ...
-                params_r2, n_frames, true_track, t2_grid);
+                params_r2, n_frames, utrue_track, t2_grid);
 
-            s(u).rmse_ukf_R1(mc) = rmse_tracks(snaps_R1, true_track, t1_grid, n_frames);
-            s(u).rmse_ukf_R2(mc) = rmse_tracks(snaps_R2, true_track, t2_grid, n_frames);
+            s(u).rmse_ukf_R1(mc) = rmse_tracks(snaps_R1, utrue_track, t1_grid, n_frames);
+            s(u).rmse_ukf_R2(mc) = rmse_tracks(snaps_R2, utrue_track, t2_grid, n_frames);
             s(u).imp_ukf_R1(mc) = (1 - s(u).rmse_ukf_R1(mc) / rmse_cal_R1(mc)) * 100;
             s(u).imp_ukf_R2(mc) = (1 - s(u).rmse_ukf_R2(mc) / rmse_cal_R2(mc)) * 100;
 
@@ -636,14 +642,14 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
             end
 
             aligned_R2 = time_align_tracks(snaps_R2, params);
-            s(u).rmse_ukf_R2_alg(mc) = rmse_tracks(aligned_R2, true_track, t1_grid, n_frames);
+            s(u).rmse_ukf_R2_alg(mc) = rmse_tracks(aligned_R2, utrue_track, t1_grid, n_frames);
 
             matched_pair = struct('R1_track_id', 1, 'R2_track_id', 1, ...
                 'match_count', 0, 'coexist_count', 0, 'match_ratio', 1.0, ...
                 'mean_dist_km', 0, 'quality', 100);
             for m = 1:N_FUS
                 all_fused = run_track_fusion(matched_pair, snaps_R1, aligned_R2, params, FUSION_METHODS{m});
-                s(u).rmse_fus(mc, m) = rmse_fusion_snaps(all_fused, true_track, t1_grid, n_frames);
+                s(u).rmse_fus(mc, m) = rmse_fusion_snaps(all_fused, utrue_track, t1_grid, n_frames);
             end
             [best_val, best_m] = min(s(u).rmse_fus(mc, :));
             s(u).rmse_fus_best(mc) = best_val;
@@ -688,7 +694,7 @@ function run_mc_180deg_uturn(N_MC, SEED_BASE, UKF_NAMES, N_UKF, FUSION_METHODS, 
             nanmean(s(u).rmse_fus_best));
     end
 
-    outf = fullfile(qdir, sprintf('uturn_N%d_Q%g.mat', N_MC, q_val));
+    outf = fullfile('results', sprintf('uturn_N%d_Q%g.mat', N_MC, q_val));
     save(outf, 's', 'rmse_cal_R1', 'rmse_cal_R2', 'rmse_raw_R1', 'rmse_raw_R2', ...
         'N_MC', 'SEED_BASE', 'UKF_NAMES', 'FUSION_METHODS', ...
         'omega');
@@ -712,10 +718,10 @@ function [wp, turn_angle_deg, omega] = get_turn_info(params)
     omega = sgn * 1.0 * pi / 180.0;
 end
 
-function frames = find_turn_frames_mc(true_track, thresh_deg_per_s)
-    n = size(true_track, 1);
+function frames = find_turn_frames_mc(utrue_track, thresh_deg_per_s)
+    n = size(utrue_track, 1);
     if n < 2, frames = []; return; end
-    lon = true_track(:,1); lat = true_track(:,2);
+    lon = utrue_track(:,1); lat = utrue_track(:,2);
     dlon = diff(lon(1:n)); dlat = diff(lat(1:n));
     hdg = atan2d(dlon, dlat);
     hdg_diff = diff(hdg);
@@ -723,7 +729,7 @@ function frames = find_turn_frames_mc(true_track, thresh_deg_per_s)
     hdg_diff(hdg_diff < -180) = hdg_diff(hdg_diff < -180) + 360;
     hdg_rate = abs(hdg_diff);
     pad = [0; hdg_rate];
-    dt_est = mean(diff(true_track(:,5)));
+    dt_est = mean(diff(utrue_track(:,5)));
     if dt_est > 0, hdg_rate_per_s = pad / dt_est; else, hdg_rate_per_s = pad; end
     frames = find(hdg_rate_per_s > thresh_deg_per_s);
     if isempty(frames)
@@ -732,11 +738,11 @@ function frames = find_turn_frames_mc(true_track, thresh_deg_per_s)
     end
 end
 
-function v = rmse_detlist(detList, true_track, t_grid, n_frames, mode)
+function v = rmse_detlist(detList, utrue_track, t_grid, n_frames, mode)
     errs = [];
     for k = 1:n_frames
-        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
-        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+        tl = interp1(utrue_track(:,5), utrue_track(:,1), t_grid(k), 'linear', 'extrap');
+        tb = interp1(utrue_track(:,5), utrue_track(:,2), t_grid(k), 'linear', 'extrap');
         for d = 1:length(detList{k})
             dp = detList{k}(d);
             if dp.is_clutter, continue; end
@@ -754,11 +760,11 @@ function v = rmse_detlist(detList, true_track, t_grid, n_frames, mode)
     v = rms_val(errs);
 end
 
-function v = rmse_tracks(snaps, true_track, t_grid, n_frames)
+function v = rmse_tracks(snaps, utrue_track, t_grid, n_frames)
     errs = [];
     for k = 1:n_frames
-        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
-        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+        tl = interp1(utrue_track(:,5), utrue_track(:,1), t_grid(k), 'linear', 'extrap');
+        tb = interp1(utrue_track(:,5), utrue_track(:,2), t_grid(k), 'linear', 'extrap');
         snap = snaps{k};
         if ~isempty(snap.trackList)
             trk = snap.trackList{1};
@@ -772,11 +778,11 @@ function v = rmse_tracks(snaps, true_track, t_grid, n_frames)
     v = rms_val(errs);
 end
 
-function v = rmse_fusion_snaps(snaps, true_track, t_grid, n_frames)
+function v = rmse_fusion_snaps(snaps, utrue_track, t_grid, n_frames)
     errs = [];
     for k = 1:n_frames
-        tl = interp1(true_track(:,5), true_track(:,1), t_grid(k), 'linear', 'extrap');
-        tb = interp1(true_track(:,5), true_track(:,2), t_grid(k), 'linear', 'extrap');
+        tl = interp1(utrue_track(:,5), utrue_track(:,1), t_grid(k), 'linear', 'extrap');
+        tb = interp1(utrue_track(:,5), utrue_track(:,2), t_grid(k), 'linear', 'extrap');
         if ~isempty(snaps{k}) && ~isempty(snaps{k}.trackList)
             trk = snaps{k}.trackList{1};
             if ~isnan(trk.lat)
