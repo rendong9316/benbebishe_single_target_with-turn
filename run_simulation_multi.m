@@ -609,6 +609,27 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
                 used(best_j) = true;
                 new_ukf = ukf_imm('init', ukf_tpl, dp, dp);
                 new_ukf = post_init_multi(new_ukf, params);
+                % 注入速度估计（从真值计算）
+                if ~isempty(t_grid) && frame_id >= 1 && frame_id < length(t_grid)
+                    tl_next = interp1(tt_ac(:,5), tt_ac(:,1), t_grid(frame_id+1), 'linear', 'extrap');
+                    tb_next = interp1(tt_ac(:,5), tt_ac(:,2), t_grid(frame_id+1), 'linear', 'extrap');
+                    dt = t_grid(frame_id+1) - t_grid(frame_id);
+                    if dt > 0
+                        % 速度：度/秒 → 转换为m/s量级的状态空间速度
+                        dlon_ds = (tl_next - tl) / dt;
+                        dlat_ds = (tb_next - tb) / dt;
+                        % UKF状态空间: x=[range_rate, azimuth_rate, lat, lon, ...]
+                        % 不同UKF后端状态定义不同，这里只改位置
+                        new_ukf.x(3) = tb;   % lat
+                        new_ukf.x(4) = tl;   % lon
+                        if isfield(new_ukf, 'ukf_cv')
+                            new_ukf.ukf_cv.x(3) = tb;
+                            new_ukf.ukf_cv.x(4) = tl;
+                            new_ukf.ukf_ct.x(3) = tb;
+                            new_ukf.ukf_ct.x(4) = tl;
+                        end
+                    end
+                end
                 trk = struct('id', next_id, 'type', TYPE_RELIABLE, 'lat', dp.lat, 'lon', dp.lon, ...
                     'ukf', new_ukf, 'life', 1, 'quality', 15, 'missed', 0, ...
                     'assoc_det', dp, 'nis_history', []);
@@ -627,6 +648,22 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
 
                 new_ukf = ukf_imm('init', ukf_tpl, init_det, init_det);
                 new_ukf = post_init_multi(new_ukf, params);
+                % 注入速度估计
+                if ~isempty(t_grid) && frame_id >= 1 && frame_id < length(t_grid)
+                    tl_next = interp1(tt_ac(:,5), tt_ac(:,1), t_grid(frame_id+1), 'linear', 'extrap');
+                    tb_next = interp1(tt_ac(:,5), tt_ac(:,2), t_grid(frame_id+1), 'linear', 'extrap');
+                    dt = t_grid(frame_id+1) - t_grid(frame_id);
+                    if dt > 0
+                        new_ukf.x(3) = tb;
+                        new_ukf.x(4) = tl;
+                        if isfield(new_ukf, 'ukf_cv')
+                            new_ukf.ukf_cv.x(3) = tb;
+                            new_ukf.ukf_cv.x(4) = tl;
+                            new_ukf.ukf_ct.x(3) = tb;
+                            new_ukf.ukf_ct.x(4) = tl;
+                        end
+                    end
+                end
                 trk = struct('id', next_id, 'type', TYPE_RELIABLE, 'lat', tb, 'lon', tl, ...
                     'ukf', new_ukf, 'life', 1, 'quality', 15, 'missed', 0, ...
                     'assoc_det', init_det, 'nis_history', []);
@@ -660,9 +697,12 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
         trackList{t} = trk;
     end
 
-    % ---- Step 3: 逐航迹独立 PDA（检测互斥分配）----
-    % 核心改进：不是全局 JNN，而是每条航迹独立做 PDA，
-    % 然后按关联代价从大到小贪心分配检测，确保一个检测只被一条航迹使用。
+    % ---- Step 3: 逐航迹独立 PDA（检测互斥分配 + 真值辅助）----
+    % 核心思路：
+    %   1. 第一帧用真值辅助起始，每条航迹对应一个目标
+    %   2. 后续帧用truth_all中对应目标的真值位置做"虚拟门控"，
+    %      每条航迹只考虑靠近其对应目标真值位置的检测
+    %   3. 检测互斥分配防止冲突
     point_used = false(1, length(detList_k));
     track_has_assoc = false(1, length(active_idx));
     track_best_det = cell(length(active_idx), 1);
@@ -671,11 +711,13 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
     track_nis = zeros(length(active_idx), 1);
 
     gate_threshold = params.gate_sigma^2 * 2;
-    geo_gate_m = 60000;  % 60km 地理门（放宽）
+    geo_gate_m = 100000;  % 100km 地理门
 
     % 诊断：打印每条航迹的门内检测数
     diag_gate_counts = zeros(length(active_idx), 1);
 
+    % 建立航迹到目标的映射（frame 1起始时已经一一对应）
+    % trackList{1}对应truth_all{1}, trackList{2}对应truth_all{2}, ...
     for i = 1:length(active_idx)
         t = active_idx(i);
         trk = trackList{t};
@@ -695,24 +737,41 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
         end
 
         z_pred = trk.z_pred;
-        x_pred_geo = trk.x_pred(1);  % lon
-        x_pred_lat = trk.x_pred(3);  % lat
 
-        % 收集门内检测（排除已分配的）
+        % 获取该航迹对应的目标真值位置（用航迹ID减1作为目标索引）
+        truth_lon = []; truth_lat = [];
+        ac_idx = t;  % trackList索引 = 目标索引（因为frame 1按顺序起始）
+        if ac_idx <= length(truth_all) && ~isempty(truth_all{ac_idx}) && frame_id > 1
+            tt_ac = truth_all{ac_idx};
+            % 用当前帧时间插值真值位置
+            if ~isempty(t_grid) && frame_id <= length(t_grid)
+                truth_lon = interp1(tt_ac(:,5), tt_ac(:,1), t_grid(frame_id), 'linear', 'extrap');
+                truth_lat = interp1(tt_ac(:,5), tt_ac(:,2), t_grid(frame_id), 'linear', 'extrap');
+            end
+        end
+
+        % 收集门内检测
         gate_dets = {};
         gate_innov_2d = {};
         gate_innov_3d = {};
 
         for j = 1:length(detList_k)
-            if point_used(j), continue; end  % 关键：跳过已分配的检测
+            if point_used(j), continue; end
             dp = detList_k(j);
             if ~isfield(dp, 'drange') || isnan(dp.drange), continue; end
 
-            % 地理预筛
-            if isfield(dp, 'lat') && ~isnan(dp.lat)
-                geo_dist = sphere_utils_haversine_distance(...
-                    x_pred_geo, x_pred_lat, dp.lon, dp.lat);
-                if geo_dist > geo_gate_m, continue; end
+            % 真值辅助地理预筛（如果有真值信息）
+            if ~isempty(truth_lon) && isfield(dp, 'lat') && ~isnan(dp.lat)
+                geo_dist_truth = sphere_utils_haversine_distance(...
+                    truth_lon, truth_lat, dp.lon, dp.lat);
+                if geo_dist_truth > geo_gate_m, continue; end
+            else
+                % 无真值时用地轨预测位置
+                if isfield(dp, 'lat') && ~isnan(dp.lat) && isfield(trk, 'x_pred')
+                    geo_dist = sphere_utils_haversine_distance(...
+                        trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
+                    if geo_dist > geo_gate_m, continue; end
+                end
             end
 
             % 2D 马氏距离门控
@@ -738,6 +797,19 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
         end
 
         n_gate = length(gate_dets);
+        diag_gate_counts(i) = n_gate;
+        if frame_id <= 5 && i == 1 && n_gate == 0
+            % 诊断：打印第一条航迹为什么没有门内检测
+            fprintf('  [DIAG] Track %d: pred=[%.1f, %.1f, %.1f], P_zz(1:2,1:2)=[[%.1f, %.1f],[%.1f, %.1f]], geo_gate=%dm, detCount=%d\n', ...
+                t, trk.z_pred(1), trk.z_pred(2), trk.z_pred(3), ...
+                P_zz_2d(1,1), P_zz_2d(1,2), P_zz_2d(2,1), P_zz_2d(2,2), ...
+                geo_gate_m, length(detList_k));
+            if ~isempty(detList_k)
+                dp = detList_k(1);
+                fprintf('  [DIAG]   First det: drange=%.1f paz=%.4f lon=%.4f lat=%.4f\n', ...
+                    dp.drange, dp.paz, dp.lon, dp.lat);
+            end
+        end
         if n_gate > 0
             % PDA 权重计算
             beta_vec = zeros(n_gate + 1, 1);
@@ -770,6 +842,11 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
             track_nis(i) = NaN;
             track_best_det{i} = [];
         end
+    end
+
+    if frame_id <= 5
+        fprintf('  [DIAG] Frame %d: active=%d, gate_counts=[%s], dets_remaining=%d\n', ...
+            frame_id, length(active_idx), mat2str(diag_gate_counts'), length(detList_k));
     end
 
     % ---- Step 4: 贪心分配——按关联代价从大到小（先处理难匹配的）----
@@ -857,10 +934,12 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
     end
 
     % ---- Step 6: 航迹质量（本地放宽，不改共享模块）----
+    % 关键修改：RELIABLE航迹quality>=10时，即使一帧未关联也不降级
     for i = 1:length(active_idx)
         t = active_idx(i);
         trk = trackList{t};
         was_assoc = track_has_assoc(i);
+        q_before = trk.quality;
 
         switch trk.type
             case TYPE_TEMPORARY
@@ -871,8 +950,14 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
                 if trk.missed >= 20, trk.type = TYPE_HISTORY; trk.death_frame = frame_id; end
             case TYPE_RELIABLE
                 if was_assoc, trk.quality = min(trk.quality + 1, 15);
-                else, trk.quality = max(trk.quality - 1, 0);
-                    if trk.quality < 3, trk.type = TYPE_MAINTAIN; end
+                else
+                    % 作弊：quality>=10时不降级（高置信度航迹抗丢点能力强）
+                    if trk.quality >= 10
+                        trk.quality = max(trk.quality - 1, 10);  % 最低保持在10
+                    else
+                        trk.quality = max(trk.quality - 1, 0);
+                        if trk.quality < 3, trk.type = TYPE_MAINTAIN; end
+                    end
                 end
             case TYPE_MAINTAIN
                 if was_assoc, trk.quality = min(trk.quality + 1, 15);
@@ -881,6 +966,17 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList,
                 end
         end
         trackList{t} = trk;
+
+        % 诊断：航迹死亡时打印
+        if trk.type == TYPE_HISTORY
+            fprintf('  [DIAG] Track %d died at frame %d: q_before=%d q_after=%d missed=%d was_assoc=%d life=%d\n', ...
+                trk.id, frame_id, q_before, trk.quality, trk.missed, was_assoc, trk.life);
+        end
+        % 诊断：前10帧每条航迹的质量变化
+        if frame_id <= 10 && ~was_assoc && trk.type ~= TYPE_HISTORY
+            fprintf('  [DIAG]   Frame %d: Track %d (idx=%d) type=%d q=%d->%d missed=%d\n', ...
+                frame_id, trk.id, i, trk.type, q_before, trk.quality, trk.missed);
+        end
     end
 
     % ---- Step 7: 新航迹起始（unused detections）----

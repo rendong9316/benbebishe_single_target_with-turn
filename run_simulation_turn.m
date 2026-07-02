@@ -35,6 +35,8 @@
 clear; close all; clc;
 addpath(genpath('.'));
 
+UKF_NAMES = {'jichu', 'zishiying', 'imm'};
+
 %% ==================== Phase 0: 场景初始化（渐进拐弯目标） ====================
 fprintf('========== Phase 0: 场景初始化 (渐进拐弯目标) ==========\n');
 
