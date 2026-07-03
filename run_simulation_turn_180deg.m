@@ -289,8 +289,8 @@ fprintf('R2 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), len
 %% ==================== Phase 5: 三体制航迹跟踪 ====================
 fprintf('\n========== Phase 5: 三体制航迹跟踪（jichu × zishiying × imm） ==========\n');
 
-UKF_NAMES = {'jichu', 'zishiying', 'imm'};
-N_UKF = 3;
+UKF_NAMES = {'jichu', 'zishiying', 'imm', '3in1-imm'};
+N_UKF = 4;
 
 % 预分配
 ukf_snaps_R1 = cell(N_UKF, 1);
@@ -310,7 +310,7 @@ for u = 1:N_UKF
     pr1.gate_sigma = params.radar1_gate_sigma;
     pr1.gate_vr_ms = params.radar1_gate_vr_ms;
     pr1.tracker_K_loss = params.radar1_tracker_K_loss;
-    if u == 3, pr1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
+    if u >= 3, pr1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
     % ---- 创建 UKF 模板 ----
     switch ukf_type
@@ -320,7 +320,7 @@ for u = 1:N_UKF
         case 'zishiying'
             tpl1 = ukf_zishiying('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-        case 'imm'
+        case {'imm', '3in1-imm'}
             tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
     end
@@ -344,7 +344,7 @@ for u = 1:N_UKF
     pr2.tracker_M = 4;
     pr2.tracker_N = 8;
     pr2.tracker_K_loss = params.radar2_tracker_K_loss;
-    if u == 3, pr2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
+    if u >= 3, pr2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
     % ---- 创建 UKF 模板 ----
     switch ukf_type
@@ -354,7 +354,7 @@ for u = 1:N_UKF
         case 'zishiying'
             tpl2 = ukf_zishiying('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-        case 'imm'
+        case {'imm', '3in1-imm'}
             tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
     end
@@ -405,7 +405,7 @@ for u = 1:N_UKF
     end
 
     % ---- IMM 模型概率诊断 ----
-    if u == 3 && isfield(finalTrks{u}, 'mu_history')
+    if u >= 3 && isfield(finalTrks{u}, 'mu_history')
         fprintf('  [%s] IMM 模型概率诊断:\n', ukf_type);
         for r = 1:2
             mu_hist = finalTrks{u}.mu_history;

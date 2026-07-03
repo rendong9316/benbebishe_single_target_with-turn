@@ -402,9 +402,10 @@ function [trackSnapshots, finalTrack] = imm_tracker(detList, ukf_cv_tpl, ukf_ct_
 
                 x_comb = mu(1) * ukf_cv.x + mu(2) * ukf_ct.x;
 
-                % ── 自适应 Q（与直线版一致: life>12）──
-                if params.use_fuzzy_adaptive && life > 12 && isfield(ukf_cv, 'nis_history')
-                    ukf_cv = apply_fuzzy_adapt(ukf_cv, params);
+                % ── 自适应 Q（3-in-1: CV+CT 双模型，模糊+机动自适应）──
+                if params.use_fuzzy_adaptive
+                    ukf_cv = adapt_q(ukf_cv, params, 'zishiying');
+                    ukf_ct = adapt_q(ukf_ct, params, 'zishiying');
                 end
 
                 % 航迹快照
@@ -469,77 +470,5 @@ function t = make_track_snap_imm(id, type, lat, lon, ukf_cv, ukf_ct, mu, life, q
     t.assoc_det = assoc_det;
     if isempty(assoc_det)
         t.assoc_det = struct('prange', [], 'paz', [], 'pvr', []);
-    end
-end
-
-% =========================================================================
-% apply_fuzzy_adapt — 模糊自适应 Q（与 single_track_runner 同步）
-% 基于 NIS 平均值的模糊推理调整过程噪声 Q
-% =========================================================================
-function ukf = apply_fuzzy_adapt(ukf, params)
-    if ~isfield(ukf, 'nis_history') || isempty(ukf.nis_history)
-        return;
-    end
-
-    nis_history = ukf.nis_history;
-
-    % 初始化
-    if ~isfield(ukf, 'Q_ema') || isempty(ukf.Q_ema)
-        ukf.Q_ema = 1.0;
-    end
-    if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
-        ukf.Q_base = ukf.Q;
-    end
-
-    % 模糊自适应 Q
-    nis_avg = mean(nis_history);
-    nis_ratio = nis_avg / 2.0;
-
-    mu_VS = trimf_val(nis_ratio, 0.0, 0.0, 0.4);
-    mu_S  = trimf_val(nis_ratio, 0.2, 0.5, 0.8);
-    mu_M  = trimf_val(nis_ratio, 0.6, 1.0, 1.5);
-    mu_L  = trimf_val(nis_ratio, 1.3, 2.0, 3.0);
-    mu_VL = trimf_val(nis_ratio, 2.5, 4.0, 4.0);
-
-    out_Decrease       = 0.6;
-    out_SlightDecrease = 0.8;
-    out_Maintain       = 1.0;
-    out_Increase       = 1.8;
-    out_RapidIncrease  = 3.0;
-
-    total_mu = mu_VS + mu_S + mu_M + mu_L + mu_VL;
-    if total_mu < 1e-10
-        factor_fuzzy = 1.0;
-    else
-        factor_fuzzy = (mu_VS * out_Decrease + mu_S * out_SlightDecrease + ...
-                       mu_M * out_Maintain + mu_L * out_Increase + ...
-                       mu_VL * out_RapidIncrease) / total_mu;
-    end
-
-    factor_raw = max(0.5, min(4.0, factor_fuzzy));
-
-    % EMA 平滑
-    ema_eta = 0.20;
-    if isfield(params, 'fuzzy_ema_eta'), ema_eta = params.fuzzy_ema_eta; end
-    ukf.Q_ema = ema_eta * factor_raw + (1 - ema_eta) * ukf.Q_ema;
-
-    if abs(ukf.Q_ema - 1.0) < 0.05
-        ukf.Q = ukf.Q_base;
-    else
-        ukf.Q = ukf.Q_base * ukf.Q_ema;
-    end
-end
-
-% =========================================================================
-% trimf_val — 三角形隶属函数求值
-% trimf(x, a, b, c): 三角形顶点在 (a,0)→(b,1)→(c,0)
-% =========================================================================
-function mu = trimf_val(x, a, b, c)
-    if x <= a || x >= c
-        mu = 0;
-    elseif x < b
-        mu = (x - a) / (b - a);
-    else
-        mu = (c - x) / (c - b);
     end
 end

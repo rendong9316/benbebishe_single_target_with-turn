@@ -35,7 +35,7 @@
 clear; close all; clc;
 addpath(genpath('.'));
 
-UKF_NAMES = {'jichu', 'zishiying', 'imm'};
+UKF_NAMES = {'jichu', 'zishiying', 'imm', '3in1-imm'};
 
 %% ==================== Phase 0: 场景初始化（渐进拐弯目标） ====================
 fprintf('========== Phase 0: 场景初始化 (渐进拐弯目标) ==========\n');
@@ -301,10 +301,10 @@ end
 fprintf('R2 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), length(errs));
 
 %% ==================== Phase 5: 三体制航迹跟踪 ====================
-fprintf('\n========== Phase 5: 三体制航迹跟踪（jichu × zishiying × imm） ==========\n');
+fprintf('\n========== Phase 5: 四体制航迹跟踪（jichu × zishiying × imm × 3in1-imm） ==========\n');
 
 UKF_TYPES = {'jichu', 'zishiying', 'imm'};
-N_UKF = 3;
+N_UKF = 4;
 
 % 预分配: ukf_snaps{u}{radar} = cell(n_frames,1), finalTrks{u} = struct
 ukf_snaps_R1 = cell(N_UKF, 1);
@@ -324,7 +324,7 @@ for u = 1:N_UKF
     pr1.gate_sigma = params.radar1_gate_sigma;
     pr1.gate_vr_ms = params.radar1_gate_vr_ms;
     pr1.tracker_K_loss = params.radar1_tracker_K_loss;
-    if u == 3, pr1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
+    if u >= 3, pr1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
     % ---- 创建 UKF 模板 ----
     switch ukf_type
@@ -337,6 +337,11 @@ for u = 1:N_UKF
         case 'imm'
             tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+            tpl1.imm_adapt_mode = 'orig';
+        case '3in1-imm'
+            tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
+                params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+            tpl1.imm_adapt_mode = '3in1';
     end
 
     % ---- R1 跟踪 ----
@@ -358,7 +363,7 @@ for u = 1:N_UKF
     pr2.tracker_M = 4;
     pr2.tracker_N = 8;
     pr2.tracker_K_loss = params.radar2_tracker_K_loss;
-    if u == 3, pr2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
+    if u >= 3, pr2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
     % ---- 创建 UKF 模板 ----
     switch ukf_type
@@ -371,6 +376,11 @@ for u = 1:N_UKF
         case 'imm'
             tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+            tpl2.imm_adapt_mode = 'orig';
+        case '3in1-imm'
+            tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
+                params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+            tpl2.imm_adapt_mode = '3in1';
     end
 
     % ---- R2 跟踪 ----
@@ -419,14 +429,24 @@ for u = 1:N_UKF
     end
 
     % ---- IMM 模型概率诊断 ----
-    if u == 3 && isfield(finalTrks{u}, 'mu_history')
+    if u >= 3 && isfield(finalTrks{u}, 'mu_history')
         fprintf('  [%s] IMM 模型概率诊断:\n', ukf_type);
         for r = 1:2
             mu_hist = finalTrks{u}.mu_history;
             n_ct_dominant = sum(mu_hist(:,2) > 0.5);
             avg_mu_ct = mean(mu_hist(:,2)) * 100;
-            fprintf('    R%d: CT平均概率=%.0f%%, CT占优帧=%d/%d\n', ...
-                r, avg_mu_ct, n_ct_dominant, n_frames);
+            n_ct_high = sum(mu_hist(:,2) > 0.8);
+            n_ct_low = sum(mu_hist(:,2) < 0.2);
+            fprintf('    R%d: CT平均概率=%.0f%%, CT>80%%=%d, CT<20%%=%d, CT>50%%=%d/%d\n', ...
+                r, avg_mu_ct, n_ct_high, n_ct_low, n_ct_dominant, n_frames);
+            % 分布直方图
+            bin_edges = [0:0.1:1.0];
+            fprintf('      分布: ');
+            for b = 1:(length(bin_edges)-1)
+                cnt = sum(mu_hist(:,2) >= bin_edges(b) & mu_hist(:,2) < bin_edges(b+1));
+                fprintf('[%.1f-%.1f]=%3d ', bin_edges(b), bin_edges(b+1), cnt);
+            end
+            fprintf('\n');
         end
     end
 end
@@ -434,7 +454,7 @@ end
 fprintf('\n');
 
 %% ---- 三体制 UKF 滤波 RMSE ----
-fprintf('\n--- 三体制 UKF 滤波 RMSE ---\n');
+fprintf('\n--- 四体制 UKF 滤波 RMSE ---\n');
 for u = 1:N_UKF
     errs = [];
     for k = 1:n_frames

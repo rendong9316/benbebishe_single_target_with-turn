@@ -28,6 +28,9 @@ function varargout = ukf_dispatch(action, ukf, varargin)
             || isfield(ukf, 'maneuver_active') || isfield(ukf, 'suspect_counter')
         % 自适应类型: filter_type 标记 或 有机动检测字段（init 之后）
         fh = @ukf_zishiying;
+    elseif isfield(ukf, 'filter_type') && strcmp(ukf.filter_type, 'imm_3in1')
+        % 三合一 IMM 类型: 复用 ukf_imm
+        fh = @ukf_imm;
     else
         % 基础类型
         fh = @ukf_jichu;

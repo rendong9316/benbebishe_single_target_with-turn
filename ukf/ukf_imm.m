@@ -181,6 +181,19 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
     imm.ukf_cv.x = x_mix{1};  imm.ukf_cv.P = P_mix{1};
     imm.ukf_ct.x = x_mix{2};  imm.ukf_ct.P = P_mix{2};
 
+    % ---- Step 1.5: 自适应 Q 在预测前施加，使 Q 变化影响当前帧的似然度 ----
+    if isfield(imm.params, 'use_fuzzy_adaptive') && imm.params.use_fuzzy_adaptive
+        adapt_mode = '3in1';
+        if isfield(imm.params, 'imm_adapt_mode'), adapt_mode = imm.params.imm_adapt_mode; end
+
+        if strcmp(adapt_mode, '3in1')
+            imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'zishiying');
+            imm.ukf_ct = adapt_q(imm.ukf_ct, imm.params, 'zishiying');
+        else
+            imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'fuzzy_only');
+        end
+    end
+
     % ---- Step 2: 各模型独立预测 ----
     [x_pred_cv, P_pred_cv, X_pred_cv, z_pred_cv, Z_pred_cv, P_zz_cv, imm.ukf_cv] = ...
         ukf_jichu('prepare', imm.ukf_cv);
@@ -265,6 +278,21 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
         L_cv = imm.Pd_Pg * exp(log_norm - 0.5 * nis_cv_val);
         log_norm = -0.5 * (nz * log(2*pi) + log(max(det(cache.P_zz_ct), 1e-30)));
         L_ct = imm.Pd_Pg * exp(log_norm - 0.5 * nis_ct_val);
+
+        % ---- 3-in-1: 机动自适应 Q 对似然度的增强 ----
+        adapt_mode = '3in1';
+        if isfield(imm.params, 'imm_adapt_mode'), adapt_mode = imm.params.imm_adapt_mode; end
+        % 如果 CT 模型的 Q_ema > 1.1（检测到机动），说明 CT 正在自适应补偿
+        % 此时给予 CT 似然度一个 bonus，鼓励 IMM 切换到 CT 模型
+        if strcmp(adapt_mode, '3in1') && isfield(imm.ukf_ct, 'Q_ema') && imm.ukf_ct.Q_ema > 1.1
+            L_ct_bonus = 1.0 + (imm.ukf_ct.Q_ema - 1.1) * 0.5;
+            L_ct = L_ct * L_ct_bonus;
+        end
+        % 如果 CV 模型的 Q_ema < 0.9（平稳），说明 CV 更可靠
+        if strcmp(adapt_mode, '3in1') && isfield(imm.ukf_cv, 'Q_ema') && imm.ukf_cv.Q_ema < 0.9
+            L_cv_bonus = 1.0 + (1.0 - imm.ukf_cv.Q_ema) * 0.3;
+            L_cv = L_cv * L_cv_bonus;
+        end
     end
 
     % ---- 贝叶斯模型概率更新 ----
@@ -286,12 +314,6 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
     imm.x = x_comb;
     imm.P = imm.mu(1) * imm.ukf_cv.P + imm.mu(2) * imm.ukf_ct.P;
     imm.mu_history(end+1, :) = imm.mu';
-
-    % ---- 自适应 Q（仅 CV，life>12，与旧 imm_tracker 完全一致） ----
-    if imm.params.use_fuzzy_adaptive && isfield(imm, 'life_count') ...
-            && imm.life_count > 12 && isfield(imm.ukf_cv, 'nis_history')
-        imm.ukf_cv = apply_fuzzy_adapt_imm(imm.ukf_cv, imm.params);
-    end
 end
 
 
