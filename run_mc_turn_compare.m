@@ -20,7 +20,7 @@ clear; close all; clc;
 addpath(genpath('.'));
 
 %% ---- 配置 ----
-N_MC = 500;
+N_MC = 200;
 SEED_BASE = 1;
 
 % UKF 类型
