@@ -303,7 +303,7 @@ fprintf('R2 校准后点迹          RMSE: %6.1f km (n=%d)\n', rms_km(errs), len
 %% ==================== Phase 5: 三体制航迹跟踪 ====================
 fprintf('\n========== Phase 5: 四体制航迹跟踪（jichu × zishiying × imm × 3in1-imm） ==========\n');
 
-UKF_TYPES = {'jichu', 'zishiying', 'imm'};
+UKF_TYPES = UKF_NAMES;
 N_UKF = 4;
 
 % 预分配: ukf_snaps{u}{radar} = cell(n_frames,1), finalTrks{u} = struct
@@ -335,13 +335,13 @@ for u = 1:N_UKF
             tpl1 = ukf_zishiying('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
         case 'imm'
+            pr1.imm_adapt_mode = 'fuzzy_only';
             tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-            tpl1.imm_adapt_mode = 'orig';
         case '3in1-imm'
+            pr1.imm_adapt_mode = '3in1';
             tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-            tpl1.imm_adapt_mode = '3in1';
     end
 
     % ---- R1 跟踪 ----
@@ -374,13 +374,13 @@ for u = 1:N_UKF
             tpl2 = ukf_zishiying('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
         case 'imm'
+            pr2.imm_adapt_mode = 'fuzzy_only';
             tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-            tpl2.imm_adapt_mode = 'orig';
         case '3in1-imm'
+            pr2.imm_adapt_mode = '3in1';
             tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-            tpl2.imm_adapt_mode = '3in1';
     end
 
     % ---- R2 跟踪 ----

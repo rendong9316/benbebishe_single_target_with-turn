@@ -317,6 +317,8 @@ params.radar2_gate_vr_ms = 40;   % R2 标准站: 留足裕度
 params.use_fuzzy_adaptive = true;        % 是否启用模糊自适应 Q
 params.fuzzy_window_size = 3;            % NIS 滑动窗口（帧）
 params.fuzzy_ema_eta = 0.10;             % EMA 平滑系数（0.10=慢而稳）
+params.adaptive_Q_min = 0.5;             % 自适应 Q 缩放下限
+params.adaptive_Q_max = 4.0;             % 自适应 Q 缩放上限
 
 % =====================================================================
 % 7.6 机动自适应 Q（两雷达共用，ukf_zishiying 使用）

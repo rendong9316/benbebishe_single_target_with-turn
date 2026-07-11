@@ -18,6 +18,17 @@ function ukf = adapt_q(ukf, params, mode)
         mode = 'zishiying';
     end
 
+    % ---- 初始化字段 ----
+    if ~isfield(ukf, 'maneuver_active'), ukf.maneuver_active = false; end
+    if ~isfield(ukf, 'maneuver_counter'), ukf.maneuver_counter = 0; end
+    if ~isfield(ukf, 'maneuver_recovery'), ukf.maneuver_recovery = 0; end
+    if ~isfield(ukf, 'Q_ema') || isempty(ukf.Q_ema)
+        ukf.Q_ema = 1.0;
+    end
+    if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
+        ukf.Q_base = ukf.Q;
+    end
+
     % ---- 基础检查 ----
     if ~isfield(ukf, 'nis_history') || isempty(ukf.nis_history) || length(ukf.nis_history) < 3
         return;
@@ -29,17 +40,6 @@ function ukf = adapt_q(ukf, params, mode)
     end
     if ~isfield(ukf, 'life_count') || ukf.life_count < mature_frames
         return;
-    end
-
-    % ---- 初始化字段 ----
-    if ~isfield(ukf, 'maneuver_active'), ukf.maneuver_active = false; end
-    if ~isfield(ukf, 'maneuver_counter'), ukf.maneuver_counter = 0; end
-    if ~isfield(ukf, 'maneuver_recovery'), ukf.maneuver_recovery = 0; end
-    if ~isfield(ukf, 'Q_ema') || isempty(ukf.Q_ema)
-        ukf.Q_ema = 1.0;
-    end
-    if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
-        ukf.Q_base = ukf.Q;
     end
 
     nis_history = ukf.nis_history;
@@ -72,6 +72,9 @@ function ukf = adapt_q(ukf, params, mode)
     % ---- 机动自适应 Q（仅 mode='zishiying' 时启用） ----
     if strcmp(mode, 'fuzzy_only')
         factor_raw = factor_fuzzy;
+        ema_eta = 0.20;
+        if isfield(params, 'fuzzy_ema_eta'), ema_eta = params.fuzzy_ema_eta; end
+        ukf = apply_q_factor_adaptq(ukf, factor_raw, ema_eta);
         return;
     end
 
@@ -145,11 +148,26 @@ function ukf = adapt_q(ukf, params, mode)
         factor_raw = factor_fuzzy;
     end
 
-    factor_raw = max(0.5, min(4.0, factor_raw));
-
     % EMA 平滑
     ema_eta = 0.20;
     if isfield(params, 'maneuver_ema_eta'), ema_eta = params.maneuver_ema_eta; end
+    ukf = apply_q_factor_adaptq(ukf, factor_raw, ema_eta);
+end
+
+
+% =========================================================================
+% apply_q_factor_adaptq — 将原始 Q 因子平滑落到滤波器状态
+% =========================================================================
+function ukf = apply_q_factor_adaptq(ukf, factor_raw, ema_eta)
+    factor_min = 0.5;
+    factor_max = 4.0;
+
+    if isfield(ukf, 'params')
+        if isfield(ukf.params, 'adaptive_Q_min'), factor_min = ukf.params.adaptive_Q_min; end
+        if isfield(ukf.params, 'adaptive_Q_max'), factor_max = ukf.params.adaptive_Q_max; end
+    end
+
+    factor_raw = max(factor_min, min(factor_max, factor_raw));
     ukf.Q_ema = ema_eta * factor_raw + (1 - ema_eta) * ukf.Q_ema;
 
     if abs(ukf.Q_ema - 1.0) < 0.05

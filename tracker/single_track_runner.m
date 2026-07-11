@@ -184,6 +184,7 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
                 end
 
                 % ---- 2. 滤波器预测（多态，tracker 不关心后端） ----
+                ukf.life_count = life + 1;
                 [x_pred, ~, ~, z_pred, ~, P_zz, ukf] = ukf_dispatch('prepare', ukf);
 
                 % ---- 3. NN 关联（只用非杂波点迹，Vr 门统一禁用） ----

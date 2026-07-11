@@ -111,7 +111,14 @@ function imm = create_imm(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
     % ---- 第8部分：模型数量 ----
     imm.M = 2;
 
-    % ---- 第9部分：初始化标志 ----
+    % ---- 第9部分：滤波器能力标记 ----
+    imm.filter_type = 'imm';
+    imm.imm_adapt_mode = get_imm_adapt_mode(imm);
+    imm.capability = struct('adaptive_q', strcmp(imm.imm_adapt_mode, '3in1'), ...
+                            'imm', true, ...
+                            'models', {{'CV', 'CT'}});
+
+    % ---- 第10部分：初始化标志 ----
     imm.initialized = false;
     imm.cache = [];
 end
@@ -136,6 +143,8 @@ function imm = init_imm(imm, meas1, meas2)
     imm.ukf_ct.nis_history = [];  % 重起始时清空
 
     imm.mu = [0.5; 0.5];
+    imm.imm_adapt_mode = get_imm_adapt_mode(imm);
+    imm.capability.adaptive_q = strcmp(imm.imm_adapt_mode, '3in1');
     imm.initialized = true;
     imm.nis_history = [];     % 镜像 CV 的 NIS，供诊断代码读取
     imm.mu_history = zeros(0, 2);  % 模型概率历史 [n_frames × 2]
@@ -178,19 +187,23 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
             P_mix{j} = P_mix{j} + mu_mix(i, j) * (ukf_models{i}.P + dx * dx');
         end
     end
-    imm.ukf_cv.x = x_mix{1};  imm.ukf_cv.P = P_mix{1};
-    imm.ukf_ct.x = x_mix{2};  imm.ukf_ct.P = P_mix{2};
+    imm.ukf_cv.x = x_mix{1};  imm.ukf_cv.P = regularize_cov_imm(P_mix{1});
+    imm.ukf_ct.x = x_mix{2};  imm.ukf_ct.P = regularize_cov_imm(P_mix{2});
 
     % ---- Step 1.5: 自适应 Q 在预测前施加，使 Q 变化影响当前帧的似然度 ----
+    if isfield(imm, 'life_count')
+        imm.ukf_cv.life_count = imm.life_count;
+        imm.ukf_ct.life_count = imm.life_count;
+    end
     if isfield(imm.params, 'use_fuzzy_adaptive') && imm.params.use_fuzzy_adaptive
-        adapt_mode = '3in1';
-        if isfield(imm.params, 'imm_adapt_mode'), adapt_mode = imm.params.imm_adapt_mode; end
+        adapt_mode = get_imm_adapt_mode(imm);
 
         if strcmp(adapt_mode, '3in1')
             imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'zishiying');
             imm.ukf_ct = adapt_q(imm.ukf_ct, imm.params, 'zishiying');
-        else
+        elseif strcmp(adapt_mode, 'fuzzy_only')
             imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'fuzzy_only');
+            imm.ukf_ct = adapt_q(imm.ukf_ct, imm.params, 'fuzzy_only');
         end
     end
 
@@ -202,18 +215,19 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
 
     % ---- Step 3: 计算组合预测（内部使用） ----
     x_pred_comb = mu(1) * x_pred_cv + mu(2) * x_pred_ct;
+    P_pred_comb = combine_cov_imm({x_pred_cv, x_pred_ct}, {P_pred_cv, P_pred_ct}, mu, x_pred_comb);
     z_pred_comb = mu(1) * z_pred_cv + mu(2) * z_pred_ct;
-    P_zz_comb = 0.5 * P_zz_cv + 0.5 * P_zz_ct;
+    P_zz_comb = combine_meas_cov_imm({z_pred_cv, z_pred_ct}, {P_zz_cv, P_zz_ct}, mu, z_pred_comb);
 
-    % ---- Step 4: 返回 CV 模型预测给 tracker（门中心更可靠，不依赖 mu 收敛） ----
-    x_pred = x_pred_cv;
-    z_pred = z_pred_cv;
-    P_zz = P_zz_cv;
+    % ---- Step 4: 返回组合预测给 tracker，关联中心与 IMM 后验一致 ----
+    x_pred = x_pred_comb;
+    z_pred = z_pred_comb;
+    P_zz = P_zz_comb;
 
     % ---- Step 5: 占位输出（接口兼容，tracker 不使用） ----
-    P_pred = P_pred_cv;  % 仅占位
-    X_pred = X_pred_cv;  % 仅占位
-    Z_pred = Z_pred_cv;  % 仅占位
+    P_pred = P_pred_comb;
+    X_pred = X_pred_cv;
+    Z_pred = Z_pred_cv;
 
     % ---- Step 6: 缓存所有中间结果 ----
     imm.cache = struct(...
@@ -234,7 +248,6 @@ end
 % =========================================================================
 function [lon, lat, imm] = update_imm(imm, innov_w)
     cache = imm.cache;
-    M = imm.M;
     nz = imm.ukf_cv.m;
 
     % ---- 纯预测帧 ----
@@ -245,8 +258,8 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
         L_cv = imm.L_no_det;
         L_ct = imm.L_no_det;
     else
-        % ---- 重建加权量测（innov_w 相对于 tracker 使用的 z_pred，即 CV 预测） ----
-        z_weighted = innov_w + cache.z_pred_cv;
+        % ---- 重建加权量测（innov_w 相对于 tracker 使用的组合 z_pred） ----
+        z_weighted = innov_w + cache.z_pred_comb;
 
         % ---- 各模型新息 ----
         innov_cv = z_weighted - cache.z_pred_cv;
@@ -280,15 +293,11 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
         L_ct = imm.Pd_Pg * exp(log_norm - 0.5 * nis_ct_val);
 
         % ---- 3-in-1: 机动自适应 Q 对似然度的增强 ----
-        adapt_mode = '3in1';
-        if isfield(imm.params, 'imm_adapt_mode'), adapt_mode = imm.params.imm_adapt_mode; end
-        % 如果 CT 模型的 Q_ema > 1.1（检测到机动），说明 CT 正在自适应补偿
-        % 此时给予 CT 似然度一个 bonus，鼓励 IMM 切换到 CT 模型
+        adapt_mode = get_imm_adapt_mode(imm);
         if strcmp(adapt_mode, '3in1') && isfield(imm.ukf_ct, 'Q_ema') && imm.ukf_ct.Q_ema > 1.1
             L_ct_bonus = 1.0 + (imm.ukf_ct.Q_ema - 1.1) * 0.5;
             L_ct = L_ct * L_ct_bonus;
         end
-        % 如果 CV 模型的 Q_ema < 0.9（平稳），说明 CV 更可靠
         if strcmp(adapt_mode, '3in1') && isfield(imm.ukf_cv, 'Q_ema') && imm.ukf_cv.Q_ema < 0.9
             L_cv_bonus = 1.0 + (1.0 - imm.ukf_cv.Q_ema) * 0.3;
             L_cv = L_cv * L_cv_bonus;
@@ -312,8 +321,58 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
 
     % ---- 更新顶层状态（供时间对齐/融合/诊断使用） ----
     imm.x = x_comb;
-    imm.P = imm.mu(1) * imm.ukf_cv.P + imm.mu(2) * imm.ukf_ct.P;
+    imm.P = combine_cov_imm({imm.ukf_cv.x, imm.ukf_ct.x}, {imm.ukf_cv.P, imm.ukf_ct.P}, imm.mu, x_comb);
+    imm.Q = imm.mu(1) * imm.ukf_cv.Q + imm.mu(2) * imm.ukf_ct.Q;
+    imm.Q_ema = imm.mu(1) * imm.ukf_cv.Q_ema + imm.mu(2) * imm.ukf_ct.Q_ema;
     imm.mu_history(end+1, :) = imm.mu';
+end
+
+
+function P_comb = combine_cov_imm(x_models, P_models, mu, x_comb)
+    P_comb = zeros(size(P_models{1}));
+    for i = 1:length(mu)
+        dx = x_models{i} - x_comb;
+        P_comb = P_comb + mu(i) * (P_models{i} + dx * dx');
+    end
+    P_comb = regularize_cov_imm(P_comb);
+end
+
+
+function P_reg = regularize_cov_imm(P)
+    P_reg = (P + P') / 2;
+    if any(isnan(P_reg(:))) || any(isinf(P_reg(:)))
+        P_reg = eye(size(P_reg)) * 1e-6;
+        return;
+    end
+    min_eig = 1e-12;
+    [V, D] = eig(P_reg);
+    d = diag(D);
+    d(d < min_eig) = min_eig;
+    P_reg = V * diag(d) * V';
+    P_reg = (P_reg + P_reg') / 2;
+end
+
+
+function P_zz_comb = combine_meas_cov_imm(z_models, P_zz_models, mu, z_comb)
+    P_zz_comb = zeros(size(P_zz_models{1}));
+    for i = 1:length(mu)
+        dz = z_models{i} - z_comb;
+        if length(dz) >= 2 && abs(dz(2)) > 180
+            dz(2) = dz(2) - 360 * round(dz(2) / 360);
+        end
+        P_zz_comb = P_zz_comb + mu(i) * (P_zz_models{i} + dz * dz');
+    end
+    P_zz_comb = (P_zz_comb + P_zz_comb') / 2;
+end
+
+
+function adapt_mode = get_imm_adapt_mode(imm)
+    adapt_mode = '3in1';
+    if isfield(imm, 'imm_adapt_mode')
+        adapt_mode = imm.imm_adapt_mode;
+    elseif isfield(imm, 'params') && isfield(imm.params, 'imm_adapt_mode')
+        adapt_mode = imm.params.imm_adapt_mode;
+    end
 end
 
 
@@ -328,74 +387,5 @@ function ukf = keep_prediction(ukf, cache, model)
         case 'ct'
             ukf.x = cache.x_pred_ct;
             ukf.P = cache.P_pred_ct;
-    end
-end
-
-
-% =========================================================================
-% apply_fuzzy_adapt_imm — 模糊自适应 Q（IMM 内部，与 single_track_runner 同步）
-% =========================================================================
-function ukf = apply_fuzzy_adapt_imm(ukf, params)
-    if ~isfield(ukf, 'nis_history') || isempty(ukf.nis_history)
-        return;
-    end
-
-    nis_history = ukf.nis_history;
-
-    if ~isfield(ukf, 'Q_ema') || isempty(ukf.Q_ema)
-        ukf.Q_ema = 1.0;
-    end
-    if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
-        ukf.Q_base = ukf.Q;
-    end
-
-    nis_avg = mean(nis_history);
-    nis_ratio = nis_avg / 2.0;
-
-    mu_VS = trimf_val_imm(nis_ratio, 0.0, 0.0, 0.4);
-    mu_S  = trimf_val_imm(nis_ratio, 0.2, 0.5, 0.8);
-    mu_M  = trimf_val_imm(nis_ratio, 0.6, 1.0, 1.5);
-    mu_L  = trimf_val_imm(nis_ratio, 1.3, 2.0, 3.0);
-    mu_VL = trimf_val_imm(nis_ratio, 2.5, 4.0, 4.0);
-
-    out_Decrease       = 0.6;
-    out_SlightDecrease = 0.8;
-    out_Maintain       = 1.0;
-    out_Increase       = 1.8;
-    out_RapidIncrease  = 3.0;
-
-    total_mu = mu_VS + mu_S + mu_M + mu_L + mu_VL;
-    if total_mu < 1e-10
-        factor_fuzzy = 1.0;
-    else
-        factor_fuzzy = (mu_VS * out_Decrease + mu_S * out_SlightDecrease + ...
-                       mu_M * out_Maintain + mu_L * out_Increase + ...
-                       mu_VL * out_RapidIncrease) / total_mu;
-    end
-
-    factor_raw = max(0.5, min(4.0, factor_fuzzy));
-
-    ema_eta = 0.20;
-    if isfield(params, 'fuzzy_ema_eta'), ema_eta = params.fuzzy_ema_eta; end
-    ukf.Q_ema = ema_eta * factor_raw + (1 - ema_eta) * ukf.Q_ema;
-
-    if abs(ukf.Q_ema - 1.0) < 0.05
-        ukf.Q = ukf.Q_base;
-    else
-        ukf.Q = ukf.Q_base * ukf.Q_ema;
-    end
-end
-
-
-% =========================================================================
-% trimf_val_imm — 三角形隶属函数求值
-% =========================================================================
-function mu = trimf_val_imm(x, a, b, c)
-    if x <= a || x >= c
-        mu = 0;
-    elseif x < b
-        mu = (x - a) / (b - a);
-    else
-        mu = (c - x) / (c - b);
     end
 end

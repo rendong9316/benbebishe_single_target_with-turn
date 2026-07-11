@@ -320,7 +320,12 @@ for u = 1:N_UKF
         case 'zishiying'
             tpl1 = ukf_zishiying('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-        case {'imm', '3in1-imm'}
+        case 'imm'
+            pr1.imm_adapt_mode = 'fuzzy_only';
+            tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
+                params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+        case '3in1-imm'
+            pr1.imm_adapt_mode = '3in1';
             tpl1 = ukf_imm('create', pr1, params.radar1_lon, ...
                 params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
     end
@@ -354,7 +359,12 @@ for u = 1:N_UKF
         case 'zishiying'
             tpl2 = ukf_zishiying('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-        case {'imm', '3in1-imm'}
+        case 'imm'
+            pr2.imm_adapt_mode = 'fuzzy_only';
+            tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
+                params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+        case '3in1-imm'
+            pr2.imm_adapt_mode = '3in1';
             tpl2 = ukf_imm('create', pr2, params.radar2_lon, ...
                 params.radar2_lat, params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
     end
