@@ -83,6 +83,12 @@ function imm = create_imm(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
     if isfield(params, 'imm_Pi_CV_to_CT') && isfield(params, 'imm_Pi_CT_to_CV')
         p_cv_ct = params.imm_Pi_CV_to_CT;
         p_ct_cv = params.imm_Pi_CT_to_CV;
+        adapt_mode_local = '3in1';
+        if isfield(params, 'imm_adapt_mode'), adapt_mode_local = params.imm_adapt_mode; end
+        if strcmp(adapt_mode_local, '3in1')
+            if isfield(params, 'imm_slow_Pi_CV_to_CT'), p_cv_ct = params.imm_slow_Pi_CV_to_CT; end
+            if isfield(params, 'imm_slow_Pi_CT_to_CV'), p_ct_cv = params.imm_slow_Pi_CT_to_CV; end
+        end
         imm.Pi = [1-p_cv_ct, p_cv_ct;
                   p_ct_cv, 1-p_ct_cv];
     else
@@ -133,12 +139,16 @@ function imm = init_imm(imm, meas1, meas2)
     imm.ukf_cv.initialized = true;
     imm.ukf_cv.Q_base = imm.ukf_cv.Q;
     imm.ukf_cv.Q_ema = 1.0;
+    imm.ukf_cv.transient_nis_ewma = 0.0;
     imm.ukf_cv.nis_history = [];  % 重起始时清空
 
     imm.ukf_ct = ukf_jichu('init', imm.ukf_ct, meas1, meas2);
     imm.ukf_ct.dt = imm.dt;
     imm.ukf_ct.initialized = true;
     imm.ukf_ct.Q_base = imm.ukf_ct.Q;
+    if strcmp(get_imm_adapt_mode(imm), '3in1')
+        imm.ukf_ct.Q = imm.ukf_ct.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+    end
     imm.ukf_ct.Q_ema = 1.0;
     imm.ukf_ct.nis_history = [];  % 重起始时清空
 
@@ -199,8 +209,9 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
         adapt_mode = get_imm_adapt_mode(imm);
 
         if strcmp(adapt_mode, '3in1')
-            imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'zishiying');
-            imm.ukf_ct = adapt_q(imm.ukf_ct, imm.params, 'zishiying');
+            imm.ukf_cv = apply_transient_q_imm(imm.ukf_cv, imm.params);
+            imm.ukf_ct.Q = imm.ukf_ct.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ct.Q_ema = 1.0;
         elseif strcmp(adapt_mode, 'fuzzy_only')
             imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'fuzzy_only');
             imm.ukf_ct = adapt_q(imm.ukf_ct, imm.params, 'fuzzy_only');
@@ -292,16 +303,7 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
         log_norm = -0.5 * (nz * log(2*pi) + log(max(det(cache.P_zz_ct), 1e-30)));
         L_ct = imm.Pd_Pg * exp(log_norm - 0.5 * nis_ct_val);
 
-        % ---- 3-in-1: 机动自适应 Q 对似然度的增强 ----
-        adapt_mode = get_imm_adapt_mode(imm);
-        if strcmp(adapt_mode, '3in1') && isfield(imm.ukf_ct, 'Q_ema') && imm.ukf_ct.Q_ema > 1.1
-            L_ct_bonus = 1.0 + (imm.ukf_ct.Q_ema - 1.1) * 0.5;
-            L_ct = L_ct * L_ct_bonus;
-        end
-        if strcmp(adapt_mode, '3in1') && isfield(imm.ukf_cv, 'Q_ema') && imm.ukf_cv.Q_ema < 0.9
-            L_cv_bonus = 1.0 + (1.0 - imm.ukf_cv.Q_ema) * 0.3;
-            L_cv = L_cv * L_cv_bonus;
-        end
+        % 3in1 模式保持 IMM 原生似然更新，不用自适应 Q 反向改写模型概率。
     end
 
     % ---- 贝叶斯模型概率更新 ----
@@ -372,6 +374,49 @@ function adapt_mode = get_imm_adapt_mode(imm)
         adapt_mode = imm.imm_adapt_mode;
     elseif isfield(imm, 'params') && isfield(imm.params, 'imm_adapt_mode')
         adapt_mode = imm.params.imm_adapt_mode;
+    end
+end
+
+
+function ukf = apply_transient_q_imm(ukf, params)
+    if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
+        ukf.Q_base = ukf.Q;
+    end
+    ukf.Q = ukf.Q_base;
+    ukf.Q_ema = 1.0;
+
+    if ~isfield(ukf, 'nis_history') || isempty(ukf.nis_history)
+        return;
+    end
+
+    nis_now = ukf.nis_history(end);
+    nis_start = get_param_imm(params, 'imm_transient_nis_start', 3.0);
+    nis_full = get_param_imm(params, 'imm_transient_nis_full', 12.0);
+    gain_max = get_param_imm(params, 'imm_transient_gain_max', 5.0);
+    ewma_alpha = get_param_imm(params, 'imm_transient_ewma_alpha', 0.65);
+
+    if ~isfield(ukf, 'transient_nis_ewma') || isempty(ukf.transient_nis_ewma)
+        ukf.transient_nis_ewma = 0.0;
+    end
+
+    nis_excess = max(0.0, nis_now - nis_start);
+    ukf.transient_nis_ewma = ewma_alpha * nis_excess + (1.0 - ewma_alpha) * ukf.transient_nis_ewma;
+    if ukf.transient_nis_ewma <= 0
+        return;
+    end
+
+    nis_span = max(nis_full - nis_start, 1e-6);
+    gain_ratio = min(1.0, ukf.transient_nis_ewma / nis_span);
+    q_gain = 1.0 + (gain_max - 1.0) * gain_ratio;
+    ukf.Q = ukf.Q_base * q_gain;
+    ukf.Q_ema = q_gain;
+end
+
+
+function value = get_param_imm(params, field_name, default_value)
+    value = default_value;
+    if isfield(params, field_name)
+        value = params.(field_name);
     end
 end
 

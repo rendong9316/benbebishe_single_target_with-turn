@@ -328,9 +328,16 @@ params.maneuver_ema_eta = 0.50;          % 机动自适应 EMA 平滑系数（0.
 % =====================================================================
 % 7.61 IMM 自适应模式（ukf_imm / imm_tracker 使用）
 % =====================================================================
-% '3in1'  = 模糊自适应 + 机动自适应 + IMM 似然增强（推荐）
-% 'fuzzy_only' = 仅模糊自适应 Q，无机动 boost
-params.imm_adapt_mode = '3in1';           % IMM 自适应模式
+% '3in1' = 时标分离: CV 短时衰减瞬态增益 + CT 固定高机动模型 + IMM 慢概率融合
+% 'fuzzy_only' = 仅模糊自适应 Q，无瞬态增益
+params.imm_adapt_mode = '3in1';             % IMM 自适应模式
+params.imm_transient_nis_start = 3.0;        % CV 瞬态增益触发 NIS
+params.imm_transient_nis_full = 12.0;        % CV 瞬态增益满量程 NIS
+params.imm_transient_gain_max = 5.0;         % CV 最大增益倍率
+params.imm_transient_ewma_alpha = 0.65;      % 短时 NIS 超限 EWMA，半衰期约1帧
+params.imm_ct_fixed_Q_scale = 1.8;           % CT 固定高机动 Q 倍率
+params.imm_slow_Pi_CV_to_CT = 0.03;          % 3in1 慢变 IMM: CV→CT
+params.imm_slow_Pi_CT_to_CV = 0.03;          % 3in1 慢变 IMM: CT→CV
 
 % =====================================================================
 % 7.7 航迹管理（雷达专属）

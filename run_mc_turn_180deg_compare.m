@@ -1,36 +1,33 @@
 % =========================================================================
-% run_mc_turn_180deg_compare.m ¡ª »ØÍ·Íä180¶È³¡¾°ÈıÌåÖÆ UKF ¶Ô±ÈÃÉÌØ¿¨Âå·ÂÕæ
+% run_mc_turn_180deg_compare.m â€” å›å¤´å¼¯180åº¦åœºæ™¯å››ä½“åˆ¶ UKF å¯¹æ¯”è’™ç‰¹å¡æ´›ä»¿çœŸ
 % =========================================================================
-% ¡¾¶¨Î»¡¿
-%   180¶È»ØÍ·Íä³¡¾°ÏÂ£¬Í¬Ò»µã¼£Êı¾İ£¬²¢ĞĞÔËĞĞÈıÖÖ UKF ºó¶Ë£¨jichu / zishiying / imm£©£¬
-%   Ã¿ÖÖºó¶Ë¾ù¾­ R1/R2 µ¥Õ¾¸ú×Ù + ËÄÖÖÈÚºÏ£¨SCC/BC/CI/FCI£©£¬
-%   ÖğÖÖ×ÓÊä³ö¶Ô±È£¬×îÖÕ»ã×ÜÍ³¼Æ¡£
+% ã€å®šä½ã€‘
+%   180åº¦å›å¤´å¼¯åœºæ™¯ä¸‹ï¼ŒåŒä¸€ç‚¹è¿¹æ•°æ®ï¼Œå¹¶è¡Œè¿è¡Œå››ç§ UKF åç«¯ï¼š
+%   jichu / zishiying / imm / imm_3in1ã€‚
+%   æ¯ç§åç«¯å‡ç» R1/R2 å•ç«™è·Ÿè¸ª + å››ç§èåˆï¼ˆSCC/BC/CI/FCIï¼‰ï¼Œ
+%   é€ç§å­è¾“å‡ºå¯¹æ¯”ï¼Œæœ€ç»ˆæ±‡æ€»ç»Ÿè®¡ã€‚
 %
-% ¡¾ÈıÖÖ UKF ºó¶Ë¡¿
-%   ukf_jichu     ¡ª »ù´¡ CV-UKF£¬¹Ì¶¨ Q
-%   ukf_zishiying ¡ª CV-UKF + Ä£ºı×ÔÊÊÓ¦ Q + »ú¶¯¼ì²â
-%   ukf_imm       ¡ª CV+CT Ë«Ä£ĞÍ IMM-UKF + Pd-IPDA ËÆÈ»
-%
-% ¡¾º½¼£¡¿
-%   Õı¶«ÈëÍä ¡ú ×ó×ª180¶È°ëÔ² ¡ú ÕıÎ÷³öÍä£¬×ªÍäÂÊ 1¶È/s
+% ã€èˆªè¿¹ã€‘
+%   æ­£ä¸œå…¥å¼¯ â†’ å·¦è½¬180åº¦åŠåœ† â†’ æ­£è¥¿å‡ºå¼¯ï¼Œè½¬å¼¯ç‡ 1åº¦/s
 % =========================================================================
 
 clear; close all; clc;
 addpath(genpath('.'));
 
-%% ---- ÅäÖÃ ----
-N_MC = 500;
-SEED_BASE = 1;
+%% ---- é…ç½® ----
+SEED_LIST = [11, 23, 57, 89, 144, 233, 377, 610, 987, 1597];
+N_MC = numel(SEED_LIST);
+SEED_BASE = SEED_LIST(1);
 
-% UKF ÀàĞÍ
-UKF_NAMES = {'jichu', 'zishiying', 'imm', 'imm_3in1', 'imm_3in1'};
+% UKF ç±»å‹
+UKF_NAMES = {'jichu', 'zishiying', 'imm', 'imm_3in1'};
 N_UKF = 4;
 
-% ÈÚºÏ·½·¨
+% èåˆæ–¹æ³•
 FUSION_METHODS = {'SCC', 'BC', 'CI', 'FCI'};
 N_FUS = length(FUSION_METHODS);
 
-%% ---- Ô¤·ÖÅäÍ³¼Æ½á¹¹ ----
+%% ---- é¢„åˆ†é…ç»Ÿè®¡ç»“æ„ ----
 for u = 1:N_UKF
     s(u).name = UKF_NAMES{u};  %#ok<*SAGROW>
 
@@ -75,34 +72,34 @@ for u = 1:N_UKF
     end
 end
 
-% ¹«ÓÃÍ³¼Æ
+% ï¿½ï¿½ï¿½ï¿½Í³ï¿½ï¿½
 rmse_cal_R1 = nan(N_MC, 1);
 rmse_cal_R2 = nan(N_MC, 1);
 rmse_raw_R1 = nan(N_MC, 1);
 rmse_raw_R2 = nan(N_MC, 1);
 n_frames_list = nan(N_MC, 1);
 
-%% ---- Ô¤¼ÆËã×ªÍäĞÅÏ¢ ----
+%% ---- Ô¤ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½Ï¢ ----
 params0 = simulation_params();
-uturn_info = struct();  % uturn ²»ĞèÒª get_turn_info£¬ºóĞø´Óº½¼£ÌáÈ¡
-omega = pi / 180.0;  % 1¶È/s
+uturn_info = struct();  % uturn ï¿½ï¿½ï¿½ï¿½Òª get_turn_infoï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óºï¿½ï¿½ï¿½ï¿½ï¿½È¡
+omega = pi / 180.0;  % 1ï¿½ï¿½/s
 
 fprintf('========================================================================\n');
-fprintf(' »ØÍ·Íä180¶È: Ö±Ïß(90¶È) -> ×ó×ª180¶ÈÔ²»¡(1¶È/s) -> Ö±Ïß(270¶È)\n');
+fprintf(' ï¿½ï¿½Í·ï¿½ï¿½180ï¿½ï¿½: Ö±ï¿½ï¿½(90ï¿½ï¿½) -> ï¿½ï¿½×ª180ï¿½ï¿½Ô²ï¿½ï¿½(1ï¿½ï¿½/s) -> Ö±ï¿½ï¿½(270ï¿½ï¿½)\n');
 fprintf('========================================================================\n');
-fprintf('U  »ØÍ·Íä180¶ÈÈıÌåÖÆ¶Ô±ÈMC  N=%d  IMM:CV+CT(Pd-IPDA,Pi=[.90 .10])  U\n', N_MC);
+fprintf('U  ï¿½ï¿½Í·ï¿½ï¿½180ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ô±ï¿½MC  N=%d  IMM:CV+CT(Pd-IPDA,Pi=[.90 .10])  U\n', N_MC);
 fprintf('========================================================================\n\n');
 
 tic;
 
 %% ========================================================================
-%% Ö÷Ñ­»·
+%% ï¿½ï¿½Ñ­ï¿½ï¿½
 %% ========================================================================
 for mc = 1:N_MC
-    seed = SEED_BASE + (mc - 1);
+    seed = SEED_LIST(mc);
     rng('default');
 
-    %% ---------- Phase 0: ³¡¾°³õÊ¼»¯ ----------
+    %% ---------- Phase 0: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ ----------
     params = simulation_params();
     params.random_seed = seed;
     rng(params.random_seed);
@@ -117,7 +114,7 @@ for mc = 1:N_MC
 
     turn_frames = find_turn_frames(true_track, 0.5);
 
-    %% ---------- Phase 1: ADS-B ±ê¶¨ ----------
+    %% ---------- Phase 1: ADS-B ï¿½ê¶¨ ----------
     rng(params.random_seed);
     T_adsb = readtable(params.adsb_csv_path, 'ReadVariableNames', false);
     adsb_lat = T_adsb.Var2;  adsb_lon = T_adsb.Var3;
@@ -157,7 +154,7 @@ for mc = 1:N_MC
     dr1_est = mean(dr1_list);  da1_est = mean(da1_list);
     dr2_est = mean(dr2_list);  da2_est = mean(da2_list);
 
-    %% ---------- Phase 2+4: µã¼£Éú³É + Æ«²îĞ£Õı ----------
+    %% ---------- Phase 2+4: ï¿½ã¼£ï¿½ï¿½ï¿½ï¿½ + Æ«ï¿½ï¿½Ğ£ï¿½ï¿½ ----------
     detList_R1 = cell(n_frames, 1);
     detList_R2 = cell(n_frames, 1);
 
@@ -211,17 +208,17 @@ for mc = 1:N_MC
         detList_R2{k} = detRaw2;
     end
 
-    % µã¼£ RMSE
+    % ï¿½ã¼£ RMSE
     rmse_raw_R1(mc) = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'raw');
     rmse_raw_R2(mc) = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'raw');
     rmse_cal_R1(mc) = rmse_detlist(detList_R1, true_track, t1_grid, n_frames, 'cal');
     rmse_cal_R2(mc) = rmse_detlist(detList_R2, true_track, t2_grid, n_frames, 'cal');
 
-    %% ---------- Phase 5+6+7: ÈıÌåÖÆ²¢ĞĞ ----------
+    %% ---------- Phase 5+6+7: ï¿½ï¿½ï¿½ï¿½ï¿½Æ²ï¿½ï¿½ï¿½ ----------
     for u = 1:N_UKF
         ukf_type = UKF_NAMES{u};
 
-        % ===== R1 ²ÎÊıÅäÖÃ =====
+        % ===== R1 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ =====
         params_r1 = params;
         params_r1.ukf_range_std_m   = params.radar1_range_noise_std_m;
         params_r1.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
@@ -231,15 +228,16 @@ for mc = 1:N_MC
         params_r1.gate_sigma        = params.radar1_gate_sigma;
         params_r1.gate_vr_ms        = params.radar1_gate_vr_ms;
         params_r1.tracker_K_loss    = params.radar1_tracker_K_loss;
-        if u >= 3
+        if u == 3
             params_r1.imm_turn_rate_rad_per_sec = omega;
+            params_r1.imm_adapt_mode = 'fuzzy_only';
         end
         if u == 4
             params_r1.imm_turn_rate_rad_per_sec = omega;
             params_r1.imm_adapt_mode = '3in1';
         end
 
-        % ===== ´´½¨ UKF Ä£°å + R1 ¸ú×Ù =====
+        % ===== ï¿½ï¿½ï¿½ï¿½ UKF Ä£ï¿½ï¿½ + R1 ï¿½ï¿½ï¿½ï¿½ =====
         switch ukf_type
             case 'jichu'
                 ukf1_tpl = ukf_jichu('create', params_r1, params.radar1_lon, ...
@@ -259,7 +257,7 @@ for mc = 1:N_MC
         [snaps_R1, finalTrk1] = single_track_runner(detList_R1, ukf1_tpl, ...
             params_r1, n_frames, true_track, t1_grid);
 
-        % ===== R2 ²ÎÊıÅäÖÃ =====
+        % ===== R2 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ =====
         params_r2 = params;
         params_r2.ukf_range_std_m   = params.radar2_range_noise_std_m;
         params_r2.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
@@ -271,15 +269,16 @@ for mc = 1:N_MC
         params_r2.tracker_M         = 4;
         params_r2.tracker_N         = 8;
         params_r2.tracker_K_loss    = params.radar2_tracker_K_loss;
-        if u >= 3
+        if u == 3
             params_r2.imm_turn_rate_rad_per_sec = omega;
+            params_r2.imm_adapt_mode = 'fuzzy_only';
         end
         if u == 4
             params_r2.imm_turn_rate_rad_per_sec = omega;
             params_r2.imm_adapt_mode = '3in1';
         end
 
-        % ===== ´´½¨ UKF Ä£°å + R2 ¸ú×Ù =====
+        % ===== ï¿½ï¿½ï¿½ï¿½ UKF Ä£ï¿½ï¿½ + R2 ï¿½ï¿½ï¿½ï¿½ =====
         switch ukf_type
             case 'jichu'
                 ukf2_tpl = ukf_jichu('create', params_r2, params.radar2_lon, ...
@@ -305,13 +304,13 @@ for mc = 1:N_MC
         s(u).imp_ukf_R1(mc)  = (1 - s(u).rmse_ukf_R1(mc) / rmse_cal_R1(mc)) * 100;
         s(u).imp_ukf_R2(mc)  = (1 - s(u).rmse_ukf_R2(mc) / rmse_cal_R2(mc)) * 100;
 
-        % ===== ¹ØÁªÕï¶Ï =====
+        % ===== ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ =====
         [s(u).assoc_R1(mc), s(u).nis_mean_R1(mc), s(u).nis_gate_R1(mc), ...
             n_assoc1, n_pred1, s(u).init_fr_R1(mc)] = diagnose_tracking(snaps_R1, n_frames);
         [s(u).assoc_R2(mc), s(u).nis_mean_R2(mc), s(u).nis_gate_R2(mc), ...
             n_assoc2, n_pred2, s(u).init_fr_R2(mc)] = diagnose_tracking(snaps_R2, n_frames);
 
-        % ===== IMM ×¨Êô: Ä£ĞÍ¸ÅÂÊ =====
+        % ===== IMM ×¨ï¿½ï¿½: Ä£ï¿½Í¸ï¿½ï¿½ï¿½ =====
         if u >= 3
             if isfield(finalTrk1, 'mu_history')
                 mu_hist1 = finalTrk1.mu_history;
@@ -337,11 +336,11 @@ for mc = 1:N_MC
             end
         end
 
-        % ===== Ê±¼ä¶ÔÆë =====
+        % ===== Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ =====
         aligned_R2 = time_align_tracks(snaps_R2, params);
         s(u).rmse_ukf_R2_alg(mc) = rmse_tracks(aligned_R2, true_track, t1_grid, n_frames);
 
-        % ===== ÈÚºÏ =====
+        % ===== ï¿½Úºï¿½ =====
         matched_pair = struct('R1_track_id', 1, 'R2_track_id', 1, ...
             'match_count', 0, 'coexist_count', 0, 'match_ratio', 1.0, ...
             'mean_dist_km', 0, 'quality', 100);
@@ -356,7 +355,7 @@ for mc = 1:N_MC
         s(u).imp_fus_vs_R1(mc) = (1 - best_val / s(u).rmse_ukf_R1(mc)) * 100;
         s(u).imp_fus_vs_R2(mc) = (1 - best_val / s(u).rmse_ukf_R2_alg(mc)) * 100;
 
-        % ===== º½¼£·Ö¶Î =====
+        % ===== ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ =====
         segs1 = extract_segments(snaps_R1, n_frames);
         segs2 = extract_segments(snaps_R2, n_frames);
         all_fused_best = run_track_fusion(matched_pair, snaps_R1, aligned_R2, params, FUSION_METHODS{best_m});
@@ -368,7 +367,7 @@ for mc = 1:N_MC
         s(u).brk_R2(mc)  = max(0, size(segs2,1) - 1);
         s(u).brk_fus(mc) = max(0, size(segs_f,1) - 1);
 
-        % ===== »µÖÖ×ÓÅĞ¶Ï =====
+        % ===== ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¶ï¿½ =====
         if s(u).rmse_ukf_R1(mc) > 30 || s(u).rmse_ukf_R2(mc) > 30
             s(u).bad_seed(mc) = 1;
             s(u).bad_reason{mc} = sprintf('DIVERGED R1=%.1f R2=%.1f', ...
@@ -380,10 +379,10 @@ for mc = 1:N_MC
         end
     end  % end UKF types loop
 
-    %% ---------- ÖğÖÖ×Ó¶Ô±ÈÊä³ö ----------
+    %% ---------- ï¿½ï¿½ï¿½ï¿½ï¿½Ó¶Ô±ï¿½ï¿½ï¿½ï¿½ ----------
     fprintf('  MC #%d (seed=%d) -- R1=%.1fs R2=%.1fs n=%d\n', ...
         mc, seed, t1_grid(1), t1_grid(end), n_frames);
-    fprintf('  µã¼£: R1Ô­Ê¼%.0f Ğ£×¼%.1f | R2Ô­Ê¼%.0f Ğ£×¼%.1f km\n', ...
+    fprintf('  ï¿½ã¼£: R1Ô­Ê¼%.0f Ğ£×¼%.1f | R2Ô­Ê¼%.0f Ğ£×¼%.1f km\n', ...
         rmse_raw_R1(mc), rmse_cal_R1(mc), rmse_raw_R2(mc), rmse_cal_R2(mc));
     fprintf('  %-12s | %8s %8s | %7s %7s | %8s %8s | %6s\n', ...
         'UKF', 'R1_UKF', 'R2_UKF', 'AssocR1', 'AssocR2', 'FusBest', 'FusRMSE', 'Method');
@@ -403,10 +402,10 @@ for mc = 1:N_MC
 
     best_rmses = [s(1).rmse_fus_best(mc), s(2).rmse_fus_best(mc), s(3).rmse_fus_best(mc)];
     [~, best_u] = min(best_rmses);
-    fprintf('  -> ×îÓÅÌåÖÆ: %s (ÈÚºÏRMSE=%.1fkm)\n', s(best_u).name, best_rmses(best_u));
+    fprintf('  -> ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: %s (ï¿½Úºï¿½RMSE=%.1fkm)\n', s(best_u).name, best_rmses(best_u));
 
     if ~isnan(s(3).mu_ct_avg_R1(mc))
-        fprintf('  IMM CT¸ÅÂÊ: R1 avg=%.0f%% turn=%.0f%% dom=%d | R2 avg=%.0f%% turn=%.0f%% dom=%d\n', ...
+        fprintf('  IMM CTï¿½ï¿½ï¿½ï¿½: R1 avg=%.0f%% turn=%.0f%% dom=%d | R2 avg=%.0f%% turn=%.0f%% dom=%d\n', ...
             s(3).mu_ct_avg_R1(mc), s(3).mu_ct_turn_R1(mc), s(3).mu_ct_dom_R1(mc), ...
             s(3).mu_ct_avg_R2(mc), s(3).mu_ct_turn_R2(mc), s(3).mu_ct_dom_R2(mc));
     end
@@ -417,85 +416,85 @@ elapsed = toc;
 close all;
 
 %% ========================================================================
-%% »ã×ÜÍ³¼Æ
+%% ï¿½ï¿½ï¿½ï¿½Í³ï¿½ï¿½
 %% ========================================================================
 fprintf('========================================================================\n');
-fprintf('          %d ´ÎÃÉÌØ¿¨ÂåÍ³¼Æ»ã×Ü (%.0f s)\n', N_MC, elapsed);
+fprintf('          %d ï¿½ï¿½ï¿½ï¿½ï¿½Ø¿ï¿½ï¿½ï¿½Í³ï¿½Æ»ï¿½ï¿½ï¿½ (%.0f s)\n', N_MC, elapsed);
 fprintf('========================================================================\n');
 
-%% ---- UKF RMSE ¶Ô±È ----
-fprintf('\n--- UKF RMSE ÈıÌåÖÆ¶Ô±È (km) ---\n');
-fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸±ê', 'jichu', 'zishiying', 'imm', 'imm_3in1');
+%% ---- UKF RMSE ï¿½Ô±ï¿½ ----
+fprintf('\n--- UKF RMSE ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ô±ï¿½ (km) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸ï¿½ï¿½', 'jichu', 'zishiying', 'imm', 'imm_3in1');
 fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 print_4way('R1 UKF RMSE', s(1).rmse_ukf_R1, s(2).rmse_ukf_R1, s(3).rmse_ukf_R1);
 print_4way('R2 UKF RMSE', s(1).rmse_ukf_R2, s(2).rmse_ukf_R2, s(3).rmse_ukf_R2);
-print_4way('R2¶ÔÆë RMSE', s(1).rmse_ukf_R2_alg, s(2).rmse_ukf_R2_alg, s(3).rmse_ukf_R2_alg);
+print_4way('R2ï¿½ï¿½ï¿½ï¿½ RMSE', s(1).rmse_ukf_R2_alg, s(2).rmse_ukf_R2_alg, s(3).rmse_ukf_R2_alg);
 
-%% ---- ÈÚºÏ RMSE ¶Ô±È ----
-fprintf('\n--- ÈÚºÏ RMSE ÈıÌåÖÆ¶Ô±È (km) ---\n');
-fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸±ê', 'jichu', 'zishiying', 'imm', 'imm_3in1');
+%% ---- ï¿½Úºï¿½ RMSE ï¿½Ô±ï¿½ ----
+fprintf('\n--- ï¿½Úºï¿½ RMSE ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ô±ï¿½ (km) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸ï¿½ï¿½', 'jichu', 'zishiying', 'imm', 'imm_3in1');
 fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 for m = 1:N_FUS
-    print_4way(sprintf('ÈÚºÏ %s', FUSION_METHODS{m}), ...
+    print_4way(sprintf('ï¿½Úºï¿½ %s', FUSION_METHODS{m}), ...
         s(1).rmse_fus(:,m), s(2).rmse_fus(:,m), s(3).rmse_fus(:,m));
 end
-print_4way('ÈÚºÏ×îÓÅ', s(1).rmse_fus_best, s(2).rmse_fus_best, s(3).rmse_fus_best);
+print_4way('ï¿½Úºï¿½ï¿½ï¿½ï¿½ï¿½', s(1).rmse_fus_best, s(2).rmse_fus_best, s(3).rmse_fus_best);
 
-%% ---- ¸ÄÉÆÂÊ¶Ô±È ----
-fprintf('\n--- ¸ÄÉÆÂÊÈıÌåÖÆ¶Ô±È (%%) ---\n');
-fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸±ê', 'jichu', 'zishiying', 'imm', 'imm_3in1');
+%% ---- ï¿½ï¿½ï¿½ï¿½ï¿½Ê¶Ô±ï¿½ ----
+fprintf('\n--- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ô±ï¿½ (%%) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸ï¿½ï¿½', 'jichu', 'zishiying', 'imm', 'imm_3in1');
 fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
-print_4way('UKF¸ÄÉÆ R1', s(1).imp_ukf_R1, s(2).imp_ukf_R1, s(3).imp_ukf_R1);
-print_4way('UKF¸ÄÉÆ R2', s(1).imp_ukf_R2, s(2).imp_ukf_R2, s(3).imp_ukf_R2);
-print_4way('ÈÚºÏ vs R1', s(1).imp_fus_vs_R1, s(2).imp_fus_vs_R1, s(3).imp_fus_vs_R1);
-print_4way('ÈÚºÏ vs R2', s(1).imp_fus_vs_R2, s(2).imp_fus_vs_R2, s(3).imp_fus_vs_R2);
+print_4way('UKFï¿½ï¿½ï¿½ï¿½ R1', s(1).imp_ukf_R1, s(2).imp_ukf_R1, s(3).imp_ukf_R1);
+print_4way('UKFï¿½ï¿½ï¿½ï¿½ R2', s(1).imp_ukf_R2, s(2).imp_ukf_R2, s(3).imp_ukf_R2);
+print_4way('ï¿½Úºï¿½ vs R1', s(1).imp_fus_vs_R1, s(2).imp_fus_vs_R1, s(3).imp_fus_vs_R1);
+print_4way('ï¿½Úºï¿½ vs R2', s(1).imp_fus_vs_R2, s(2).imp_fus_vs_R2, s(3).imp_fus_vs_R2);
 
-%% ---- ¹ØÁª + NIS ¶Ô±È ----
-fprintf('\n--- ¹ØÁªÕï¶ÏÈıÌåÖÆ¶Ô±È ---\n');
-fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸±ê', 'jichu', 'zishiying', 'imm', 'imm_3in1');
+%% ---- ï¿½ï¿½ï¿½ï¿½ + NIS ï¿½Ô±ï¿½ ----
+fprintf('\n--- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶Ô±ï¿½ ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸ï¿½ï¿½', 'jichu', 'zishiying', 'imm', 'imm_3in1');
 fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
-print_4way_pct('¹ØÁªÂÊ R1(%%)', s(1).assoc_R1, s(2).assoc_R1, s(3).assoc_R1);
-print_4way_pct('¹ØÁªÂÊ R2(%%)', s(1).assoc_R2, s(2).assoc_R2, s(3).assoc_R2);
-print_4way('NIS¾ùÖµ R1', s(1).nis_mean_R1, s(2).nis_mean_R1, s(3).nis_mean_R1);
-print_4way('NIS¾ùÖµ R2', s(1).nis_mean_R2, s(2).nis_mean_R2, s(3).nis_mean_R2);
-print_4way_pct('NISÃÅÄÚ R1(%%)', s(1).nis_gate_R1, s(2).nis_gate_R1, s(3).nis_gate_R1);
-print_4way_pct('NISÃÅÄÚ R2(%%)', s(1).nis_gate_R2, s(2).nis_gate_R2, s(3).nis_gate_R2);
-print_4way('ÆğÊ¼Ö¡ R1', s(1).init_fr_R1, s(2).init_fr_R1, s(3).init_fr_R1);
-print_4way('ÆğÊ¼Ö¡ R2', s(1).init_fr_R2, s(2).init_fr_R2, s(3).init_fr_R2);
+print_4way_pct('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ R1(%%)', s(1).assoc_R1, s(2).assoc_R1, s(3).assoc_R1);
+print_4way_pct('ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ R2(%%)', s(1).assoc_R2, s(2).assoc_R2, s(3).assoc_R2);
+print_4way('NISï¿½ï¿½Öµ R1', s(1).nis_mean_R1, s(2).nis_mean_R1, s(3).nis_mean_R1);
+print_4way('NISï¿½ï¿½Öµ R2', s(1).nis_mean_R2, s(2).nis_mean_R2, s(3).nis_mean_R2);
+print_4way_pct('NISï¿½ï¿½ï¿½ï¿½ R1(%%)', s(1).nis_gate_R1, s(2).nis_gate_R1, s(3).nis_gate_R1);
+print_4way_pct('NISï¿½ï¿½ï¿½ï¿½ R2(%%)', s(1).nis_gate_R2, s(2).nis_gate_R2, s(3).nis_gate_R2);
+print_4way('ï¿½ï¿½Ê¼Ö¡ R1', s(1).init_fr_R1, s(2).init_fr_R1, s(3).init_fr_R1);
+print_4way('ï¿½ï¿½Ê¼Ö¡ R2', s(1).init_fr_R2, s(2).init_fr_R2, s(3).init_fr_R2);
 
-%% ---- MTL + ¶ÏÁÑ¶Ô±È ----
-fprintf('\n--- MTL º½¼£Æ½¾ù³¤¶È (Ö¡) ---\n');
-fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸±ê', 'jichu', 'zishiying', 'imm', 'imm_3in1');
+%% ---- MTL + ï¿½ï¿½ï¿½Ñ¶Ô±ï¿½ ----
+fprintf('\n--- MTL ï¿½ï¿½ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (Ö¡) ---\n');
+fprintf('%-18s | %10s | %10s | %10s\n', 'Ö¸ï¿½ï¿½', 'jichu', 'zishiying', 'imm', 'imm_3in1');
 fprintf('%-18s-+%s-+%s-+%s\n', '------------------', '----------', '----------', '----------');
 print_4way('MTL R1', s(1).mtl_R1, s(2).mtl_R1, s(3).mtl_R1);
 print_4way('MTL R2', s(1).mtl_R2, s(2).mtl_R2, s(3).mtl_R2);
-print_4way('MTL ÈÚºÏ', s(1).mtl_fus, s(2).mtl_fus, s(3).mtl_fus);
-print_4way('¶ÏÁÑ R1', s(1).brk_R1, s(2).brk_R1, s(3).brk_R1);
-print_4way('¶ÏÁÑ R2', s(1).brk_R2, s(2).brk_R2, s(3).brk_R2);
-print_4way('¶ÏÁÑ ÈÚºÏ', s(1).brk_fus, s(2).brk_fus, s(3).brk_fus);
+print_4way('MTL ï¿½Úºï¿½', s(1).mtl_fus, s(2).mtl_fus, s(3).mtl_fus);
+print_4way('ï¿½ï¿½ï¿½ï¿½ R1', s(1).brk_R1, s(2).brk_R1, s(3).brk_R1);
+print_4way('ï¿½ï¿½ï¿½ï¿½ R2', s(1).brk_R2, s(2).brk_R2, s(3).brk_R2);
+print_4way('ï¿½ï¿½ï¿½ï¿½ ï¿½Úºï¿½', s(1).brk_fus, s(2).brk_fus, s(3).brk_fus);
 
-%% ---- »µÖÖ×ÓÍ³¼Æ ----
-fprintf('\n--- »µÖÖ×ÓÍ³¼Æ ---\n');
+%% ---- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í³ï¿½ï¿½ ----
+fprintf('\n--- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í³ï¿½ï¿½ ---\n');
 for u = 1:N_UKF
     n_bad = sum(s(u).bad_seed);
     fprintf('  %s: %d/%d (%.0f%%)\n', s(u).name, n_bad, N_MC, n_bad/N_MC*100);
 end
 all_bad = s(1).bad_seed & s(2).bad_seed & s(3).bad_seed;
 n_all_bad = sum(all_bad);
-fprintf('  ÈıÌåÖÆ¾ù»µ: %d seeds\n', n_all_bad);
+fprintf('  ï¿½ï¿½ï¿½ï¿½ï¿½Æ¾ï¿½ï¿½ï¿½: %d seeds\n', n_all_bad);
 if n_all_bad > 0
     bad_seeds_list = find(all_bad);
     for i = 1:length(bad_seeds_list)
         mc_idx = bad_seeds_list(i);
         fprintf('    seed=%d: R1=[%.0f,%.0f,%.0f] R2=[%.0f,%.0f,%.0f]\n', ...
-            SEED_BASE+mc_idx-1, ...
+            SEED_LIST(mc_idx), ...
             s(1).rmse_ukf_R1(mc_idx), s(2).rmse_ukf_R1(mc_idx), s(3).rmse_ukf_R1(mc_idx), ...
             s(1).rmse_ukf_R2(mc_idx), s(2).rmse_ukf_R2(mc_idx), s(3).rmse_ukf_R2(mc_idx));
     end
 end
 
-%% ---- ÈÚºÏËã·¨·Ö²¼ ----
-fprintf('\n--- ×îÓÅÈÚºÏËã·¨·Ö²¼ ---\n');
+%% ---- ï¿½Úºï¿½ï¿½ã·¨ï¿½Ö²ï¿½ ----
+fprintf('\n--- ï¿½ï¿½ï¿½ï¿½ï¿½Úºï¿½ï¿½ã·¨ï¿½Ö²ï¿½ ---\n');
 for u = 1:N_UKF
     fprintf('  %s:', s(u).name);
     for m = 1:N_FUS
@@ -505,18 +504,18 @@ for u = 1:N_UKF
     fprintf('\n');
 end
 
-%% ---- IMM Ä£ĞÍ¸ÅÂÊ ----
-fprintf('\n--- IMM Ä£ĞÍ¸ÅÂÊ (½ö imm ÌåÖÆ) ---\n');
-print_imm_mu('CT¾ùÖµ R1(%%)', s(3).mu_ct_avg_R1);
-print_imm_mu('CT¾ùÖµ R2(%%)', s(3).mu_ct_avg_R2);
-print_imm_mu('CT×ªÍä R1(%%)', s(3).mu_ct_turn_R1);
-print_imm_mu('CT×ªÍä R2(%%)', s(3).mu_ct_turn_R2);
-print_imm_mu('CTÕ¼ÓÅÖ¡ R1', s(3).mu_ct_dom_R1);
-print_imm_mu('CTÕ¼ÓÅÖ¡ R2', s(3).mu_ct_dom_R2);
+%% ---- IMM Ä£ï¿½Í¸ï¿½ï¿½ï¿½ ----
+fprintf('\n--- IMM Ä£ï¿½Í¸ï¿½ï¿½ï¿½ (ï¿½ï¿½ imm ï¿½ï¿½ï¿½ï¿½) ---\n');
+print_imm_mu('CTï¿½ï¿½Öµ R1(%%)', s(3).mu_ct_avg_R1);
+print_imm_mu('CTï¿½ï¿½Öµ R2(%%)', s(3).mu_ct_avg_R2);
+print_imm_mu('CT×ªï¿½ï¿½ R1(%%)', s(3).mu_ct_turn_R1);
+print_imm_mu('CT×ªï¿½ï¿½ R2(%%)', s(3).mu_ct_turn_R2);
+print_imm_mu('CTÕ¼ï¿½ï¿½Ö¡ R1', s(3).mu_ct_dom_R1);
+print_imm_mu('CTÕ¼ï¿½ï¿½Ö¡ R2', s(3).mu_ct_dom_R2);
 
-%% ---- ½»²æ¶Ô±È ----
-fprintf('\n--- ½»²æ¶Ô±È: ÌåÖÆ¼ä²îÒì (%%) ---\n');
-fprintf('%-24s | %10s | %10s\n', 'Ö¸±ê', 'zishiying vs jichu.*imm vs jichu.*3in1 vs jichu');
+%% ---- ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ ----
+fprintf('\n--- ï¿½ï¿½ï¿½ï¿½Ô±ï¿½: ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ (%%) ---\n');
+fprintf('%-24s | %10s | %10s\n', 'Ö¸ï¿½ï¿½', 'zishiying vs jichu.*imm vs jichu.*3in1 vs jichu');
 fprintf('%-24s-+%s-+%s\n', '------------------------', '----------', '----------');
 
 delta_z_vs_j_R1 = (s(2).rmse_ukf_R1 - s(1).rmse_ukf_R1) ./ s(1).rmse_ukf_R1 * 100;
@@ -525,18 +524,18 @@ delta_z_vs_j_fus = (s(2).rmse_fus_best - s(1).rmse_fus_best) ./ s(1).rmse_fus_be
 delta_i_vs_j_fus = (s(3).rmse_fus_best - s(1).rmse_fus_best) ./ s(1).rmse_fus_best * 100;
 
 print_cross_row('Delta R1 UKF(%%)', delta_z_vs_j_R1, delta_i_vs_j_R1);
-print_cross_row('Delta ÈÚºÏ×îÓÅ(%%)', delta_z_vs_j_fus, delta_i_vs_j_fus);
+print_cross_row('Delta ï¿½Úºï¿½ï¿½ï¿½ï¿½ï¿½(%%)', delta_z_vs_j_fus, delta_i_vs_j_fus);
 
 n_z_better_R1 = sum(s(2).rmse_ukf_R1 < s(1).rmse_ukf_R1);
 n_i_better_R1 = sum(s(3).rmse_ukf_R1 < s(1).rmse_ukf_R1);
 n_z_better_fus = sum(s(2).rmse_fus_best < s(1).rmse_fus_best);
 n_i_better_fus = sum(s(3).rmse_fus_best < s(1).rmse_fus_best);
-fprintf('  Ê¤ÂÊ(R1): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)\n', ...
+fprintf('  Ê¤ï¿½ï¿½(R1): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)\n', ...
     n_z_better_R1, N_MC, n_z_better_R1/N_MC*100, n_i_better_R1, N_MC, n_i_better_R1/N_MC*100);
-fprintf('  Ê¤ÂÊ(ÈÚºÏ): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)\n', ...
+fprintf('  Ê¤ï¿½ï¿½(ï¿½Úºï¿½): zishiying %d/%d(%.0f%%)  imm %d/%d(%.0f%%)\n', ...
     n_z_better_fus, N_MC, n_z_better_fus/N_MC*100, n_i_better_fus, N_MC, n_i_better_fus/N_MC*100);
 
-% ÈıÌåÖÆÖÕ¼«PK
+% ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½PK
 best_ukf_for_seed = zeros(N_MC, 1);
 best_ukf_name = cell(N_MC, 1);
 for mc_idx = 1:N_MC
@@ -544,7 +543,7 @@ for mc_idx = 1:N_MC
     [~, best_ukf_for_seed(mc_idx)] = min(rmses);
     best_ukf_name{mc_idx} = UKF_NAMES{best_ukf_for_seed(mc_idx)};
 end
-fprintf('\n  ÖÕ¼«×îÓÅÌåÖÆ·Ö²¼ (ÈÚºÏRMSE×îĞ¡):\n');
+fprintf('\n  ï¿½Õ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·Ö²ï¿½ (ï¿½Úºï¿½RMSEï¿½ï¿½Ğ¡):\n');
 for u = 1:N_UKF
     cnt = sum(best_ukf_for_seed == u);
     fprintf('    %s: %d/%d (%.0f%%)\n', UKF_NAMES{u}, cnt, N_MC, cnt/N_MC*100);
@@ -552,20 +551,20 @@ end
 
 fprintf('========================================================================\n');
 
-%% ---- ±£´æÊı¾İ ----
+%% ---- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ----
 if ~exist('results', 'dir'), mkdir('results'); end
 outf = fullfile('results', sprintf('mc_turn180_compare_%s.mat', datestr(now, 'yyyymmdd_HHMMSS')));
 save(outf, 's', 'rmse_cal_R1', 'rmse_cal_R2', 'rmse_raw_R1', 'rmse_raw_R2', ...
-    'n_frames_list', 'N_MC', 'SEED_BASE', 'UKF_NAMES', 'FUSION_METHODS', ...
+    'n_frames_list', 'N_MC', 'SEED_BASE', 'SEED_LIST', 'UKF_NAMES', 'FUSION_METHODS', ...
     'omega', 'best_ukf_for_seed', 'best_ukf_name');
-fprintf('\nÍêÕûÊı¾İÒÑ±£´æ: %s\n', outf);
+fprintf('\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ±ï¿½ï¿½ï¿½: %s\n', outf);
 fprintf('Done.\n');
 
 %% ========================================================================
-%% ¹¤¾ßº¯Êı
+%% ï¿½ï¿½ï¿½ßºï¿½ï¿½ï¿½
 %% ========================================================================
 
-% ---- ¶¨Î»ÕæÖµÖĞµÄ×ªÍäÖ¡ ----
+% ---- ï¿½ï¿½Î»ï¿½ï¿½Öµï¿½Ğµï¿½×ªï¿½ï¿½Ö¡ ----
 function frames = find_turn_frames(true_track, thresh_deg_per_s)
     n = size(true_track, 1);
     if n < 2, frames = []; return; end
@@ -592,7 +591,7 @@ function frames = find_turn_frames(true_track, thresh_deg_per_s)
     end
 end
 
-% ---- µã¼£RMSE ----
+% ---- ï¿½ã¼£RMSE ----
 function v = rmse_detlist(detList, true_track, t_grid, n_frames, mode)
     errs = [];
     for k = 1:n_frames
@@ -615,7 +614,7 @@ function v = rmse_detlist(detList, true_track, t_grid, n_frames, mode)
     v = rms_val(errs);
 end
 
-% ---- º½¼£RMSE ----
+% ---- ï¿½ï¿½ï¿½ï¿½RMSE ----
 function v = rmse_tracks(snaps, true_track, t_grid, n_frames)
     errs = [];
     for k = 1:n_frames
@@ -634,7 +633,7 @@ function v = rmse_tracks(snaps, true_track, t_grid, n_frames)
     v = rms_val(errs);
 end
 
-% ---- ÈÚºÏRMSE ----
+% ---- ï¿½Úºï¿½RMSE ----
 function v = rmse_fusion_snaps(snaps, true_track, t_grid, n_frames)
     errs = [];
     for k = 1:n_frames
@@ -650,7 +649,7 @@ function v = rmse_fusion_snaps(snaps, true_track, t_grid, n_frames)
     v = rms_val(errs);
 end
 
-% ---- Õï¶Ï ----
+% ---- ï¿½ï¿½ï¿½ ----
 function [assoc_rate, nis_mean, nis_gate, n_assoc, n_pred, init_frame] = diagnose_tracking(snaps, n_frames)
     n_assoc = 0; n_pred = 0; n_init = 0;
     init_frame = 0; nis_vals = [];
@@ -683,7 +682,7 @@ function [assoc_rate, nis_mean, nis_gate, n_assoc, n_pred, init_frame] = diagnos
     end
 end
 
-% ---- º½¼£·Ö¶Î ----
+% ---- ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ ----
 function segs = extract_segments(snaps, n_frames)
     segs = [];
     in_seg = false; seg_start = 0;
@@ -738,15 +737,19 @@ function v = rms_val(e)
     if isempty(e), v = NaN; else, v = sqrt(mean(e.^2)); end
 end
 
-% ---- ´òÓ¡º¯Êı ----
-function print_4way(label, v1, v2, v3, v4)
-    fprintf('%-18s | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f\n', ...
-        label, nanmean(v1), nanstd(v1), nanmean(v2), nanstd(v2), nanmean(v3), nanstd(v3), nanmean(v4), nanstd(v4));
+% ---- æ‰“å°å‡½æ•° ----
+function print_4way(label, varargin)
+    if numel(varargin) == 3
+        fprintf('%-18s | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f\n', ...
+            label, nanmean(varargin{1}), nanstd(varargin{1}), nanmean(varargin{2}), nanstd(varargin{2}), nanmean(varargin{3}), nanstd(varargin{3}));
+    else
+        fprintf('%-18s | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f\n', ...
+            label, nanmean(varargin{1}), nanstd(varargin{1}), nanmean(varargin{2}), nanstd(varargin{2}), nanmean(varargin{3}), nanstd(varargin{3}), nanmean(varargin{4}), nanstd(varargin{4}));
+    end
 end
 
-function print_4way_pct(label, v1, v2, v3, v4)
-    fprintf('%-18s | %7.1f+-%4.1f | %7.1f+-%4.1f | %7.1f+-%4.1f\n', ...
-        label, nanmean(v1), nanstd(v1), nanmean(v2), nanstd(v2), nanmean(v3), nanstd(v3), nanmean(v4), nanstd(v4));
+function print_4way_pct(label, varargin)
+    print_4way(label, varargin{:});
 end
 
 function print_imm_mu(label, v)
