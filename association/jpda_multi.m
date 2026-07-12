@@ -24,6 +24,14 @@ function [assoc, det_used_prob] = jpda_multi(trackList, active_idx, detList, par
     end
 
     log_w = compute_event_log_weights(events, gate, params);
+
+    % JPDA* 置换剪枝 (Blom & Bloem, NLR-TP-2006-690)：
+    % 对每组使用相同检测集合的联合事件，只保留似然最高的那个置换，
+    % 避免 JPDA 的"置换平均"导致 track coalescence。
+    if get_param(params, 'jpda_star_enable', true)
+        [events, log_w] = jpda_star_prune(events, log_w);
+    end
+
     max_log_w = max(log_w);
     if ~isfinite(max_log_w)
         event_w = zeros(size(log_w));
@@ -94,6 +102,28 @@ function [assoc, det_used_prob] = jpda_multi(trackList, active_idx, detList, par
 end
 
 
+function motion_gate_m = compute_motion_gate(trk, params)
+    motion_gate_m = get_param(params, 'motion_gate_max_m', 60000);
+    if ~isfield(trk, 'ukf') || ~isfield(trk.ukf, 'x') || length(trk.ukf.x) < 4
+        return;
+    end
+    vlon = trk.ukf.x(2);
+    vlat = trk.ukf.x(4);
+    lat_rad = deg2rad(trk.ukf.x(3));
+    v_ms = sqrt((vlon * 111000 * cos(lat_rad))^2 + (vlat * 111000)^2);
+    if isnan(v_ms) || v_ms < 1
+        v_ms = get_param(params, 'multi_start_min_speed_ms', 80);
+    end
+    dt = get_param(params, 'dt_sec', 30);
+    margin_m = get_param(params, 'motion_gate_margin_m', 25000);
+    motion_gate_m = v_ms * dt + margin_m;
+    cap = get_param(params, 'motion_gate_max_m', 60000);
+    if motion_gate_m > cap
+        motion_gate_m = cap;
+    end
+end
+
+
 function gate = build_gate(trackList, active_idx, detList, params)
     n_tracks = length(active_idx);
     n_dets = length(detList);
@@ -127,6 +157,9 @@ function gate = build_gate(trackList, active_idx, detList, params)
         if isfield(trk, 'missed')
             geo_gate_m = geo_gate_m + trk.missed * get_param(params, 'jpda_geo_gate_m_missed_step', 15000);
         end
+        % 硬性运动门：基于航迹当前速度计算物理可达半径，
+        % 即使 Mahalanobis 门因协方差膨胀变宽，也禁止离谱的远距离关联
+        motion_gate_m = compute_motion_gate(trk, params);
 
         for j = 1:n_dets
             dp = detList(j);
@@ -136,6 +169,9 @@ function gate = build_gate(trackList, active_idx, detList, params)
 
             geo_dist = sphere_utils_haversine_distance(trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
             if geo_dist > geo_gate_m
+                continue;
+            end
+            if geo_dist > motion_gate_m
                 continue;
             end
 
@@ -157,6 +193,51 @@ function gate = build_gate(trackList, active_idx, detList, params)
             gate.log_likelihood(i, j) = log_pd + log_norm - 0.5 * mahal;
         end
     end
+end
+
+
+function [events_kept, log_w_kept] = jpda_star_prune(events, log_w)
+    n_events = size(events, 1);
+    if n_events <= 1
+        events_kept = events;
+        log_w_kept = log_w;
+        return;
+    end
+
+    keys = cell(n_events, 1);
+    for e = 1:n_events
+        dets = events(e, :);
+        dets = sort(dets(dets > 0));
+        keys{e} = mat2str(dets);
+    end
+
+    keep = false(n_events, 1);
+    visited = false(n_events, 1);
+    n_groups = 0;
+    n_pruned = 0;
+    for e = 1:n_events
+        if visited(e)
+            continue;
+        end
+        group_members = e;
+        visited(e) = true;
+        for f = e+1:n_events
+            if visited(f)
+                continue;
+            end
+            if strcmp(keys{f}, keys{e})
+                group_members(end+1) = f;
+                visited(f) = true;
+            end
+        end
+        [~, best_local] = max(log_w(group_members));
+        keep(group_members(best_local)) = true;
+        n_groups = n_groups + 1;
+        n_pruned = n_pruned + length(group_members) - 1;
+    end
+
+    events_kept = events(keep, :);
+    log_w_kept = log_w(keep);
 end
 
 

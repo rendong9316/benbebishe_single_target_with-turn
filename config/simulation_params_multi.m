@@ -57,9 +57,19 @@ function params = simulation_params_multi()
     params.jpda_geo_gate_m_missed_step = 20000;
     params.jpda_max_hypotheses = 5000;
     params.jpda_min_update_prob = 0.05;
+    params.jpda_vr_gate_ms = 60;
+    params.multi_fallback_use_vr_gate = false;
+    % JPDA* 置换剪枝（Blom & Bloem 2006）：防 track coalescence
+    params.jpda_star_enable = true;
+
+    % 运动一致性硬门：禁止航迹跳到物理不可达的远距离检测
+    % 基于航迹当前速度计算可达半径，即使协方差膨胀也不会误关联
+    params.motion_gate_margin_m = 25000;
+    params.motion_gate_max_m = 60000;
 
     % 多目标航迹质量参数
     params.multi_confirm_quality = 8;
     params.multi_maintain_quality = 4;
-    params.tracker_K_loss = 15;
+    params.tracker_K_loss = 25;
+    params.multi_truth_reinit_enable = false;
 end

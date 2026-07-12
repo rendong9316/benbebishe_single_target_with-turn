@@ -38,10 +38,11 @@ params = simulation_params_multi();
 rng(params.random_seed);
 
 % ---- 三目标航迹定义 ----
-% 目标A: 西南→东北 (类似单目标但缩短)
-way_A = [126.8, 31.5, 0; 130.0, 33.5, 0];
-way_B = [126.8, 33.5, 0; 130.0, 31.5, 0];
-way_C = [126.8, 32.5, 0; 130.8, 32.5, 0];
+% 强交叉场景：A 与 B 对穿，C 横向穿插，三条线在中部密集交叉。
+% 三条航线端点均位于两部雷达共同覆盖区内。
+way_A = [128.8, 30.5, 0; 132.0, 32.5, 0];
+way_B = [128.8, 32.5, 0; 132.0, 30.5, 0];
+way_C = [128.8, 31.5, 0; 130.5, 32.9, 0];
 
 % 生成三条航迹
 traj_A = aircraft_trajectory_create(way_A, params.aircraft_speed_ms, params.dt_sec);
@@ -285,7 +286,6 @@ params.ukf_P_pos_std = params.radar1_ukf_P_pos_std;
 params.ukf_P_vel_std = params.radar1_ukf_P_vel_std;
 params.gate_sigma = params.radar1_gate_sigma;
 params.gate_vr_ms = params.radar1_gate_vr_ms;
-params.tracker_K_loss = 15;
 ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
@@ -298,7 +298,6 @@ params_r2.gate_vr_ms = params.radar2_gate_vr_ms;
 params_r2.ukf_Q_scale = params.radar2_ukf_Q_scale;
 params_r2.ukf_P_pos_std = params.radar2_ukf_P_pos_std;
 params_r2.ukf_P_vel_std = params.radar2_ukf_P_vel_std;
-params_r2.tracker_K_loss = 15;
 ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 

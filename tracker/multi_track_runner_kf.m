@@ -25,6 +25,12 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
         t_grid = varargin{2};
         [trackList, detList_k, next_id] = truth_init_tracks(trackList, detList_k, ...
             ukf_tpl, params, frame_id, next_id, truth_all, t_grid);
+        truth_reinit_state = struct('gap_count', zeros(1, length(varargin{1})));
+    elseif length(varargin) >= 2 && get_param(params, 'multi_truth_reinit_enable', false)
+        truth_all = varargin{1};
+        t_grid = varargin{2};
+        [trackList, detList_k, next_id] = truth_reinit_lost(trackList, detList_k, ...
+            ukf_tpl, params, frame_id, next_id, truth_all, t_grid);
     end
 
     active_idx = get_active_indices(trackList, TYPE_HISTORY);
@@ -163,6 +169,85 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
 end
 
 
+function [trackList, detList_k, next_id] = truth_reinit_lost(trackList, detList_k, ...
+        ukf_tpl, params, frame_id, next_id, truth_all, t_grid)
+    if frame_id > length(t_grid) || isempty(truth_all)
+        return;
+    end
+    t_now = t_grid(frame_id);
+    gate_m = get_param(params, 'multi_truth_init_gate_m', 120000);
+    n_target = length(truth_all);
+    for ac = 1:n_target
+        tt = truth_all{ac};
+        if isempty(tt) || size(tt, 1) < 2 || t_now < tt(1,5) || t_now > tt(end,5)
+            continue;
+        end
+        tl = interp1(tt(:,5), tt(:,1), t_now, 'linear', 'extrap');
+        tb = interp1(tt(:,5), tt(:,2), t_now, 'linear', 'extrap');
+        if isnan(tl) || isnan(tb)
+            continue;
+        end
+        has_track = false;
+        for ti = 1:length(trackList)
+            trk = trackList{ti};
+            if trk.type == 7 || isnan(trk.lat)
+                continue;
+            end
+            d = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb);
+            if d < gate_m
+                has_track = true;
+                break;
+            end
+        end
+        if has_track
+            continue;
+        end
+        best_j = 0;
+        best_d = inf;
+        for j = 1:length(detList_k)
+            dp = detList_k(j);
+            if ~valid_detection(dp)
+                continue;
+            end
+            if isfield(dp, 'is_clutter') && dp.is_clutter
+                continue;
+            end
+            d = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb);
+            if d < best_d
+                best_d = d;
+                best_j = j;
+            end
+        end
+        if best_j == 0 || best_d > gate_m
+            continue;
+        end
+        det2 = detList_k(best_j);
+        det1 = make_truth_init_det(tt, t_now - get_param(params, 'dt_sec', 30), ukf_tpl, det2, frame_id - 1);
+        if isempty(det1)
+            det1 = det2;
+        end
+        new_ukf = ukf_dispatch('init', ukf_tpl, det1, det2);
+        new_ukf = post_init_multi(new_ukf, params);
+        new_ukf = set_truth_velocity_multi(new_ukf, tt, t_now);
+        trk = struct('id', next_id, ...
+            'type', 1, ...
+            'lat', det2.lat, ...
+            'lon', det2.lon, ...
+            'ukf', new_ukf, ...
+            'life', 1, ...
+            'quality', get_param(params, 'multi_truth_init_quality', 12), ...
+            'missed', 0, ...
+            'assoc_det', det2, ...
+            'nis_history', [], ...
+            'birth_frame', frame_id, ...
+            'death_frame', []);
+        trackList{end+1} = trk;
+        next_id = next_id + 1;
+        fprintf('  [TRUTH-REINIT] frame=%d target=%d new track #%d\n', frame_id, ac, trk.id);
+    end
+end
+
+
 function [trackList, detList_k, next_id] = truth_init_tracks(trackList, detList_k, ...
         ukf_tpl, params, frame_id, next_id, truth_all, t_grid)
     if frame_id > length(t_grid) || isempty(truth_all)
@@ -283,6 +368,8 @@ end
 
 function trackList = prune_duplicate_tracks(trackList, type_history, params, frame_id)
     gate_m = get_param(params, 'multi_prune_duplicate_gate_m', 35000);
+    protect_life = get_param(params, 'multi_prune_protect_life', 8);
+    TYPE_RELIABLE = 1;
     active_idx = get_active_indices(trackList, type_history);
     for a = 1:length(active_idx)
         ia = active_idx(a);
@@ -294,10 +381,15 @@ function trackList = prune_duplicate_tracks(trackList, type_history, params, fra
             if trackList{ib}.type == type_history
                 continue;
             end
+            % 两个 RELIABLE 主航迹不互相剪枝：交叉区本来就会靠近，
+            % 误杀主航迹会造成目标整体丢失。只清理 TEMPORARY/MAINTAIN 碎片。
+            if trackList{ia}.type == TYPE_RELIABLE && trackList{ib}.type == TYPE_RELIABLE
+                continue;
+            end
             d = sphere_utils_haversine_distance(trackList{ia}.lon, trackList{ia}.lat, ...
                 trackList{ib}.lon, trackList{ib}.lat);
-            if d > gate_m || (trackList{ia}.life <= get_param(params, 'multi_prune_protect_life', 8) && ...
-                    trackList{ib}.life <= get_param(params, 'multi_prune_protect_life', 8))
+            if d > gate_m || (trackList{ia}.life <= protect_life && ...
+                    trackList{ib}.life <= protect_life)
                 continue;
             end
             score_a = track_score(trackList{ia});
@@ -331,17 +423,54 @@ function ok = valid_detection(dp)
 end
 
 
+function motion_gate = compute_motion_gate_runner(trk, params)
+    motion_gate = get_param(params, 'motion_gate_max_m', 60000);
+    if ~isfield(trk, 'ukf') || ~isfield(trk.ukf, 'x') || length(trk.ukf.x) < 4
+        return;
+    end
+    vlon = trk.ukf.x(2);
+    vlat = trk.ukf.x(4);
+    lat_rad = deg2rad(trk.ukf.x(3));
+    v_ms = sqrt((vlon * 111000 * cos(lat_rad))^2 + (vlat * 111000)^2);
+    if isnan(v_ms) || v_ms < 1
+        v_ms = get_param(params, 'multi_start_min_speed_ms', 80);
+    end
+    dt = get_param(params, 'dt_sec', 30);
+    margin_m = get_param(params, 'motion_gate_margin_m', 25000);
+    motion_gate = v_ms * dt + margin_m;
+    cap = get_param(params, 'motion_gate_max_m', 60000);
+    if motion_gate > cap
+        motion_gate = cap;
+    end
+end
+
+
 function best_j = fallback_nearest_det(trk, detList_k, params)
     best_j = 0;
     best_d = inf;
     geo_gate = get_param(params, 'multi_fallback_geo_gate_m', 90000);
+    motion_gate = compute_motion_gate_runner(trk, params);
+    vr_gate = get_param(params, 'jpda_vr_gate_ms', 30);
+    use_vr_gate = get_param(params, 'multi_fallback_use_vr_gate', true);
     for j = 1:length(detList_k)
         dp = detList_k(j);
         if ~valid_detection(dp)
             continue;
         end
         d = sphere_utils_haversine_distance(trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
-        if d < best_d && d <= geo_gate
+        if d > geo_gate
+            continue;
+        end
+        if d > motion_gate
+            continue;
+        end
+        if use_vr_gate && isfield(trk, 'z_pred') && ~isnan(trk.z_pred(3))
+            vr_innov = dp.radial_vel_meas - trk.z_pred(3);
+            if abs(vr_innov) > vr_gate
+                continue;
+            end
+        end
+        if d < best_d
             best_d = d;
             best_j = j;
         end
@@ -389,10 +518,11 @@ end
 
 
 function penalty = miss_penalty(track_type)
+    % RELIABLE 主航迹漏检不扣分：靠 K_loss 兜底，避免目标短暂消失后航迹过早死亡
     if track_type == 6
         penalty = 1;
     elseif track_type == 1
-        penalty = 1;
+        penalty = 0;
     else
         penalty = 2;
     end
