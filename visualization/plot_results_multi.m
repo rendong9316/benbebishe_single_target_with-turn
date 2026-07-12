@@ -120,28 +120,30 @@ function plot_multi_track_result(true_track_A, true_track_B, true_track_C, ...
     % 图层控制复选框
     n_layers = length(layer_names);
     cb = gobjects(1, n_layers);
+    n_cb = 0;
     for i = 1:n_layers
-        ypos = 0.92 - (i-1) * 0.045;
+        ypos = 0.92 - n_cb * 0.045;
         if ypos < 0.05, break; end
-        cb(i) = uicontrol('Parent', fig, 'Style', 'checkbox', ...
+        n_cb = n_cb + 1;
+        cb(n_cb) = uicontrol('Parent', fig, 'Style', 'checkbox', ...
             'String', layer_names{i}, 'Value', 1, ...
             'Units', 'normalized', 'Position', [0.76, ypos, 0.22, 0.040], ...
             'FontSize', 9, 'BackgroundColor', [1 1 1], ...
             'Callback', @(src, ~) try_set_visible_multi(h_all(i), src.Value));
     end
 
-    btn_bottom = 0.92 - n_layers * 0.045 - 0.01;
+    btn_bottom = 0.92 - n_cb * 0.045 - 0.01;
     if btn_bottom > 0.02
         uicontrol('Parent', fig, 'Style', 'pushbutton', ...
             'String', '全部隐藏', ...
             'Units', 'normalized', 'Position', [0.76, btn_bottom, 0.10, 0.04], ...
             'FontSize', 9, ...
-            'Callback', @(src, ~) toggle_all_cb_multi(src, cb, h_all));
+            'Callback', @(src, ~) toggle_all_cb_multi(src, cb(1:n_cb), h_all(1:n_cb)));
         uicontrol('Parent', fig, 'Style', 'pushbutton', ...
             'String', '全部显示', ...
             'Units', 'normalized', 'Position', [0.87, btn_bottom, 0.10, 0.04], ...
             'FontSize', 9, ...
-            'Callback', @(~, ~) show_all_cb_multi(cb, h_all));
+            'Callback', @(~, ~) show_all_cb_multi(cb(1:n_cb), h_all(1:n_cb)));
     end
 
     uicontrol('Parent', fig, 'Style', 'text', ...
@@ -212,23 +214,33 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
         end
     end
 
-    % 融合航迹 (每种算法不同颜色)
+    % 融合航迹 — 仅绘制最优算法
+    % 从 fusion_eval.overall 中选 RMSE 最小的融合算法
+    best_method_idx = 1;
+    best_rmse = inf;
+    for m = 1:length(method_names)
+        if ~isempty(fusion_eval) && isfield(fusion_eval, 'overall')
+            rms_m = fusion_eval.overall(m).s.rms;
+            if rms_m < best_rmse
+                best_rmse = rms_m;
+                best_method_idx = m;
+            end
+        end
+    end
+    best_method = method_names{best_method_idx};
     method_colors = {[0 0.5 0], [0.8 0.4 0], [0 0 0.8], [0.6 0 0.6]};
     for p = 1:length(matched_pairs)
-        mp = get_match_pair_multi(matched_pairs, p);
-        for m = 1:length(method_names)
-            snaps_m = all_fused_snapshots{p,m};
-            fused_pos = collect_fused_positions_multi(snaps_m);
-            for t = 1:length(fused_pos)
-                ft = fused_pos{t};
-                if length(ft.lat_history) > 1
-                    seg_label = sprintf('%s Pair#%d', method_names{m}, p);
-                    h = geoplot(ax, ft.lat_history, ft.lon_history, '-d', ...
-                        'Color', method_colors{m}, 'LineWidth', 2, ...
-                        'MarkerSize', 4, 'MarkerFaceColor', method_colors{m}, ...
-                        'DisplayName', seg_label);
-                    h_all(end+1) = h;  layer_names{end+1} = seg_label;
-                end
+        snaps_m = all_fused_snapshots{p, best_method_idx};
+        fused_pos = collect_fused_positions_multi(snaps_m);
+        for t = 1:length(fused_pos)
+            ft = fused_pos{t};
+            if length(ft.lat_history) > 1
+                seg_label = sprintf('%s Pair#%d', best_method, p);
+                h = geoplot(ax, ft.lat_history, ft.lon_history, '-d', ...
+                    'Color', method_colors{best_method_idx}, 'LineWidth', 2, ...
+                    'MarkerSize', 4, 'MarkerFaceColor', method_colors{best_method_idx}, ...
+                    'DisplayName', seg_label);
+                h_all(end+1) = h;  layer_names{end+1} = seg_label;
             end
         end
     end
@@ -241,38 +253,39 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
     geoplot(ax, params.radar1_tx_lat, params.radar1_tx_lon, 'b^', 'MarkerSize', 10);
     geoplot(ax, params.radar2_tx_lat, params.radar2_tx_lon, 'r^', 'MarkerSize', 10);
 
-    title(ax, '多目标融合结果 (3目标交叉)');
+    title(ax, sprintf('多目标融合结果 — 最优算法: %s (RMSE=%.1fkm)', best_method, best_rmse));
 
     % 图层控制
     n_layers = length(layer_names);
     cb = gobjects(1, n_layers);
+    n_cb = 0;
     for i = 1:n_layers
-        ypos = 0.92 - (i-1) * 0.045;
+        ypos = 0.92 - n_cb * 0.045;
         if ypos < 0.05, break; end
-        cb(i) = uicontrol('Parent', fig, 'Style', 'checkbox', ...
+        n_cb = n_cb + 1;
+        cb(n_cb) = uicontrol('Parent', fig, 'Style', 'checkbox', ...
             'String', layer_names{i}, 'Value', 1, ...
             'Units', 'normalized', 'Position', [0.76, ypos, 0.22, 0.040], ...
             'FontSize', 9, 'BackgroundColor', [1 1 1], ...
             'Callback', @(src, ~) try_set_visible_multi(h_all(i), src.Value));
     end
 
-    btn_bottom = 0.92 - n_layers * 0.045 - 0.01;
+    btn_bottom = 0.92 - n_cb * 0.045 - 0.01;
     if btn_bottom > 0.02
         uicontrol('Parent', fig, 'Style', 'pushbutton', ...
             'String', '全部隐藏', ...
             'Units', 'normalized', 'Position', [0.76, btn_bottom, 0.10, 0.04], ...
             'FontSize', 9, ...
-            'Callback', @(src, ~) toggle_all_cb_multi(src, cb, h_all));
+            'Callback', @(src, ~) toggle_all_cb_multi(src, cb(1:n_cb), h_all(1:n_cb)));
         uicontrol('Parent', fig, 'Style', 'pushbutton', ...
             'String', '全部显示', ...
             'Units', 'normalized', 'Position', [0.87, btn_bottom, 0.10, 0.04], ...
             'FontSize', 9, ...
-            'Callback', @(~, ~) show_all_cb_multi(cb, h_all));
+            'Callback', @(~, ~) show_all_cb_multi(cb(1:n_cb), h_all(1:n_cb)));
     end
 
     % 融合算法统计信息
-    n_methods = length(method_names);
-    info_str = sprintf('%d匹配对 x %d融合算法', length(matched_pairs), n_methods);
+    info_str = sprintf('最优算法: %s | RMSE=%.1fkm | %d匹配对', best_method, best_rmse, length(matched_pairs));
     uicontrol('Parent', fig, 'Style', 'text', ...
         'Units', 'normalized', 'Position', [0.76, 0.005, 0.22, 0.03], ...
         'String', info_str, ...
@@ -292,19 +305,15 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
     subplot(1, 2, 1);
     hold on; grid on;
 
-    % 每条匹配对的每种融合算法画误差曲线
+    % 每条匹配对的最优融合算法画误差曲线
     for p = 1:length(matched_pairs)
-        mp = get_match_pair_multi(matched_pairs, p);
-        for m = 1:n_methods
-            snaps_m = all_fused_snapshots{p,m};
-            errs = build_frame_errors_multi(snaps_m, truthTrajs, frame_times, mp);
-            if ~isempty(errs) && sum(~isnan(errs)) > 2
-                smoothed = movmean(errs, 10, 'omitnan');
-                h = plot(frame_times, smoothed, 'LineStyle', method_ls{m}, ...
-                    'Color', method_clr{m}, 'LineWidth', 1.5);
-                all_h_lines(end+1) = h;
-                all_line_names{end+1} = sprintf('%s Pair#%d', method_names{m}, p);
-            end
+        snaps_m = all_fused_snapshots{p, best_method_idx};
+        errs = build_frame_errors_multi(snaps_m, truthTrajs, frame_times, []);
+        if ~isempty(errs) && sum(~isnan(errs)) > 2
+            smoothed = movmean(errs, 10, 'omitnan');
+            h = plot(frame_times, smoothed, 'Color', method_clr{best_method_idx}, 'LineWidth', 1.5);
+            all_h_lines(end+1) = h;
+            all_line_names{end+1} = sprintf('%s Pair#%d', best_method, p);
         end
     end
 
@@ -330,41 +339,37 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
 
     xlabel('时间 (s)'); ylabel('位置误差 (km)');
     title('误差收敛曲线 (滑动平均 10帧)');
-    legend(all_line_names, 'FontSize', 7, 'Location', 'best', 'NumColumns', 3);
+    legend(all_line_names, 'FontSize', 7, 'Location', 'best', 'NumColumns', 2);
 
     subplot(1, 2, 2);
     hold on; grid on;
     for p = 1:length(matched_pairs)
-        mp = get_match_pair_multi(matched_pairs, p);
-        for m = 1:n_methods
-            errs = [];
-            snaps_m = all_fused_snapshots{p,m};
-            for k = 1:length(snaps_m)
-                snap = snaps_m{k};
-                if isempty(snap.trackList), continue; end
-                ft = snap.trackList{1};
-                if isnan(ft.lat), continue; end
-                best_d = inf;
-                for ac = 1:3
-                    truth_ac = truthTrajs{ac};
-                    t_lon = interp1(truth_ac.time_sec, truth_ac.lon, frame_times(k), 'linear', 'extrap');
-                    t_lat = interp1(truth_ac.time_sec, truth_ac.lat, frame_times(k), 'linear', 'extrap');
-                    if isnan(t_lat), continue; end
-                    d = sphere_utils_haversine_distance(ft.lon, ft.lat, t_lon, t_lat) / 1000;
-                    if d < best_d, best_d = d; end
-                end
-                if best_d < inf, errs(end+1) = best_d; end
+        snaps_m = all_fused_snapshots{p, best_method_idx};
+        errs = [];
+        for k = 1:length(snaps_m)
+            snap = snaps_m{k};
+            if isempty(snap.trackList), continue; end
+            ft = snap.trackList{1};
+            if isnan(ft.lat), continue; end
+            best_d = inf;
+            for ac = 1:3
+                truth_ac = truthTrajs{ac};
+                t_lon = interp1(truth_ac.time_sec, truth_ac.lon, frame_times(k), 'linear', 'extrap');
+                t_lat = interp1(truth_ac.time_sec, truth_ac.lat, frame_times(k), 'linear', 'extrap');
+                if isnan(t_lat), continue; end
+                d = sphere_utils_haversine_distance(ft.lon, ft.lat, t_lon, t_lat) / 1000;
+                if d < best_d, best_d = d; end
             end
-            if ~isempty(errs)
-                [f, x] = ecdf(errs);
-                plot(x, f*100, 'LineStyle', method_ls{m}, ...
-                    'Color', method_clr{m}, 'LineWidth', 2);
-            end
+            if best_d < inf, errs(end+1) = best_d; end
+        end
+        if ~isempty(errs)
+            [f, x] = ecdf(errs);
+            plot(x, f*100, 'Color', method_clr{best_method_idx}, 'LineWidth', 2);
         end
     end
     xlabel('位置误差 (km)'); ylabel('累积概率 (%)');
     title('融合误差CDF');
-    legend(method_names, 'FontSize', 8, 'Location', 'southeast');
+    legend(best_method, 'FontSize', 8, 'Location', 'southeast');
 
     drawnow;
 end
