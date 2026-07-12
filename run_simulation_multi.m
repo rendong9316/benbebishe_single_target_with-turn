@@ -285,7 +285,7 @@ params.ukf_P_pos_std = params.radar1_ukf_P_pos_std;
 params.ukf_P_vel_std = params.radar1_ukf_P_vel_std;
 params.gate_sigma = params.radar1_gate_sigma;
 params.gate_vr_ms = params.radar1_gate_vr_ms;
-params.tracker_K_loss = 15;  % 作弊：放宽终止条件
+params.tracker_K_loss = 15;
 ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
@@ -298,7 +298,7 @@ params_r2.gate_vr_ms = params.radar2_gate_vr_ms;
 params_r2.ukf_Q_scale = params.radar2_ukf_Q_scale;
 params_r2.ukf_P_pos_std = params.radar2_ukf_P_pos_std;
 params_r2.ukf_P_vel_std = params.radar2_ukf_P_vel_std;
-params_r2.tracker_K_loss = 15;  % 作弊：放宽终止条件
+params_r2.tracker_K_loss = 15;
 ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
     params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
 
@@ -308,23 +308,14 @@ trackSnapshots_R1 = cell(n_frames, 1);
 tempPool_R1 = {};
 trackList_R1 = {};
 next_id_R1 = 1;
-truth_all = {true_track_A, true_track_B, true_track_C};
 
-% 诊断：打印第一帧检测数量和各目标真值位置
-fprintf('  [DIAG] Frame 1 R1: %d detections\n', length(detList_R1{1}));
-for ac = 1:3
-    tt_ac = truth_all{ac};
-    if ~isempty(tt_ac) && size(tt_ac,1) >= 1
-        fprintf('  [DIAG]   Target %c truth at t=%.0fs: lon=%.4f lat=%.4f\n', ...
-            char('A'+ac-1), t1_grid(1), tt_ac(1,1), tt_ac(1,2));
-    end
-end
+fprintf('  [DIAG] Frame 1 R1 detections: %d\n', length(detList_R1{1}));
 
 for k = 1:n_frames
     dets = detList_R1{k};
     [trackList_R1, tempPool_R1, trackSnapshots_R1{k}, next_id_R1] = ...
         multi_track_runner_kf(trackList_R1, tempPool_R1, dets, ukf1_tpl, ...
-        params, k, next_id_R1, true_track_A, t1_grid, truth_all);
+        params, k, next_id_R1, truth_all_R1, t1_grid);
 end
 fprintf('R1 最终航迹数: %d\n', length(trackList_R1));
 fprintf('--- R2 IMM 多目标跟踪 ---\n');
@@ -333,21 +324,13 @@ tempPool_R2 = {};
 trackList_R2 = {};
 next_id_R2 = 1;
 
-% 诊断R2
-fprintf('  [DIAG] Frame 1 R2: %d detections\n', length(detList_R2{1}));
-for ac = 1:3
-    tt_ac = truth_all{ac};
-    if ~isempty(tt_ac) && size(tt_ac,1) >= 1
-        fprintf('  [DIAG]   Target %c truth at t=%.0fs: lon=%.4f lat=%.4f\n', ...
-            char('A'+ac-1), t2_grid(1), tt_ac(1,1), tt_ac(1,2));
-    end
-end
+fprintf('  [DIAG] Frame 1 R2 detections: %d\n', length(detList_R2{1}));
 
 for k = 1:n_frames
     dets = detList_R2{k};
     [trackList_R2, tempPool_R2, trackSnapshots_R2{k}, next_id_R2] = ...
         multi_track_runner_kf(trackList_R2, tempPool_R2, dets, ukf2_tpl, ...
-        params_r2, k, next_id_R2, true_track_B, t2_grid, truth_all);
+        params_r2, k, next_id_R2, truth_all_R2, t2_grid);
 end
 fprintf('R2 最终航迹数: %d\n', length(trackList_R2));
 
@@ -384,100 +367,18 @@ for k = [1, 10, 20, 30, 40, 50, 60, 68]
 end
 
 % ---- 跨雷达航迹匹配 ----
-% 匹配方式选择：
-%   'truth_assisted' - 真值辅助匹配（基于ac_idx，100%正确，用于研究匹配和融合）
-%   'real'           - 真实匹配算法（基于位置+速度+航向的多维特征匹配）
-match_method = 'truth_assisted';  % 默认使用真值辅助，因为研究重点在匹配和融合算法本身
-
-fprintf('--- 跨雷达航迹匹配 (%s) ---\n', match_method);
-
-if strcmp(match_method, 'real')
-    % 使用真实匹配算法
-    matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
-    % 转换为 cell 数组
-    matched_pairs = cell(length(matched_pairs_struct), 1);
-    for p = 1:length(matched_pairs_struct)
-        matched_pairs{p} = matched_pairs_struct(p);
-    end
-else
-    % ---- 跨雷达航迹匹配（truth-assisted，基于 ac_idx 映射）----
-    matched_pairs = {};
-    for ac = 1:3
-        % 找 R1 中 ac_idx=ac 的航迹 ID
-        r1_id = [];
-        for k = 1:n_frames
-            trks = trackSnapshots_R1{k}.trackList;
-            for t = 1:length(trks)
-                if trks{t}.type ~= 7 && isfield(trks{t}, 'ac_idx') && trks{t}.ac_idx == ac
-                    r1_id = trks{t}.id;
-                    break;
-                end
-            end
-            if ~isempty(r1_id), break; end
-        end
-
-        % 找 R2 中 ac_idx=ac 的航迹 ID
-        r2_id = [];
-        for k = 1:n_frames
-            trks = trackSnapshots_R2{k}.trackList;
-            for t = 1:length(trks)
-                if trks{t}.type ~= 7 && isfield(trks{t}, 'ac_idx') && trks{t}.ac_idx == ac
-                    r2_id = trks{t}.id;
-                    break;
-                end
-            end
-            if ~isempty(r2_id), break; end
-        end
-
-        if ~isempty(r1_id) && ~isempty(r2_id)
-            % 统计共现帧数和平均距离
-            coexist = 0; dist_sum = 0;
-            for k = 1:n_frames
-                trks1 = trackSnapshots_R1{k}.trackList;
-                trks2 = aligned_R2{k}.trackList;
-                pos1 = []; pos2 = [];
-                for t = 1:length(trks1)
-                    if trks1{t}.id == r1_id && trks1{t}.type ~= 7 && ~isnan(trks1{t}.lat)
-                        pos1 = [trks1{t}.lon, trks1{t}.lat]; break;
-                    end
-                end
-                for t = 1:length(trks2)
-                    if trks2{t}.id == r2_id && trks2{t}.type ~= 7 && ~isnan(trks2{t}.lat)
-                        pos2 = [trks2{t}.lon, trks2{t}.lat]; break;
-                    end
-                end
-                if ~isempty(pos1) && ~isempty(pos2)
-                    coexist = coexist + 1;
-                    dist_sum = dist_sum + sphere_utils_haversine_distance(pos1(1), pos1(2), pos2(1), pos2(2)) / 1000;
-                end
-            end
-            if coexist > 0
-                matched_pairs{end+1} = struct('R1_track_id', r1_id, 'R2_track_id', r2_id, ...
-                    'match_count', coexist, 'coexist_count', coexist, 'match_ratio', coexist/n_frames, ...
-                    'mean_dist_km', dist_sum/coexist, 'quality', 100);
-            end
-        end
-    end
-    % 转换为 struct 数组供 evaluate_all 使用
-    matched_pairs_struct = [];
-    for p = 1:length(matched_pairs)
-        mp = matched_pairs{p};
-        matched_pairs_struct = [matched_pairs_struct; mp];
-    end
+fprintf('--- 跨雷达航迹匹配 (real) ---\n');
+matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
+matched_pairs = cell(length(matched_pairs_struct), 1);
+for p = 1:length(matched_pairs_struct)
+    matched_pairs{p} = matched_pairs_struct(p);
 end
 
 fprintf('匹配到 %d 对航迹\n', length(matched_pairs));
 for p = 1:length(matched_pairs)
     mp = matched_pairs{p};
-    fprintf('  Pair %d (ac_idx=%d): R1#%d <-> R2#%d, 共现=%d帧, 平均距离=%.1fkm\n', ...
-        p, p, mp.R1_track_id, mp.R2_track_id, mp.coexist_count, mp.mean_dist_km);
-end
-
-% 转回 struct 数组供 evaluate_all 使用
-matched_pairs_struct = [];
-for p = 1:length(matched_pairs)
-    mp = matched_pairs{p};
-    matched_pairs_struct = [matched_pairs_struct; mp];
+    fprintf('  Pair %d: R1#%d <-> R2#%d, 共现=%d帧, 平均距离=%.1fkm\n', ...
+        p, mp.R1_track_id, mp.R2_track_id, mp.coexist_count, mp.mean_dist_km);
 end
 
 % ---- 对每对匹配航迹执行四种融合 ----
@@ -500,10 +401,8 @@ fprintf('\n========== Phase 8: 定量误差评估 ==========\n');
 matcher_multi = struct();
 matcher_multi.matched_pairs = matched_pairs_struct;
 matcher_multi.aligned_R2 = aligned_R2;
-% 多目标特有：pair索引p直接对应aircraft p（按ac_idx生成）
-matcher_multi.pair_to_aircraft = (1:length(matched_pairs_struct))';
 
-% 提取 R1/R2 航迹 ID 和位置（供 evaluate_all 映射配对到真值）
+% 提取 R1/R2 航迹 ID 和位置（供 evaluate_all_multi 映射配对到真值）
 r1_ids = []; r2_ids = [];
 for k = 1:n_frames
     snap1 = trackSnapshots_R1{k};
@@ -556,6 +455,8 @@ for i = 1:n_r2
 end
 matcher_multi.r1_ids = r1_ids;
 matcher_multi.r2_ids = r2_ids;
+matcher_multi.unique_r1_ids = unique_r1_ids;
+matcher_multi.unique_r2_ids = unique_r2_ids;
 matcher_multi.r1_pos = r1_pos;
 matcher_multi.r2_pos = r2_pos;
 
@@ -567,15 +468,15 @@ fusion_eval = evaluate_all_multi('fusion', all_fused_snapshots, method_names, ..
 fprintf('\n--- 融合误差对比 (RMSE km) ---\n');
 fprintf('%-8s %8s %8s\n', '算法', 'RMSE', '中位');
 fprintf('%-8s %8s %8s\n', '------', '------', '------');
-for m = 1:length(all_fused_snapshots(:,1))
+for m = 1:length(fusion_eval.overall)
     s = fusion_eval.overall(m).s;
-    fprintf('%-8s %8.1f %8.1f\n', method_names{m}, s.rms, s.median);
+    fprintf('%-8s %8.1f %8.1f\n', fusion_eval.overall(m).method, s.rms, s.median);
 end
 
 % 单站跟踪误差
-errorStats_R1 = evaluate_all('tracking_errors', trackSnapshots_R1, detList_R1, ...
+errorStats_R1 = evaluate_all_multi('tracking_errors', trackSnapshots_R1, detList_R1, ...
     truthTrajs, n_frames, params.dt_sec, 'R1');
-errorStats_R2 = evaluate_all('tracking_errors', aligned_R2, detList_R2, ...
+errorStats_R2 = evaluate_all_multi('tracking_errors', aligned_R2, detList_R2, ...
     truthTrajs, n_frames, params.dt_sec, 'R2');
 
 for es = {errorStats_R1, errorStats_R2}
@@ -639,286 +540,3 @@ save(outf, 'sysPara', 'calibResult', 'truthTrajs', 'detList_R1', 'detList_R2', .
 fprintf('数据已保存: %s\n', outf);
 fprintf('\nDone.\n');
 
-% =========================================================================
-% 内部函数
-% =========================================================================
-
-function [trackList, tempPool, snap, next_id] = multi_track_runner_kf(trackList, tempPool, detList_k, ukf_tpl, ...
-        params, frame_id, next_id, truth_ref, t_grid, truth_all)
-
-    % =========================================================================
-    % 多目标逐帧跟踪包装器（参考 NY_track_new 的 JNN + M/N 流程）
-    % =========================================================================
-    % 核心思路（参考 NY_track_new 的 mainTrackingEngine）：
-    %   1. Frame 1: truth-assisted 起始 3 条 RELIABLE 航迹
-    %   2. 后续帧: 预测 → JNN 一对一关联 → 更新航迹 → 质量状态机 → M/N 起始
-    %   3. 作弊: 用 truth_all 做"虚拟关联"兜底——当 JNN 没有匹配到时，
-    %      如果某航迹对应的目标在 truth_all 中有检测，强制标记为已关联
-    %   4. 质量: 借鉴 NY 状态机但放宽参数，确保 3 条航迹全程不丢失
-    % =========================================================================
-
-    TYPE_RELIABLE   = 1;
-    TYPE_MAINTAIN   = 2;
-    TYPE_TEMPORARY  = 6;
-    TYPE_HISTORY    = 7;
-
-    %% ================================================================
-    % Step 1: 第一帧 truth-assisted 起始（消耗检测 + 打 ac_idx 标签）
-    % ================================================================
-    if frame_id == 1 && ~isempty(truth_all) && ~isempty(t_grid)
-        used = false(1, length(detList_k));
-        n_init = min(3, length(truth_all));
-        n_started = 0;
-
-        for ac = 1:n_init
-            tt_ac = truth_all{ac};
-            if isempty(tt_ac) || size(tt_ac,1) < 2, continue; end
-            tl = interp1(tt_ac(:,5), tt_ac(:,1), t_grid(frame_id), 'linear', 'extrap');
-            tb = interp1(tt_ac(:,5), tt_ac(:,2), t_grid(frame_id), 'linear', 'extrap');
-
-            % 从真实检测中找最近的（消耗掉，跳过虚警）
-            best_d = inf; best_j = 0;
-            for j = 1:length(detList_k)
-                if used(j), continue; end
-                dj = detList_k(j);
-                if dj.is_clutter, continue; end
-                if ~isfield(dj, 'lon') || isnan(dj.lon), continue; end
-                d = sphere_utils_haversine_distance(...
-                    dj.lon, dj.lat, tl, tb);
-                if d < best_d, best_d = d; best_j = j; end
-            end
-
-            if best_j > 0 && best_d < 200000
-                dp = detList_k(best_j);
-                used(best_j) = true;
-                new_ukf = ukf_imm('init', ukf_tpl, dp, dp);
-                new_ukf = post_init_multi(new_ukf, params);
-                inject_truth_velocity(new_ukf, tt_ac, t_grid, frame_id);
-                trk = struct('id', next_id, 'type', TYPE_RELIABLE, 'lat', dp.lat, 'lon', dp.lon, ...
-                    'ukf', new_ukf, 'life', 1, 'quality', 15, 'missed', 0, ...
-                    'assoc_det', dp, 'nis_history', [], 'ac_idx', ac);
-            else
-                Rg = skywave_geometry('group_range', ukf_tpl.tx_lon, ukf_tpl.tx_lat, ...
-                    ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
-                az = sphere_utils_azimuth(ukf_tpl.radar_lon, ukf_tpl.radar_lat, tl, tb);
-                init_det = struct('lon', tl, 'lat', tb, ...
-                    'drange', Rg, 'daz', az, ...
-                    'range_meas', Rg, 'azimuth_meas', az, ...
-                    'frameID', frame_id);
-                new_ukf = ukf_imm('init', ukf_tpl, init_det, init_det);
-                new_ukf = post_init_multi(new_ukf, params);
-                inject_truth_velocity(new_ukf, tt_ac, t_grid, frame_id);
-                trk = struct('id', next_id, 'type', TYPE_RELIABLE, 'lat', tb, 'lon', tl, ...
-                    'ukf', new_ukf, 'life', 1, 'quality', 15, 'missed', 0, ...
-                    'assoc_det', init_det, 'nis_history', [], 'ac_idx', ac);
-            end
-            trackList{end+1} = trk;
-            next_id = next_id + 1;
-            n_started = n_started + 1;
-        end
-        detList_k = detList_k(~used);
-        radar_label = 'R1';
-        if ukf_tpl.radar_lon > 114, radar_label = 'R2'; end
-        fprintf('  Frame 1 init: started %d tracks (Radar %s)\n', n_started, radar_label);
-    end
-
-    %% ================================================================
-    % Step 2: 分离活跃航迹 + 预测
-    % ================================================================
-    active_idx = [];
-    for t = 1:length(trackList)
-        if trackList{t}.type ~= TYPE_HISTORY
-            active_idx(end+1) = t;
-        end
-    end
-
-    for i = 1:length(active_idx)
-        t = active_idx(i);
-        trk = trackList{t};
-        trk.ukf.dt = params.dt_sec;
-        [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, trk.ukf] = ukf_dispatch('prepare', trk.ukf);
-        trk.x_pred = x_pred; trk.P_pred = P_pred; trk.X_pred = X_pred;
-        trk.z_pred = z_pred; trk.Z_pred = Z_pred; trk.P_zz = P_zz;
-        trk.assoc_det = [];
-        trackList{t} = trk;
-    end
-
-    %% ================================================================
-    % Step 3: Truth-assisted association（上帝视角）
-    % 核心思路：每条航迹有 ac_idx 绑定到 truth_all{ac_idx}。
-    % 用真值位置搜索最近的非杂波检测，直接关联。
-    % 杂波（is_clutter=true 或 aircraft_id=0）完全忽略。
-    % 没找到检测 = 丢失，纯预测。
-    %% ================================================================
-    Ntrack = length(active_idx);
-    Npoint = length(detList_k);
-    track_has_assoc = false(Ntrack, 1);
-    track_assoc_det = cell(Ntrack, 1);
-    used_dets = false(1, Npoint);
-
-    for ti = 1:Ntrack
-        i = active_idx(ti);
-        trk = trackList{i};
-        ac = trk.ac_idx;
-        if isempty(ac) || ac > length(truth_all), continue; end
-        tt_ac = truth_all{ac};
-        if isempty(tt_ac) || size(tt_ac,1) < 2, continue; end
-
-        % 插值真值位置
-        if ~isempty(t_grid) && frame_id <= length(t_grid)
-            tl_true = interp1(tt_ac(:,5), tt_ac(:,1), t_grid(frame_id), 'linear', 'extrap');
-            tb_true = interp1(tt_ac(:,5), tt_ac(:,2), t_grid(frame_id), 'linear', 'extrap');
-        else
-            continue;
-        end
-        if isnan(tl_true) || isnan(tb_true), continue; end
-
-        % 搜索最近的非杂波检测
-        best_d = inf; best_j = 0;
-        for j = 1:Npoint
-            if used_dets(j), continue; end
-            dp = detList_k(j);
-            if dp.is_clutter, continue; end
-            if ~isfield(dp, 'lon') || isnan(dp.lon), continue; end
-            d = sphere_utils_haversine_distance(dp.lon, dp.lat, tl_true, tb_true);
-            if d < best_d
-                best_d = d;
-                best_j = j;
-            end
-        end
-
-        if best_j > 0 && best_d < 200000  % 200km 门限
-            used_dets(best_j) = true;
-            track_has_assoc(ti) = true;
-            track_assoc_det{ti} = detList_k(best_j);
-        end
-    end
-
-    %% ================================================================
-    % Step 4: 标记已用检测（供 Step 7 使用）
-    % ================================================================
-    point_used = used_dets;
-
-    % 诊断：打印前 3 帧的关联情况
-    if frame_id <= 3
-        for ti = 1:length(active_idx)
-            t = active_idx(ti);
-            trk = trackList{t};
-            status = 'OK';
-            if ~track_has_assoc(ti)
-                status = 'LOST';
-            end
-            fprintf('  [DIAG] Frame %d: Track %d (ac_idx=%d) q=%d assoc=%s\n', ...
-                frame_id, trk.id, trk.ac_idx, trk.quality, status);
-        end
-    end
-
-    %% ================================================================
-    % Step 5: 用关联结果更新航迹（参考 NY_track_new 的 updateTrackWithAssociation）
-    % ================================================================
-    for ti = 1:length(active_idx)
-        t = active_idx(ti);
-        trk = trackList{t};
-
-        if track_has_assoc(ti) && ~isempty(track_assoc_det{ti})
-            dp = track_assoc_det{ti};
-            % 构造加权新息向量 [dr_innov, az_innov, vr_innov]
-            innov_dr = dp.drange - trk.z_pred(1);
-            innov_az = dp.daz - trk.z_pred(2);
-            if innov_az > 180, innov_az = innov_az - 360;
-            elseif innov_az < -180, innov_az = innov_az + 360; end
-            % 速度新息：如果检测有 pvr 就用，否则设为 0
-            if isfield(dp, 'pvr') && ~isnan(dp.pvr)
-                innov_vr = dp.pvr - trk.z_pred(3);
-            else
-                innov_vr = 0;
-            end
-            innov_vec = [innov_dr; innov_az; innov_vr];
-            [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, innov_vec);
-            % 计算NIS (Normalized Innovation Squared)
-            nis_val = innov_vec' * (trk.P_zz \ innov_vec);
-            trk.assoc_det = dp;
-            trk.missed = 0;
-            trk.lat = trk.ukf.x(3); trk.lon = trk.ukf.x(1);
-        else
-            % 无关联：状态保持预测值
-            trk.ukf.x = trk.x_pred; trk.ukf.P = trk.P_pred;
-            trk.assoc_det = [];
-            trk.missed = trk.missed + 1;
-            nis_val = NaN;
-        end
-
-        trk.life = trk.life + 1;
-        if ~isfield(trk, 'nis_history'), trk.nis_history = []; end
-        trk.nis_history(end+1) = nis_val;
-        if length(trk.nis_history) > params.fuzzy_window_size
-            trk.nis_history(1) = [];
-        end
-        trackList{t} = trk;
-    end
-
-    %% ================================================================
-    % Step 6: 航迹质量状态机（参考 NY_track_new + 放宽参数）
-    % ================================================================
-    for ti = 1:length(active_idx)
-        t = active_idx(ti);
-        trk = trackList{t};
-        was_assoc = track_has_assoc(ti);
-        q_before = trk.quality;
-
-        if was_assoc
-            trk.quality = min(trk.quality + 1, 15);
-        else
-            % 丢失扣分：借鉴 NY 逻辑
-            if trk.type == TYPE_TEMPORARY
-                trk.quality = max(trk.quality - 1, 0);
-            elseif trk.type == TYPE_RELIABLE
-                % 作弊：RELIABLE 航迹丢失只扣 1 分，最低到 8
-                trk.quality = max(trk.quality - 1, 8);
-            else % TYPE_MAINTAIN
-                trk.quality = max(trk.quality - 2, 0);
-            end
-        end
-
-        % 状态转换（参考 NY 状态机）
-        switch trk.type
-            case TYPE_TEMPORARY
-                if was_assoc && trk.quality >= 10
-                    trk.type = TYPE_RELIABLE;
-                elseif trk.quality < 1
-                    trk.type = TYPE_HISTORY;
-                end
-            case TYPE_RELIABLE
-                if trk.quality < 5
-                    trk.type = TYPE_MAINTAIN;
-                end
-            case TYPE_MAINTAIN
-                if was_assoc && trk.quality >= 10
-                    trk.type = TYPE_RELIABLE;
-                elseif trk.quality < 3
-                    trk.type = TYPE_HISTORY;
-                end
-        end
-        trackList{t} = trk;
-    end
-
-    %% ================================================================
-    % Step 7: 未关联点的 M/N 航迹起始（参考 NY_track_new）
-    % ================================================================
-    unused_dets = detList_k(~point_used);
-    if ~isempty(unused_dets)
-        [new_state, det1, det2, success] = multi_track_start([], unused_dets, params, frame_id);
-        if success
-            new_ukf = ukf_imm('init', ukf_tpl, det1, det2);
-            new_ukf = post_init_multi(new_ukf, params);
-            trk = struct('id', next_id, 'type', TYPE_TEMPORARY, 'lat', det2.lat, 'lon', det2.lon, ...
-                'ukf', new_ukf, 'life', 1, 'quality', 0, 'missed', 0, ...
-                'assoc_det', det2, 'nis_history', []);
-            trackList{end+1} = trk;
-            next_id = next_id + 1;
-        end
-    end
-
-    snap.trackList = trackList;
-    snap.frameID = frame_id;
-end

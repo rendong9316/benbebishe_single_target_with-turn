@@ -1,139 +1,287 @@
 % =========================================================================
-% jpda_multi.m — 多目标 JPDA 关联（真值辅助作弊版）
+% jpda_multi.m — 多目标 JPDA 关联
 % =========================================================================
-%
-% 【核心思路】
-%   纯 JPDA 在多目标交叉时失效，因为所有检测都会落入所有航迹的波门内，
-%   加权新息被杂波稀释。本实现用"作弊"手段解决这个问题：
-%
-%   1. 第一帧用真值辅助起始（贪心选3个最分散的检测）
-%   2. 关联时先用空间聚类将检测分配到最近的航迹
-%   3. 然后在每个航迹的窄波门内做 PDA 加权更新
-%   4. 放宽航迹终止条件（quality<5 才降为 MAINTAIN）
-%
-% 【输入】
-%   trackList   — 航迹 cell 数组
-%   active_idx  — 活跃航迹索引数组
-%   detList     — 检测点迹结构体数组
-%   params      — 参数结构体
-%   truth_all   — (可选) 真值轨迹 cell 数组
-%
-% 【输出】
-%   assoc_pairs — N_tracks x 2 矩阵
-%   dets_in_gate — N_tracks x 1 cell
-%   innov_w — N_tracks x 1 cell (3x1)
+% 仅依赖航迹预测、校正后点迹和参数，不读取真值标签。
 % =========================================================================
 
-function [assoc_pairs, dets_in_gate, innov_w] = jpda_multi(trackList, active_idx, detList, params, truth_all)
+function [assoc, det_used_prob] = jpda_multi(trackList, active_idx, detList, params)
     n_tracks = length(active_idx);
     n_dets = length(detList);
-    assoc_pairs = zeros(0, 2);
-    dets_in_gate = cell(n_tracks, 1);
-    innov_w = cell(n_tracks, 1);
+    assoc = cell(n_tracks, 1);
+    det_used_prob = zeros(1, n_dets);
 
+    for i = 1:n_tracks
+        assoc{i} = empty_assoc(active_idx(i), i);
+    end
     if n_tracks == 0 || n_dets == 0
         return;
     end
 
-    gate_threshold = params.gate_sigma^2 * 2;
-    geo_gate_m = 80000;  % 80km 地理门
+    gate = build_gate(trackList, active_idx, detList, params);
+    events = enumerate_events(gate.gated_indices, n_dets, params);
+    if isempty(events)
+        events = zeros(1, n_tracks);
+    end
 
-    % ---- Step 1: 空间聚类分配检测 ----
-    % 为每条航迹收集门内检测
+    log_w = compute_event_log_weights(events, gate, params);
+    max_log_w = max(log_w);
+    if ~isfinite(max_log_w)
+        event_w = zeros(size(log_w));
+        all_miss = all(events == 0, 2);
+        if any(all_miss)
+            event_w(find(all_miss, 1)) = 1;
+        else
+            event_w(1) = 1;
+        end
+    else
+        event_w = exp(log_w - max_log_w);
+        total_w = sum(event_w);
+        if total_w <= 0 || ~isfinite(total_w)
+            event_w = zeros(size(log_w));
+            event_w(1) = 1;
+        else
+            event_w = event_w / total_w;
+        end
+    end
+
+    beta = zeros(n_tracks, n_dets);
+    beta0 = zeros(n_tracks, 1);
+    for e = 1:size(events, 1)
+        for i = 1:n_tracks
+            j = events(e, i);
+            if j == 0
+                beta0(i) = beta0(i) + event_w(e);
+            else
+                beta(i, j) = beta(i, j) + event_w(e);
+            end
+        end
+    end
+    det_used_prob = min(1, sum(beta, 1));
+
     for i = 1:n_tracks
-        t = active_idx(i);
-        trk = trackList{t};
-        if ~isfield(trk, 'P_zz'), continue; end
-        P_zz_2d = trk.P_zz(1:2, 1:2);
-        if any(isnan(P_zz_2d(:))), continue; end
-        z_pred = trk.z_pred;
+        det_indices = find(beta(i, :) > 1e-6);
+        betas = beta(i, det_indices);
+        innov_w = zeros(3, 1);
+        for d = 1:length(det_indices)
+            j = det_indices(d);
+            innov_w = innov_w + beta(i, j) * gate.innov3{i, j};
+        end
 
-        gate_dets = {};
-        gate_innov_2d = {};
-        gate_innov_3d = {};
+        nis = NaN;
+        if ~isempty(det_indices)
+            trk = trackList{active_idx(i)};
+            if isfield(trk, 'P_zz') && isequal(size(trk.P_zz), [3, 3])
+                P = regularize_local(trk.P_zz);
+                nis = innov_w' * (P \ innov_w);
+            end
+        end
+
+        best_det_index = 0;
+        if ~isempty(det_indices)
+            [~, pos] = max(betas);
+            best_det_index = det_indices(pos);
+        end
+
+        assoc{i} = struct('track_index', active_idx(i), ...
+            'active_position', i, ...
+            'det_indices', det_indices, ...
+            'betas', betas, ...
+            'beta0', beta0(i), ...
+            'innov_w', innov_w, ...
+            'nis', nis, ...
+            'best_det_index', best_det_index);
+    end
+end
+
+
+function gate = build_gate(trackList, active_idx, detList, params)
+    n_tracks = length(active_idx);
+    n_dets = length(detList);
+    gate.gated = false(n_tracks, n_dets);
+    gate.gated_indices = cell(n_tracks, 1);
+    gate.log_likelihood = -inf(n_tracks, n_dets);
+    gate.innov3 = cell(n_tracks, n_dets);
+
+    gate_threshold = get_param(params, 'gate_sigma', 6)^2 * 2;
+    Pd = get_param(params, 'detection_probability', 0.9);
+    Pg = get_param(params, 'pda_pd_gate', 0.8647);
+    log_pd = log(max(Pd * Pg, realmin));
+
+    for i = 1:n_tracks
+        trk = trackList{active_idx(i)};
+        if ~isfield(trk, 'P_zz') || ~isfield(trk, 'z_pred') || ~isfield(trk, 'x_pred')
+            continue;
+        end
+        if ~isequal(size(trk.P_zz), [3, 3])
+            continue;
+        end
+
+        P2 = regularize_local(trk.P_zz(1:2, 1:2));
+        detP2 = max(det(P2), realmin);
+        log_norm = -0.5 * (2 * log(2*pi) + log(detP2));
+        if isfield(trk, 'life') && trk.life <= 5
+            geo_gate_m = get_param(params, 'jpda_geo_gate_m_initial', 120000);
+        else
+            geo_gate_m = get_param(params, 'jpda_geo_gate_m_stable', 80000);
+        end
+        if isfield(trk, 'missed')
+            geo_gate_m = geo_gate_m + trk.missed * get_param(params, 'jpda_geo_gate_m_missed_step', 15000);
+        end
 
         for j = 1:n_dets
             dp = detList(j);
-            if ~isfield(dp, 'drange') || isnan(dp.drange), continue; end
-
-            % 地理预筛
-            if isfield(dp, 'lat') && ~isnan(dp.lat) && isfield(trk, 'x_pred')
-                geo_dist = sphere_utils_haversine_distance(...
-                    trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
-                if geo_dist > geo_gate_m, continue; end
+            if ~valid_det(dp)
+                continue;
             end
 
-            % 2D 马氏距离门控
-            z_meas = [dp.drange; dp.paz];
-            innov_2d = z_meas - z_pred(1:2);
-            if innov_2d(2) > 180, innov_2d(2) = innov_2d(2) - 360;
-            elseif innov_2d(2) < -180, innov_2d(2) = innov_2d(2) + 360; end
-            mahal = innov_2d' * (P_zz_2d \ innov_2d);
-            if mahal >= gate_threshold, continue; end
-
-            % 3D 新息
-            vr_meas = dp.pvr;
-            vr_pred = z_pred(3);
-            innov_3d = [innov_2d; vr_meas - vr_pred];
-
-            gate_dets{end+1} = dp;
-            gate_innov_2d{end+1} = innov_2d;
-            gate_innov_3d{end+1} = innov_3d;
-        end
-
-        n_gate = length(gate_dets);
-        if n_gate > 0
-            % PDA 权重
-            beta_vec = zeros(n_gate + 1, 1);
-            for g = 1:n_gate
-                beta_vec(g) = normpdf(0, sqrt(gate_threshold), 1) * ...
-                    exp(-gate_innov_2d{g}' * inv(P_zz_2d) * gate_innov_2d{g} / 2) / ...
-                    sqrt(det(2*pi*P_zz_2d));
+            geo_dist = sphere_utils_haversine_distance(trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
+            if geo_dist > geo_gate_m
+                continue;
             end
-            beta_vec(n_gate+1) = 1 - sum(beta_vec(1:n_gate)) * params.pda_pd_gate;
-            beta_vec = beta_vec / max(sum(beta_vec), eps);
 
-            weighted_innov = zeros(3, 1);
-            for g = 1:n_gate
-                weighted_innov = weighted_innov + beta_vec(g) * gate_innov_3d{g};
+            z2 = [dp.drange; dp.daz];
+            innov2 = z2 - trk.z_pred(1:2);
+            innov2(2) = wrap_angle(innov2(2));
+            mahal = innov2' * (P2 \ innov2);
+            if mahal >= gate_threshold
+                continue;
             end
-            nis_val = weighted_innov' * (trk.P_zz \ weighted_innov);
 
-            dets_in_gate{i} = gate_dets;
-            innov_w{i} = weighted_innov;
-        else
-            dets_in_gate{i} = {};
-            innov_w{i} = zeros(3, 1);
-            nis_val = NaN;
-        end
+            z3 = [dp.drange; dp.daz; get_vr(dp)];
+            innov3 = z3 - trk.z_pred;
+            innov3(2) = wrap_angle(innov3(2));
 
-        if ~isfield(trk, 'nis_history'), trk.nis_history = []; end
-        trk.nis_history(end+1) = nis_val;
-        if length(trk.nis_history) > params.fuzzy_window_size
-            trk.nis_history(1) = [];
-        end
-        trackList{t} = trk;
-    end
-
-    % ---- Step 2: 构建关联对 ----
-    for i = 1:n_tracks
-        if isempty(dets_in_gate{i}), continue; end
-        ref_det = dets_in_gate{i}{1};
-        det_idx = 0;
-        for j = 1:length(detList)
-            if detList(j).drange == ref_det.drange && ...
-               detList(j).paz == ref_det.paz && ...
-               detList(j).frameID == ref_det.frameID
-                det_idx = j;
-                break;
-            end
-        end
-        if det_idx > 0
-            assoc_pairs(end+1, :) = [active_idx(i), det_idx];
+            gate.gated(i, j) = true;
+            gate.gated_indices{i}(end+1) = j;
+            gate.innov3{i, j} = innov3;
+            gate.log_likelihood(i, j) = log_pd + log_norm - 0.5 * mahal;
         end
     end
 end
 
-function y = normpdf(x, mu, sigma)
-    y = exp(-(x-mu).^2 / (2*sigma^2)) / (sqrt(2*pi) * sigma);
+
+function events = enumerate_events(gated_indices, n_dets, params)
+    n_tracks = length(gated_indices);
+    events = zeros(0, n_tracks);
+    current = zeros(1, n_tracks);
+    used = false(1, n_dets);
+    max_hyp = get_param(params, 'jpda_max_hypotheses', 5000);
+    events = recurse_events(1, gated_indices, used, current, events, max_hyp);
+end
+
+
+function events = recurse_events(i, gated_indices, used, current, events, max_hyp)
+    if size(events, 1) >= max_hyp
+        return;
+    end
+    if i > length(gated_indices)
+        events(end+1, :) = current;
+        return;
+    end
+
+    current(i) = 0;
+    events = recurse_events(i + 1, gated_indices, used, current, events, max_hyp);
+    if size(events, 1) >= max_hyp
+        return;
+    end
+
+    cand = gated_indices{i};
+    for c = 1:length(cand)
+        j = cand(c);
+        if used(j)
+            continue;
+        end
+        used(j) = true;
+        current(i) = j;
+        events = recurse_events(i + 1, gated_indices, used, current, events, max_hyp);
+        used(j) = false;
+        if size(events, 1) >= max_hyp
+            return;
+        end
+    end
+end
+
+
+function log_w = compute_event_log_weights(events, gate, params)
+    n_events = size(events, 1);
+    n_tracks = size(events, 2);
+    log_w = zeros(n_events, 1);
+    miss_prob = max(1 - get_param(params, 'detection_probability', 0.9) * ...
+        get_param(params, 'pda_pd_gate', 0.8647), realmin);
+    log_miss = log(miss_prob);
+
+    for e = 1:n_events
+        lw = 0;
+        for i = 1:n_tracks
+            j = events(e, i);
+            if j == 0
+                lw = lw + log_miss;
+            else
+                lw = lw + gate.log_likelihood(i, j);
+            end
+        end
+        log_w(e) = lw;
+    end
+end
+
+
+function assoc = empty_assoc(track_index, active_position)
+    assoc = struct('track_index', track_index, ...
+        'active_position', active_position, ...
+        'det_indices', [], ...
+        'betas', [], ...
+        'beta0', 1, ...
+        'innov_w', zeros(3, 1), ...
+        'nis', NaN, ...
+        'best_det_index', 0);
+end
+
+
+function ok = valid_det(dp)
+    ok = isfield(dp, 'lat') && isfield(dp, 'lon') && ...
+        isfield(dp, 'drange') && isfield(dp, 'daz') && ...
+        ~isnan(dp.lat) && ~isnan(dp.lon) && ...
+        ~isnan(dp.drange) && ~isnan(dp.daz);
+end
+
+
+function vr = get_vr(dp)
+    if isfield(dp, 'radial_vel_meas') && ~isnan(dp.radial_vel_meas)
+        vr = dp.radial_vel_meas;
+    elseif isfield(dp, 'pvr') && ~isnan(dp.pvr)
+        vr = dp.pvr;
+    else
+        vr = 0;
+    end
+end
+
+
+function P = regularize_local(P)
+    P = (P + P') / 2;
+    if any(isnan(P(:))) || any(isinf(P(:)))
+        P = eye(size(P));
+        return;
+    end
+    jitter = 1e-9;
+    tries = 0;
+    while rcond(P) < 1e-12 && tries < 6
+        P = P + eye(size(P)) * jitter;
+        jitter = jitter * 10;
+        tries = tries + 1;
+    end
+end
+
+
+function a = wrap_angle(a)
+    if a > 180 || a < -180
+        a = a - 360 * round(a / 360);
+    end
+end
+
+
+function value = get_param(params, name, default_value)
+    value = default_value;
+    if isfield(params, name)
+        value = params.(name);
+    end
 end

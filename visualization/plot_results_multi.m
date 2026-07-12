@@ -215,7 +215,7 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
     % 融合航迹 (每种算法不同颜色)
     method_colors = {[0 0.5 0], [0.8 0.4 0], [0 0 0.8], [0.6 0 0.6]};
     for p = 1:length(matched_pairs)
-        mp = matched_pairs(p);
+        mp = get_match_pair_multi(matched_pairs, p);
         for m = 1:length(method_names)
             snaps_m = all_fused_snapshots{p,m};
             fused_pos = collect_fused_positions_multi(snaps_m);
@@ -294,7 +294,7 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
 
     % 每条匹配对的每种融合算法画误差曲线
     for p = 1:length(matched_pairs)
-        mp = matched_pairs{p};
+        mp = get_match_pair_multi(matched_pairs, p);
         for m = 1:n_methods
             snaps_m = all_fused_snapshots{p,m};
             errs = build_frame_errors_multi(snaps_m, truthTrajs, frame_times, mp);
@@ -335,7 +335,7 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
     subplot(1, 2, 2);
     hold on; grid on;
     for p = 1:length(matched_pairs)
-        mp = matched_pairs{p};
+        mp = get_match_pair_multi(matched_pairs, p);
         for m = 1:n_methods
             errs = [];
             snaps_m = all_fused_snapshots{p,m};
@@ -467,6 +467,14 @@ function show_all_cb_multi(cb, h_all)
     for i = 1:length(cb)
         if cb(i) ~= 0, set(cb(i), 'Value', 1); end
         try_set_visible_multi(h_all(i), 1);
+    end
+end
+
+function mp = get_match_pair_multi(matched_pairs, p)
+    if iscell(matched_pairs)
+        mp = matched_pairs{p};
+    else
+        mp = matched_pairs(p);
     end
 end
 

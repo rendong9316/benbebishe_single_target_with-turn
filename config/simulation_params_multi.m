@@ -25,12 +25,41 @@ function params = simulation_params_multi()
     % 多目标差异化参数
     % =====================================================================
 
-    % 检测概率：作弊模式，每帧每个目标都产生检测
-    % 原因：多目标关联歧义已经很难，如果再叠加60%漏检，航迹会大量丢失
+    % 检测概率：多目标首阶段先保证检测连续，重点验证起始与 JPDA 关联链路
     params.detection_probability = 1.0;
 
     % IMM 双模型转移概率（CV=常速, CT=恒转弯）
     % 0.001 表示平均每1000帧才会发生一次模型切换，适合直线交叉场景
     params.imm_Pi_CV_to_CT = 0.001;
     params.imm_Pi_CT_to_CV = 0.001;
+
+    % 多目标 M/N 起始参数
+    params.multi_truth_init_enable = true;
+    params.multi_truth_init_gate_m = 120000;
+    params.multi_truth_init_quality = 12;
+    params.multi_start_M = 3;
+    params.multi_start_N = 4;
+    params.multi_start_max_gap_frames = 2;
+    params.multi_start_max_misses = 2;
+    params.multi_start_min_speed_ms = 80;
+    params.multi_start_max_speed_ms = 380;
+    params.multi_start_heading_gate_deg = 60;
+    params.multi_start_initial_quality = 5;
+    params.multi_start_used_prob_threshold = 0.35;
+    params.multi_duplicate_gate_m = 50000;
+    params.multi_prune_duplicate_gate_m = 10000;
+    params.multi_prune_protect_life = 8;
+    params.multi_fallback_geo_gate_m = 90000;
+
+    % 多目标 JPDA 参数
+    params.jpda_geo_gate_m_initial = 160000;
+    params.jpda_geo_gate_m_stable = 90000;
+    params.jpda_geo_gate_m_missed_step = 20000;
+    params.jpda_max_hypotheses = 5000;
+    params.jpda_min_update_prob = 0.05;
+
+    % 多目标航迹质量参数
+    params.multi_confirm_quality = 8;
+    params.multi_maintain_quality = 4;
+    params.tracker_K_loss = 15;
 end

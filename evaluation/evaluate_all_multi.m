@@ -128,6 +128,44 @@ function fusion_eval = evaluate_fusion_multi(all_fused_snapshots, method_names, 
     n_ac = length(truthTrajs);
     frame_times = (0:n_frames-1) * dt_sec;
 
+    if isempty(matched_pairs)
+        fusion_errs = cell(n_methods, n_ac);
+        r1_errs = cell(1, n_ac);
+        r2_errs = cell(1, n_ac);
+        for m = 1:n_methods
+            for a = 1:n_ac
+                fusion_errs{m, a} = [];
+            end
+        end
+        for a = 1:n_ac
+            r1_errs{a} = [];
+            r2_errs{a} = [];
+        end
+        summary = struct();
+        for m = 1:n_methods
+            for a = 1:n_ac
+                summary(m,a).method = method_names{m};
+                summary(m,a).aircraft = a;
+                summary(m,a).s = compute_err_stats_eval([]);
+            end
+        end
+        overall = struct();
+        all_methods = [method_names, {'R1_only', 'R2_only'}];
+        for m = 1:length(all_methods)
+            overall(m).method = all_methods{m};
+            overall(m).s = compute_err_stats_eval([]);
+        end
+        fusion_eval = struct('method_names', {method_names}, ...
+            'pair_to_aircraft', [], ...
+            'fusion_errors', {fusion_errs}, ...
+            'r1_errors', {r1_errs}, ...
+            'r2_errors', {r2_errs}, ...
+            'summary', summary, ...
+            'overall', overall);
+        fprintf('\n无跨雷达匹配对，跳过融合误差评估。\n');
+        return;
+    end
+
     % Step 1: Map R1-R2 matched pairs to true aircraft
     pair_to_aircraft = zeros(length(matched_pairs), 1);
 
@@ -138,7 +176,11 @@ function fusion_eval = evaluate_fusion_multi(all_fused_snapshots, method_names, 
         % 原来基于位置的猜测逻辑（单目标场景）
         for p = 1:length(matched_pairs)
             mp = matched_pairs(p);
-            r1_idx = find(matcher.r1_ids == mp.R1_track_id, 1);
+            if isfield(matcher, 'unique_r1_ids')
+                r1_idx = find(matcher.unique_r1_ids == mp.R1_track_id, 1);
+            else
+                r1_idx = find(matcher.r1_ids(:,1) == mp.R1_track_id, 1);
+            end
             if isempty(r1_idx), continue; end
             r1_lons = squeeze(matcher.r1_pos(r1_idx, :, 1))';
             r1_lats = squeeze(matcher.r1_pos(r1_idx, :, 2))';
@@ -160,9 +202,15 @@ function fusion_eval = evaluate_fusion_multi(all_fused_snapshots, method_names, 
 
     fprintf('\n匹配对 -> 真值飞机映射:\n');
     for p = 1:length(matched_pairs)
+        ac = pair_to_aircraft(p);
+        if ac < 1 || ac > length(truthTrajs)
+            fprintf('  Pair %d (R1#%d <-> R2#%d) -> 未映射\n', ...
+                p, matched_pairs(p).R1_track_id, matched_pairs(p).R2_track_id);
+            continue;
+        end
         fprintf('  Pair %d (R1#%d <-> R2#%d) -> 飞机%s\n', ...
             p, matched_pairs(p).R1_track_id, matched_pairs(p).R2_track_id, ...
-            truthTrajs{pair_to_aircraft(p)}.label);
+            truthTrajs{ac}.label);
     end
 
     % Step 2: Compute fusion track errors frame by frame
