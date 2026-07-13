@@ -367,7 +367,11 @@ end
 
 % ---- 跨雷达航迹匹配 ----
 fprintf('--- 跨雷达航迹匹配 (real) ---\n');
-matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
+if isfield(params, 'track_matcher_method') && strcmp(params.track_matcher_method, 'dualgate')
+    matched_pairs_struct = track_matcher_dualgate(trackSnapshots_R1, aligned_R2, params);
+else
+    matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
+end
 matched_pairs = cell(length(matched_pairs_struct), 1);
 for p = 1:length(matched_pairs_struct)
     matched_pairs{p} = matched_pairs_struct(p);

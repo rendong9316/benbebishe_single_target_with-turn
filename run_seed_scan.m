@@ -193,6 +193,7 @@ function [r1_rmse, r2_rmse, r1_ratio, r2_ratio, n1, n2] = run_one_seed(seed)
         params.ukf_P_vel_std = params.radar1_ukf_P_vel_std;
         params.gate_sigma = params.radar1_gate_sigma;
         params.gate_vr_ms = params.radar1_gate_vr_ms;
+        params.track_matcher_method = 'dualgate';
         ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
         params_r2 = params;

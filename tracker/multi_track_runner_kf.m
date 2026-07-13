@@ -518,13 +518,10 @@ end
 
 
 function penalty = miss_penalty(track_type)
-    % RELIABLE 主航迹漏检不扣分：靠 K_loss 兜底，避免目标短暂消失后航迹过早死亡
     if track_type == 6
         penalty = 1;
-    elseif track_type == 1
-        penalty = 0;
     else
-        penalty = 2;
+        penalty = 1;
     end
 end
 

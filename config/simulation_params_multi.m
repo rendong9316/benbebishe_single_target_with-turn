@@ -67,9 +67,17 @@ function params = simulation_params_multi()
     params.motion_gate_margin_m = 25000;
     params.motion_gate_max_m = 60000;
 
+    % 双门限航迹关联参数（开题报告）
+    params.track_matcher_method = 'dualgate';  % 'dualgate' 或 'legacy'
+    params.dualgate_T1_km = 35;            % 第一门限：距离粗筛
+    params.dualgate_M = 8;                 % 第二门限：连续帧数
+    params.dualgate_var_km2 = 50;          % 方差校验阈值
+    params.dualgate_coexist_thresh = 5;    % 最少共现帧数
+    params.dualgate_mutual_exclusion = true;  % 互斥后处理：每条航迹只保留最佳匹配
+
     % 多目标航迹质量参数
     params.multi_confirm_quality = 8;
     params.multi_maintain_quality = 4;
-    params.tracker_K_loss = 25;
+    params.tracker_K_loss = 15;
     params.multi_truth_reinit_enable = false;
 end

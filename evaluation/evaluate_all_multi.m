@@ -40,8 +40,15 @@ function errorStats = compute_tracking_errors_multi(trackSnapshots, detList, tru
         ukf_lats{a} = [];  det_lats{a} = [];  raw_lats{a} = [];
 
         for k = 1:n_frames
-            t_true_lat = interp1(tt.time_sec, tt.lat, frame_times(k), 'linear', 'extrap');
-            t_true_lon = interp1(tt.time_sec, tt.lon, frame_times(k), 'linear', 'extrap');
+            tnow = frame_times(k);
+            if tnow < tt.time_sec(1) || tnow > tt.time_sec(end)
+                continue;
+            end
+            t_true_lat = interp1(tt.time_sec, tt.lat, tnow, 'linear');
+            t_true_lon = interp1(tt.time_sec, tt.lon, tnow, 'linear');
+            if isnan(t_true_lat) || isnan(t_true_lon)
+                continue;
+            end
 
             snap = trackSnapshots{k};
             if ~isempty(snap.trackList)
