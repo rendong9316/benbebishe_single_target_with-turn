@@ -156,8 +156,7 @@ function plot_multi_track_result(true_track_A, true_track_B, true_track_C, ...
     drawnow;
 end
 
-% =========================================================================
-% 2. plot_multi_fusion_result — 多目标融合结果可视化
+% ========================================================================= — 多目标融合结果可视化
 % =========================================================================
 function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
         trackSnapshots_R1, trackSnapshots_R2, all_fused_snapshots, ...

@@ -4,7 +4,11 @@
 % 目的：验证多目标起始、关联、滤波、匹配、融合的全链路稳定性
 %
 % 场景矩阵：5种 × 10个种子 = 50次仿真
-% 指标：R1/R2 RMSE(3目标) / 关联率 / 航迹数 / 匹配对数 / 融合RMSE
+% 指标：R1/R2 RMSE(3目标) / 关联率 / 峰值航迹数 / 真值覆盖数 /
+%       匹配对数 / 融合RMSE / 融合中位数
+%
+% 每次 run_one_run 末尾弹出 fig4(single_track) + fig5(single_fusion) 图窗，
+% 与 run_simulation_multi.m 保持一致。图窗停留不关闭，方便查看。
 % =========================================================================
 
 function run_scenario_scan_full()
@@ -45,7 +49,7 @@ function run_scenario_scan_full()
 
             % 每完成一个就保存，防止意外中断丢失
             if mod(sd, 5) == 0 || sd == n_seeds
-                save_partial(results, seeds, n_scenarios, n_seeds);
+                save_partial(results, seeds);
             end
         end
     end
@@ -255,16 +259,23 @@ function metrics = run_one_run(sname, way_A, way_B, way_C, seed)
         end
 
         % === Phase 8: 评估 ===
+        % 构建 matcher_multi（移植自 run_simulation_multi.m:408-465）
+        matcher_multi = build_matcher_multi(trackSnapshots_R1, aligned_R2, n_frames);
+        matcher_multi.matched_pairs = matched_pairs_struct;
+        matcher_multi.aligned_R2 = aligned_R2;
+
+        % 融合评估：使用 evaluate_all_multi 的正确 pair→真值映射
+        fusion_eval = evaluate_all_multi('fusion', all_fused_snapshots, method_names, ...
+            matched_pairs_struct, trackSnapshots_R1, trackSnapshots_R2, ...
+            truthTrajs, n_frames, params.dt_sec, matcher_multi);
+
+        % 单雷达 RMSE/关联率：R2 用 aligned_R2 修正 13s 时间偏置
         [r1_rmse, r1_ratio] = compute_metrics_local(trackSnapshots_R1, truthTrajs, n_frames, params.dt_sec);
-        [r2_rmse, r2_ratio] = compute_metrics_local(trackSnapshots_R2, truthTrajs, n_frames, params.dt_sec);
+        [r2_rmse, r2_ratio] = compute_metrics_local(aligned_R2, truthTrajs, n_frames, params.dt_sec);
 
-        % 融合 RMSE (SCC) — 从 matched_pairs_struct 中提取 R1/R2 trackList
-        fusion_rmse = compute_fusion_rmse_local(all_fused_snapshots, matched_pairs_struct, ...
-            trackSnapshots_R1, trackSnapshots_R2, truthTrajs, n_frames, params.dt_sec, aligned_R2);
-
-        % 航迹数
-        n1 = count_active_local(trackList_R1);
-        n2 = count_active_local(trackList_R2);
+        % 峰值航迹数 + 真值覆盖数
+        [peak_n1, coverage_n1] = compute_track_coverage(trackSnapshots_R1, truthTrajs, n_frames, params.dt_sec);
+        [peak_n2, coverage_n2] = compute_track_coverage(aligned_R2, truthTrajs, n_frames, params.dt_sec);
 
         % 每帧检测数统计
         avg_dets_r1 = mean(cellfun(@length, detList_R1));
@@ -274,10 +285,13 @@ function metrics = run_one_run(sname, way_A, way_B, way_C, seed)
         metrics.r2_rmse = r2_rmse(1);
         metrics.r1_ratio = r1_ratio(1);
         metrics.r2_ratio = r2_ratio(1);
-        metrics.fusion_rmse = fusion_rmse;
+        metrics.fusion_rmse = fusion_eval.overall(1).s.rms;
+        metrics.fusion_median = fusion_eval.overall(1).s.median;
         metrics.n_pairs = n_pairs;
-        metrics.n1_tracks = n1;
-        metrics.n2_tracks = n2;
+        metrics.peak_n1_tracks = peak_n1;
+        metrics.peak_n2_tracks = peak_n2;
+        metrics.coverage_n1 = coverage_n1;
+        metrics.coverage_n2 = coverage_n2;
         metrics.avg_dets_r1 = avg_dets_r1;
         metrics.avg_dets_r2 = avg_dets_r2;
         metrics.success = true;
@@ -287,13 +301,27 @@ function metrics = run_one_run(sname, way_A, way_B, way_C, seed)
         metrics.all_r1_ratio = r1_ratio;
         metrics.all_r2_ratio = r2_ratio;
 
-        fprintf('  R1 RMSE: T1=%.1f T2=%.1f T3=%.1f | ratios=[%.2f %.2f %.2f] | n=%d | avg_dets=%.1f\n', ...
+        fprintf('  R1 RMSE: T1=%.1f T2=%.1f T3=%.1f | ratios=[%.2f %.2f %.2f] | peak=%d cov=%d/3 | avg_dets=%.1f\n', ...
             metrics.all_r1_rmse(1), metrics.all_r1_rmse(2), metrics.all_r1_rmse(3), ...
-            metrics.all_r1_ratio(1), metrics.all_r1_ratio(2), metrics.all_r1_ratio(3), n1, avg_dets_r1);
-        fprintf('  R2 RMSE: T1=%.1f T2=%.1f T3=%.1f | ratios=[%.2f %.2f %.2f] | n=%d | avg_dets=%.1f\n', ...
+            metrics.all_r1_ratio(1), metrics.all_r1_ratio(2), metrics.all_r1_ratio(3), ...
+            peak_n1, coverage_n1, avg_dets_r1);
+        fprintf('  R2 RMSE: T1=%.1f T2=%.1f T3=%.1f | ratios=[%.2f %.2f %.2f] | peak=%d cov=%d/3 | avg_dets=%.1f\n', ...
             metrics.all_r2_rmse(1), metrics.all_r2_rmse(2), metrics.all_r2_rmse(3), ...
-            metrics.all_r2_ratio(1), metrics.all_r2_ratio(2), metrics.all_r2_ratio(3), n2, avg_dets_r2);
-        fprintf('  Pairs=%d, Fusion(SCC) RMSE=%.1f km\n\n', n_pairs, fusion_rmse);
+            metrics.all_r2_ratio(1), metrics.all_r2_ratio(2), metrics.all_r2_ratio(3), ...
+            peak_n2, coverage_n2, avg_dets_r2);
+        fprintf('  Pairs=%d, Fusion SCC RMSE=%.1f km (median=%.1f)\n\n', n_pairs, metrics.fusion_rmse, metrics.fusion_median);
+
+        % === Phase 9: 可视化（与 run_simulation_multi.m figure 4/5 一致）===
+        % Figure 4: 多目标跟踪综合图
+        plot_results_multi('single_track', true_track_A, true_track_B, true_track_C, ...
+            detList_R1, detList_R2, trackSnapshots_R1, trackSnapshots_R2, params, []);
+        drawnow;
+
+        % Figure 5: 多目标融合可视化（内部产生 地理图 + 误差曲线/CDF 两张子图）
+        plot_results_multi('single_fusion', true_track_A, true_track_B, true_track_C, ...
+            trackSnapshots_R1, trackSnapshots_R2, all_fused_snapshots, ...
+            method_names, matched_pairs, fusion_eval, truthTrajs, params, []);
+        drawnow;
 
     catch ME
         fprintf('  FAILED: %s\n', ME.message);
@@ -302,15 +330,94 @@ function metrics = run_one_run(sname, way_A, way_B, way_C, seed)
         metrics.all_r1_ratio = [0 0 0];
         metrics.all_r2_ratio = [0 0 0];
         metrics.fusion_rmse = NaN;
+        metrics.fusion_median = NaN;
         metrics.n_pairs = 0;
-        metrics.n1_tracks = 0;
-        metrics.n2_tracks = 0;
+        metrics.peak_n1_tracks = 0;
+        metrics.peak_n2_tracks = 0;
+        metrics.coverage_n1 = 0;
+        metrics.coverage_n2 = 0;
         metrics.avg_dets_r1 = 0;
         metrics.avg_dets_r2 = 0;
         metrics.success = false;
         metrics.error = ME.message;
         fprintf('  FAILED: %s\n', metrics.error);
     end
+end
+
+
+function matcher_multi = build_matcher_multi(trackSnapshots_R1, aligned_R2, n_frames)
+    % 移植自 run_simulation_multi.m:408-465
+    r1_ids = []; r2_ids = [];
+    for k = 1:n_frames
+        snap1 = trackSnapshots_R1{k};
+        snap2 = aligned_R2{k};
+        if isfield(snap1, 'trackList')
+            trks1 = snap1.trackList;
+            for t = 1:length(trks1)
+                trk = trks1{t};
+                if trk.type ~= 7 && ~isnan(trk.lat)
+                    r1_ids(end+1, :) = [trk.id, k, trk.lon, trk.lat];
+                end
+            end
+        end
+        if isfield(snap2, 'trackList')
+            trks2 = snap2.trackList;
+            for t = 1:length(trks2)
+                trk = trks2{t};
+                if trk.type ~= 7 && ~isnan(trk.lat)
+                    r2_ids(end+1, :) = [trk.id, k, trk.lon, trk.lat];
+                end
+            end
+        end
+    end
+
+    if isempty(r1_ids)
+        unique_r1_ids = [];
+        r1_pos = nan(0, n_frames, 2);
+    else
+        unique_r1_ids = unique(r1_ids(:,1));
+        n_r1 = length(unique_r1_ids);
+        r1_pos = nan(n_r1, n_frames, 2);
+        for i = 1:n_r1
+            rid = unique_r1_ids(i);
+            rows = r1_ids(r1_ids(:,1) == rid, :);
+            for r = 1:size(rows,1)
+                fk = round(rows(r,2));
+                if fk >= 1 && fk <= n_frames
+                    r1_pos(i, fk, 1) = rows(r,3);
+                    r1_pos(i, fk, 2) = rows(r,4);
+                end
+            end
+        end
+    end
+
+    if isempty(r2_ids)
+        unique_r2_ids = [];
+        r2_pos = nan(0, n_frames, 2);
+    else
+        unique_r2_ids = unique(r2_ids(:,1));
+        n_r2 = length(unique_r2_ids);
+        r2_pos = nan(n_r2, n_frames, 2);
+        for i = 1:n_r2
+            rid = unique_r2_ids(i);
+            rows = r2_ids(r2_ids(:,1) == rid, :);
+            for r = 1:size(rows,1)
+                fk = round(rows(r,2));
+                if fk >= 1 && fk <= n_frames
+                    r2_pos(i, fk, 1) = rows(r,3);
+                    r2_pos(i, fk, 2) = rows(r,4);
+                end
+            end
+        end
+    end
+
+    matcher_multi = struct();
+    matcher_multi.r1_ids = r1_ids;
+    matcher_multi.r2_ids = r2_ids;
+    matcher_multi.unique_r1_ids = unique_r1_ids;
+    matcher_multi.unique_r2_ids = unique_r2_ids;
+    matcher_multi.r1_pos = r1_pos;
+    matcher_multi.r2_pos = r2_pos;
 end
 
 
@@ -327,6 +434,7 @@ function [rmse, ratio] = compute_metrics_local(snaps, truthTrajs, n_frames, dt_s
 
         ids = [];
         for k = 1:n_frames
+            if ~isfield(snaps{k}, 'trackList'), continue; end
             trks = snaps{k}.trackList;
             for t = 1:length(trks)
                 if trks{t}.type ~= 7 && ~isnan(trks{t}.lat)
@@ -385,87 +493,48 @@ function [rmse, ratio] = compute_metrics_local(snaps, truthTrajs, n_frames, dt_s
 end
 
 
-function fusion_rmse = compute_fusion_rmse_local(all_fused, matched_pairs, ...
-        snap_R1, snap_R2, truthTrajs, n_frames, dt_sec, aligned_R2)
-    if isempty(matched_pairs) || length(matched_pairs) == 0
-        fusion_rmse = NaN;
-        return;
-    end
-    n_pairs = length(matched_pairs);
-    n_ac = length(truthTrajs);
-    frame_times = (0:n_frames-1) * dt_sec;
-
-    % 用 evaluate_all_multi 的逻辑映射 pair -> aircraft
-    matcher = struct();
-    matcher.pair_to_aircraft = zeros(n_pairs, 1);
-    for p = 1:n_pairs
-        mp = matched_pairs(p);
-        r1_id = mp.R1_track_id;
-        best_ac = 0; best_d = inf;
-        for ac = 1:n_ac
-            tt = truthTrajs{ac};
-            d_sum = 0; n = 0;
-            for k = 1:n_frames
-                tnow = frame_times(k);
-                if tnow < tt.time_sec(1) || tnow > tt.time_sec(end), continue; end
-                tl = interp1(tt.time_sec, tt.lon, tnow, 'linear', 'extrap');
-                tb = interp1(tt.time_sec, tt.lat, tnow, 'linear', 'extrap');
-                trks = snap_R1{k}.trackList;
-                for t = 1:length(trks)
-                    if ~isnan(trks{t}.lon)
-                        d = sphere_utils_haversine_distance(trks{t}.lon, trks{t}.lat, tl, tb) / 1000;
-                        d_sum = d_sum + d; n = n + 1;
-                        break;
-                    end
-                end
-            end
-            if n > 0 && d_sum/n < best_d
-                best_d = d_sum/n;
-                best_ac = ac;
+function [peak_n, coverage_n] = compute_track_coverage(snaps, truthTrajs, n_frames, dt_sec)
+    peak_n = 0;
+    for k = 1:n_frames
+        if ~isfield(snaps{k}, 'trackList'), continue; end
+        n_active = 0;
+        trks = snaps{k}.trackList;
+        for t = 1:length(trks)
+            trk = trks{t};
+            if trk.type ~= 7 && ~isnan(trk.lat)
+                n_active = n_active + 1;
             end
         end
-        matcher.pair_to_aircraft(p) = best_ac;
+        if n_active > peak_n
+            peak_n = n_active;
+        end
     end
 
-    % 计算融合 RMSE（SCC = method 1）
-    sq_sum = 0; n_err = 0;
-    for p = 1:n_pairs
-        ac = matcher.pair_to_aircraft(p);
-        if ac == 0, continue; end
+    n_ac = length(truthTrajs);
+    coverage_n = 0;
+    for ac = 1:n_ac
         tt = truthTrajs{ac};
-        fused_snaps = all_fused{p, 1}; % SCC
-        for k = 1:n_frames
-            tnow = frame_times(k);
-            if tnow < tt.time_sec(1) || tnow > tt.time_sec(end), continue; end
+        n_true_frames = floor((tt.time_sec(end) - tt.time_sec(1)) / dt_sec) + 1;
+        followed = false;
+        for k = 1:min(n_true_frames, n_frames)
+            tnow = (k-1) * dt_sec;
             tl = interp1(tt.time_sec, tt.lon, tnow, 'linear', 'extrap');
             tb = interp1(tt.time_sec, tt.lat, tnow, 'linear', 'extrap');
-            fused_k = fused_snaps{k};
-            if isempty(fused_k.trackList), continue; end
-            for t = 1:length(fused_k.trackList)
-                ftrk = fused_k.trackList{t};
-                if isnan(ftrk.lat), continue; end
-                d = sphere_utils_haversine_distance(ftrk.lon, ftrk.lat, tl, tb) / 1000;
-                if d < 100
-                    sq_sum = sq_sum + d^2;
-                    n_err = n_err + 1;
+            if ~isfield(snaps{k}, 'trackList'), continue; end
+            trks = snaps{k}.trackList;
+            for t = 1:length(trks)
+                trk = trks{t};
+                if trk.type == 7 || isnan(trk.lat), continue; end
+                d = sphere_utils_haversine_distance(trk.lon, trk.lat, tl, tb) / 1000;
+                if d < 30
+                    followed = true;
+                    break;
                 end
-                break;
             end
+            if followed, break; end
         end
-    end
-    if n_err > 0
-        fusion_rmse = sqrt(sq_sum / n_err);
-    else
-        fusion_rmse = NaN;
-    end
-end
-
-
-function n = count_active_local(trackList)
-    n = 0;
-    for i = 1:length(trackList)
-        if trackList{i}.type ~= 7
-            n = n + 1;
+        if followed
+            coverage_n = coverage_n + 1;
         end
     end
 end
@@ -484,7 +553,7 @@ function [trackSnapshots, trackList] = run_tracker(detList, ukf_tpl, params, n_f
 end
 
 
-function save_partial(results, seeds, n_scenarios, n_seeds)
+function save_partial(results, seeds)
     save('results/scan_full_partial.mat', 'results', 'seeds', '-v7.3');
 end
 
@@ -497,20 +566,22 @@ function print_full_summary(results, seeds, n_scenarios, n_seeds)
 
     scenario_names = {'strong_cross', 'parallel_sep', 'converge', 'speed_diff', 'cross_180'};
 
-    % 按场景统计
     fprintf('\n=== Per-Scenario Statistics (over %d seeds) ===\n\n', n_seeds);
 
     for sc = 1:n_scenarios
         fprintf('--- Scenario %d: %s ---\n', sc, char(scenario_names{sc}));
 
-        % 收集成功运行的种子
         r1_all = zeros(n_seeds, 3);
         r2_all = zeros(n_seeds, 3);
         ratios_r1 = zeros(n_seeds, 3);
         ratios_r2 = zeros(n_seeds, 3);
         fusion_all = zeros(n_seeds, 1);
+        fusion_med_all = zeros(n_seeds, 1);
         pairs_all = zeros(n_seeds, 1);
-        ntracks_all = zeros(n_seeds, 2);
+        peak_n1_all = zeros(n_seeds, 1);
+        peak_n2_all = zeros(n_seeds, 1);
+        cov_n1_all = zeros(n_seeds, 1);
+        cov_n2_all = zeros(n_seeds, 1);
         success_count = 0;
 
         for sd = 1:n_seeds
@@ -532,9 +603,12 @@ function print_full_summary(results, seeds, n_scenarios, n_seeds)
             ratios_r2(success_count, 2) = m.all_r2_ratio(2);
             ratios_r2(success_count, 3) = m.all_r2_ratio(3);
             fusion_all(success_count) = m.fusion_rmse;
+            fusion_med_all(success_count) = m.fusion_median;
             pairs_all(success_count) = m.n_pairs;
-            ntracks_all(success_count, 1) = m.n1_tracks;
-            ntracks_all(success_count, 2) = m.n2_tracks;
+            peak_n1_all(success_count) = m.peak_n1_tracks;
+            peak_n2_all(success_count) = m.peak_n2_tracks;
+            cov_n1_all(success_count) = m.coverage_n1;
+            cov_n2_all(success_count) = m.coverage_n2;
         end
 
         if success_count == 0
@@ -549,7 +623,7 @@ function print_full_summary(results, seeds, n_scenarios, n_seeds)
             r1s = std(r1_all(1:success_count, ac));
             r2m = mean(r2_all(1:success_count, ac));
             r2s = std(r2_all(1:success_count, ac));
-            fprintf('  Target %d: R1 RMSE=%.1f±%.1f km | R2 RMSE=%.1f±%.1f km\n', ...
+            fprintf('  Target %d: R1 RMSE=%.1f+-%.1f km | R2 RMSE=%.1f+-%.1f km\n', ...
                 ac, r1m, r1s, r2m, r2s);
         end
 
@@ -559,20 +633,26 @@ function print_full_summary(results, seeds, n_scenarios, n_seeds)
 
         fm = mean(fusion_all(1:success_count));
         fs = std(fusion_all(1:success_count));
-        fprintf('  Fusion(SCC) RMSE: %.1f±%.1f km\n', fm, fs);
+        fmed_m = mean(fusion_med_all(1:success_count));
+        fprintf('  Fusion(SCC) RMSE: %.1f+-%.1f km | median avg=%.1f km\n', fm, fs, fmed_m);
 
         pm = mean(pairs_all(1:success_count));
         ps = std(pairs_all(1:success_count));
-        fprintf('  Match pairs: %.1f±%.1f\n', pm, ps);
+        fprintf('  Match pairs: %.1f+-%.1f\n', pm, ps);
 
-        nm1 = mean(ntracks_all(1:success_count, 1));
-        ns1 = std(ntracks_all(1:success_count, 1));
-        nm2 = mean(ntracks_all(1:success_count, 2));
-        ns2 = std(ntracks_all(1:success_count, 2));
-        fprintf('  Active tracks: R1=%.1f±%.1f | R2=%.1f±%.1f\n\n', nm1, ns1, nm2, ns2);
+        pm1 = mean(peak_n1_all(1:success_count));
+        ps1 = std(peak_n1_all(1:success_count));
+        pm2 = mean(peak_n2_all(1:success_count));
+        ps2 = std(peak_n2_all(1:success_count));
+        fprintf('  Peak concurrent tracks: R1=%.1f+-%.1f | R2=%.1f+-%.1f\n', pm1, ps1, pm2, ps2);
+
+        cm1 = mean(cov_n1_all(1:success_count));
+        cs1 = std(cov_n1_all(1:success_count));
+        cm2 = mean(cov_n2_all(1:success_count));
+        cs2 = std(cov_n2_all(1:success_count));
+        fprintf('  Truth coverage (of 3): R1=%.1f+-%.1f | R2=%.1f+-%.1f\n\n', cm1, cs1, cm2, cs2);
     end
 
-    % 全局排名
     fprintf('\n=== Scenario Stability Ranking (by R1 RMSE mean) ===\n');
     rank_data = struct();
     for sc = 1:n_scenarios
@@ -586,6 +666,9 @@ function print_full_summary(results, seeds, n_scenarios, n_seeds)
         end
         if count > 0
             rank_data(sc).mean_rmse = rmse_sum / count;
+            rank_data(sc).name = char(scenario_names{sc});
+        else
+            rank_data(sc).mean_rmse = inf;
             rank_data(sc).name = char(scenario_names{sc});
         end
     end
