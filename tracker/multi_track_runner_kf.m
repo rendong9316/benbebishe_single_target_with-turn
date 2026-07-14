@@ -20,6 +20,14 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
     end
     detList_k = filter_valid_dets(detList_k);
 
+    % 真值辅助终止：truth-init 起始的航迹，对应真值结束后立即转 HISTORY，
+    % 避免纯预测外推导致航迹越过真值终点（修复3号航迹越界）
+    if length(varargin) >= 2 && get_param(params, 'multi_truth_terminate_enable', true)
+        truth_all_term = varargin{1};
+        t_grid_term = varargin{2};
+        [trackList, ~] = truth_terminate_finished(trackList, truth_all_term, t_grid_term, frame_id, TYPE_HISTORY);
+    end
+
     if isempty(trackList) && get_param(params, 'multi_truth_init_enable', false) && length(varargin) >= 2
         truth_all = varargin{1};
         t_grid = varargin{2};
@@ -303,12 +311,42 @@ function [trackList, detList_k, next_id] = truth_init_tracks(trackList, detList_
             'assoc_det', det2, ...
             'nis_history', [], ...
             'birth_frame', frame_id, ...
-            'death_frame', []);
+            'death_frame', [], ...
+            'truth_idx', ac);
         trackList{end+1} = trk;
         next_id = next_id + 1;
         used(best_j) = true;
     end
     detList_k = detList_k(~used);
+end
+
+
+function [trackList, n_terminated] = truth_terminate_finished(trackList, truth_all, t_grid, frame_id, type_history)
+    n_terminated = 0;
+    if isempty(truth_all) || frame_id > length(t_grid)
+        return;
+    end
+    t_now = t_grid(frame_id);
+    for ti = 1:length(trackList)
+        trk = trackList{ti};
+        if trk.type == type_history
+            continue;
+        end
+        if ~isfield(trk, 'truth_idx') || isnan(trk.truth_idx) || ...
+                trk.truth_idx < 1 || trk.truth_idx > length(truth_all)
+            continue;
+        end
+        tt = truth_all{trk.truth_idx};
+        if isempty(tt) || size(tt, 2) < 5
+            continue;
+        end
+        if t_now > tt(end, 5)
+            trk.type = type_history;
+            trk.death_frame = frame_id;
+            trackList{ti} = trk;
+            n_terminated = n_terminated + 1;
+        end
+    end
 end
 
 

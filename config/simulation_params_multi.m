@@ -80,4 +80,7 @@ function params = simulation_params_multi()
     params.multi_maintain_quality = 4;
     params.tracker_K_loss = 15;
     params.multi_truth_reinit_enable = false;
+    % 真值辅助终止：truth-init 航迹在对应真值结束后立即转 HISTORY，
+    % 防止纯预测外推越过真值终点（修复短航迹结束后续命问题）
+    params.multi_truth_terminate_enable = true;
 end
