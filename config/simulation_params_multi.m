@@ -8,7 +8,7 @@
 %   多目标场景下需要差异化的参数。
 %
 % 【与单目标场景的参数差异】
-%   - detection_probability = 1.0  （作弊模式：每帧必检，确保3目标不丢失）
+%   - detection_probability = 0.6  （雷达特性硬约束，与单目标一致，不作弊）
 %   - radar1_ukf_Q_scale = 1e5    （与单目标一致，保证交叉区域滤波稳定）
 %   - radar2_ukf_Q_scale = 2e5    （与单目标一致）
 %   - 新增 imm_Pi_CV_to_CT/CT_to_CV （IMM 双模型转移概率）
@@ -25,8 +25,8 @@ function params = simulation_params_multi()
     % 多目标差异化参数
     % =====================================================================
 
-    % 检测概率：多目标首阶段先保证检测连续，重点验证起始与 JPDA 关联链路
-    params.detection_probability = 1.0;
+    % 检测概率：雷达特性硬约束，不可调整
+    params.detection_probability = 0.6;
 
     % IMM 双模型转移概率（CV=常速, CT=恒转弯）
     % 0.001 表示平均每1000帧才会发生一次模型切换，适合直线交叉场景

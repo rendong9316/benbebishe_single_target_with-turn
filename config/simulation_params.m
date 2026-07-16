@@ -413,9 +413,8 @@ params.gate_sigma = 2.5;
 %   - 同频段其他 OTH-SWR 的互干扰
 
 % 单帧检测概率 P_d
-% P_d = 1.0: 多目标跟踪场景下，每帧 3 个目标都需要被可靠检测。
-% 作弊模式：设 Pd=1.0 保证每帧每个目标都有检测。
-params.detection_probability = 1.0;
+% P_d = 0.6: 雷达特性硬约束，不可调整。
+params.detection_probability = 0.6;
 
 % 单分辨单元虚警率 P_fa
 % P_fa = 0.001: 每千个距离-方位分辨单元平均产生 1 个虚警。在总共
