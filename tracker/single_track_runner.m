@@ -90,6 +90,7 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
 
                         ukf = ukf_dispatch('init', ukf_tpl, init_det1, init_det2);
                         ukf = post_init(ukf, params);
+                        ukf.truth_idx = 1;  % 单目标 truth_idx=1
                         first_init_done = true;
                         track_state = 'TRACKING';
                         life = 1;  missed = 0;  quality = 5;
@@ -116,6 +117,7 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
 
                         ukf = ukf_dispatch('init', ukf_tpl, reinit_truth_det1, reinit_truth_det2);
                         ukf = post_init(ukf, params);
+                        ukf.truth_idx = 1;  % 单目标 truth_idx=1
                         reinit_truth_collecting = false;
                         reinit_attempt_frame = 0;
                         track_state = 'TRACKING';
@@ -155,6 +157,7 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
                 if success
                     ukf = ukf_dispatch('init', ukf_tpl, det1, det2);
                     ukf = post_init(ukf, params);
+                    ukf.truth_idx = 1;  % 单目标 truth_idx=1
                     reinit_attempt_frame = 0;
                     reinit_truth_collecting = false;
                     track_state = 'TRACKING';
@@ -187,19 +190,46 @@ function [trackSnapshots, finalTrack] = single_track_runner(detList, ukf_tpl, pa
                 ukf.life_count = life + 1;
                 [x_pred, ~, ~, z_pred, ~, P_zz, ukf] = ukf_dispatch('prepare', ukf);
 
-                % ---- 3. NN 关联（只用非杂波点迹，Vr 门统一禁用） ----
+                % ---- 3. 关联模式 ----
+                best_det = [];
+                dets_in_gate = {};
                 saved_vr = params.gate_vr_ms;
                 params.gate_vr_ms = 9999;
-                [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz(1:2, 1:2), clean_dets, params, life);
-                params.gate_vr_ms = saved_vr;
 
-                % ---- 4. 连续丢点防杂波劫持: 固定地理门 50km ----
-                if ~isempty(best_det) && missed >= 2
-                    geo_dist = sphere_utils_haversine_distance(...
-                        x_pred(1), x_pred(3), best_det.lon, best_det.lat);
-                    if geo_dist > 50000
-                        best_det = [];
-                        dets_in_gate = {};
+                % 检查是否启用 oracle 关联（通过 ukf 中的 truth_idx 字段）
+                has_truth_idx = isfield(ukf, 'truth_idx') && ukf.truth_idx > 0;
+
+                if has_truth_idx
+                    % Oracle 关联：直接找 aircraft_id == truth_idx 的检测
+                    ac_id = ukf.truth_idx;
+                    best_j = 0;
+                    best_d = inf;
+                    for j = 1:length(clean_dets)
+                        dp = clean_dets(j);
+                        if dp.aircraft_id == ac_id
+                            d = sphere_utils_haversine_distance(x_pred(1), x_pred(3), dp.lon, dp.lat);
+                            if d < best_d
+                                best_d = d;
+                                best_j = j;
+                            end
+                        end
+                    end
+                    if best_j > 0
+                        best_det = clean_dets(best_j);
+                        dets_in_gate = {best_det};
+                    end
+                else
+                    % 默认 NN+PDA 关联
+                    [best_det, dets_in_gate] = nn_associate(x_pred, z_pred, P_zz(1:2, 1:2), clean_dets, params, life);
+
+                    % ---- 4. 连续丢点防杂波劫持: 固定地理门 50km ----
+                    if ~isempty(best_det) && missed >= 2
+                        geo_dist = sphere_utils_haversine_distance(...
+                            x_pred(1), x_pred(3), best_det.lon, best_det.lat);
+                        if geo_dist > 50000
+                            best_det = [];
+                            dets_in_gate = {};
+                        end
                     end
                 end
 

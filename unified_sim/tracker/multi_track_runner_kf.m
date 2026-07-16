@@ -66,7 +66,11 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
         trackList{t} = trk;
     end
 
-    if strcmp(get_param(params, 'multi_single_assoc_mode', 'jpda'), 'nn_pda') && get_param(params, 'n_targets', 1) == 1
+    % 关联模式: 'jpda' (默认) | 'nn_pda' (单目标) | 'oracle' (真值辅助)
+    assoc_mode = get_param(params, 'multi_single_assoc_mode', 'jpda');
+    if strcmp(assoc_mode, 'oracle') || strcmp(assoc_mode, 'truth')
+        [assoc, det_used_prob] = oracle_assoc(trackList, active_idx, detList_k, params);
+    elseif strcmp(assoc_mode, 'nn_pda') && get_param(params, 'n_targets', 1) == 1
         [assoc, det_used_prob] = single_nn_pda_assoc(trackList, active_idx, detList_k, params);
     else
         [assoc, det_used_prob] = jpda_multi(trackList, active_idx, detList_k, params);
@@ -740,6 +744,65 @@ function penalty = miss_penalty(track_type)
         penalty = 1;
     else
         penalty = 1;
+    end
+end
+
+
+% =========================================================================
+% oracle_assoc — 真值辅助关联（oracle association）
+% =========================================================================
+% 按 aircraft_id 直接命中：每条航迹携带 truth_idx，
+% 每帧从检测中找 truth_idx == ac 的检测，有则关联、无则 miss++。
+% 虚警检测的 aircraft_id == 0，自然被过滤。
+% =========================================================================
+function [assoc, det_used_prob] = oracle_assoc(trackList, active_idx, detList_k, params)
+    n_tracks = length(active_idx);
+    n_dets = length(detList_k);
+    assoc = cell(n_tracks, 1);
+    det_used_prob = zeros(1, n_dets);
+
+    for i = 1:n_tracks
+        assoc{i} = empty_assoc_runner(active_idx(i), i);
+    end
+    if n_tracks == 0 || n_dets == 0
+        return;
+    end
+
+    for i = 1:n_tracks
+        trk = trackList{active_idx(i)};
+        ac = trk.truth_idx;  % 航迹对应的真值目标编号
+
+        % 找 truth_idx == ac 的检测（aircraft_id 字段）
+        best_j = 0;
+        best_d = inf;
+        for j = 1:n_dets
+            dp = detList_k(j);
+            det_ac = dp.aircraft_id;
+            if det_ac ~= ac
+                continue;
+            end
+            % 在波门内（用预测位置 + 大波门）
+            if ~isfield(trk, 'x_pred') || ~isfield(trk, 'P_pred')
+                continue;
+            end
+            d = sphere_utils_haversine_distance(trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
+            if d < best_d
+                best_d = d;
+                best_j = j;
+            end
+        end
+
+        if best_j > 0
+            dp = detList_k(best_j);
+            innov_vec = [dp.drange - trk.z_pred(1); wrap_angle_local(dp.daz - trk.z_pred(2)); dp.radial_vel_meas - trk.z_pred(3)];
+            assoc{i}.det_indices = best_j;
+            assoc{i}.betas = [1];
+            assoc{i}.beta0 = 0;
+            assoc{i}.innov_w = innov_vec;
+            assoc{i}.nis = innov_vec' * (trk.P_zz \ innov_vec);
+            assoc{i}.best_det_index = best_j;
+            det_used_prob(best_j) = 1;
+        end
     end
 end
 

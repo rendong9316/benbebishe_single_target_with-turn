@@ -310,6 +310,7 @@ for u = 1:N_UKF
     pr1.gate_sigma = params.radar1_gate_sigma;
     pr1.gate_vr_ms = params.radar1_gate_vr_ms;
     pr1.tracker_K_loss = params.radar1_tracker_K_loss;
+    pr1.multi_single_assoc_mode = 'oracle';  % 真值辅助关联
     if u >= 3, pr1.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
     % ---- 创建 UKF 模板 ----
@@ -349,6 +350,7 @@ for u = 1:N_UKF
     pr2.tracker_M = 4;
     pr2.tracker_N = 8;
     pr2.tracker_K_loss = params.radar2_tracker_K_loss;
+    pr2.multi_single_assoc_mode = 'oracle';  % 真值辅助关联
     if u >= 3, pr2.imm_turn_rate_rad_per_sec = turn_rate_rad_per_sec; end
 
     % ---- 创建 UKF 模板 ----

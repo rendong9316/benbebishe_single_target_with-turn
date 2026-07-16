@@ -4,8 +4,8 @@
 % 多目标专属航迹生命周期：预测 → JPDA → 更新 → 质量维护 → M/N 起始。
 % =========================================================================
 
-function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
-        trackList, tempPool, detList_k, ukf_tpl, params, frame_id, next_id, varargin)
+function [trackList, tempPool, snap, next_id, init_pool] = multi_track_runner_kf( ...
+        trackList, tempPool, detList_k, ukf_tpl, params, frame_id, next_id, init_pool, varargin)
 
     TYPE_RELIABLE = 1;
     TYPE_MAINTAIN = 2;
@@ -18,6 +18,9 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
     if isempty(tempPool)
         tempPool = {};
     end
+    if nargin < 8 || isempty(init_pool)
+        init_pool = struct();
+    end
     detList_k = filter_valid_dets(detList_k);
 
     % 真值辅助终止：truth-init 起始的航迹，对应真值结束后立即转 HISTORY，
@@ -28,12 +31,13 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
         [trackList, ~] = truth_terminate_finished(trackList, truth_all_term, t_grid_term, frame_id, TYPE_HISTORY);
     end
 
-    if isempty(trackList) && get_param(params, 'multi_truth_init_enable', false) && length(varargin) >= 2
+    % 真值辅助起始（3/5 oracle）：每帧检查每个真值目标，
+    % 滑窗内 ≥M 个真实检测则用最早+最近两点起始。不虚构检测。
+    if get_param(params, 'multi_truth_init_enable', false) && length(varargin) >= 2
         truth_all = varargin{1};
         t_grid = varargin{2};
-        [trackList, detList_k, next_id] = truth_init_tracks(trackList, detList_k, ...
-            ukf_tpl, params, frame_id, next_id, truth_all, t_grid);
-        truth_reinit_state = struct('gap_count', zeros(1, length(varargin{1})));
+        [trackList, init_pool, next_id] = truth_init_tracks(trackList, detList_k, ...
+            init_pool, ukf_tpl, params, frame_id, next_id, truth_all, t_grid);
     elseif length(varargin) >= 2 && get_param(params, 'multi_truth_reinit_enable', false)
         truth_all = varargin{1};
         t_grid = varargin{2};
@@ -58,7 +62,12 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
         trackList{t} = trk;
     end
 
-    [assoc, det_used_prob] = jpda_multi(trackList, active_idx, detList_k, params);
+    % 关联模式: 'jpda' (默认) | 'oracle' (真值辅助, 按 aircraft_id 直接命中)
+    if strcmp(get_param(params, 'multi_single_assoc_mode', 'jpda'), 'oracle')
+        [assoc, det_used_prob] = oracle_assoc(trackList, active_idx, detList_k, params);
+    else
+        [assoc, det_used_prob] = jpda_multi(trackList, active_idx, detList_k, params);
+    end
     track_has_assoc = false(1, length(active_idx));
     update_det_used = false(1, length(detList_k));
 
@@ -80,25 +89,37 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
             nis_val = ai.nis;
             track_has_assoc(i) = true;
         else
-            best_j = fallback_nearest_det(trk, detList_k, params);
-            if best_j > 0
-                dp = detList_k(best_j);
-                innov_vec = [dp.drange - trk.z_pred(1); wrap_angle_local(dp.daz - trk.z_pred(2)); dp.radial_vel_meas - trk.z_pred(3)];
-                [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, innov_vec);
-                trk.lat = trk.ukf.x(3);
-                trk.lon = trk.ukf.x(1);
-                trk.missed = 0;
-                trk.assoc_det = dp;
-                update_det_used(best_j) = true;
-                nis_val = innov_vec' * (trk.P_zz \ innov_vec);
-                track_has_assoc(i) = true;
-            else
+            % oracle 模式下：没找到匹配检测 → 纯外推，禁止 fallback_nearest_det
+            % 防止交叉区域把目标 A 的检测错误更新到目标 B 的航迹
+            if strcmp(get_param(params, 'multi_single_assoc_mode', 'jpda'), 'oracle')
                 [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, []);
                 trk.lat = trk.ukf.x(3);
                 trk.lon = trk.ukf.x(1);
                 trk.missed = trk.missed + 1;
                 trk.assoc_det = [];
                 nis_val = NaN;
+                track_has_assoc(i) = false;
+            else
+                best_j = fallback_nearest_det(trk, detList_k, params);
+                if best_j > 0
+                    dp = detList_k(best_j);
+                    innov_vec = [dp.drange - trk.z_pred(1); wrap_angle_local(dp.daz - trk.z_pred(2)); dp.radial_vel_meas - trk.z_pred(3)];
+                    [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, innov_vec);
+                    trk.lat = trk.ukf.x(3);
+                    trk.lon = trk.ukf.x(1);
+                    trk.missed = 0;
+                    trk.assoc_det = dp;
+                    update_det_used(best_j) = true;
+                    nis_val = innov_vec' * (trk.P_zz \ innov_vec);
+                    track_has_assoc(i) = true;
+                else
+                    [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, []);
+                    trk.lat = trk.ukf.x(3);
+                    trk.lon = trk.ukf.x(1);
+                    trk.missed = trk.missed + 1;
+                    trk.assoc_det = [];
+                    nis_val = NaN;
+                end
             end
         end
 
@@ -160,14 +181,19 @@ function [trackList, tempPool, snap, next_id] = multi_track_runner_kf( ...
 
     det_used_prob(update_det_used) = 1;
     det_used_prob(update_det_used) = 1;
-    unused_idx = find(det_used_prob < get_param(params, 'multi_start_used_prob_threshold', 0.35));
-    unused_dets = detList_k(unused_idx);
-    active_tracks = trackList(get_active_indices(trackList, TYPE_HISTORY));
-    [tempPool, new_tracks, next_id] = multi_track_start( ...
-        tempPool, unused_dets, params, frame_id, ukf_tpl, next_id, active_tracks);
-
-    for n = 1:length(new_tracks)
-        trackList{end+1} = new_tracks{n};
+    % oracle 模式下：所有航迹起始必须走 truth_init_tracks 的 3/5 逻辑，
+    % 关闭基于 unused 检测的 M/N 起始，避免产生无 truth_idx 的航迹
+    if strcmp(get_param(params, 'multi_single_assoc_mode', 'jpda'), 'oracle')
+        tempPool = {};
+    else
+        unused_idx = find(det_used_prob < get_param(params, 'multi_start_used_prob_threshold', 0.35));
+        unused_dets = detList_k(unused_idx);
+        active_tracks = trackList(get_active_indices(trackList, TYPE_HISTORY));
+        [tempPool, new_tracks, next_id] = multi_track_start( ...
+            tempPool, unused_dets, params, frame_id, ukf_tpl, next_id, active_tracks);
+        for n = 1:length(new_tracks)
+            trackList{end+1} = new_tracks{n};
+        end
     end
 
     trackList = prune_duplicate_tracks(trackList, TYPE_HISTORY, params, frame_id);
@@ -256,68 +282,114 @@ function [trackList, detList_k, next_id] = truth_reinit_lost(trackList, detList_
 end
 
 
-function [trackList, detList_k, next_id] = truth_init_tracks(trackList, detList_k, ...
-        ukf_tpl, params, frame_id, next_id, truth_all, t_grid)
+function [trackList, init_pool, next_id] = truth_init_tracks(trackList, detList_k, ...
+        init_pool, ukf_tpl, params, frame_id, next_id, truth_all, t_grid)
+    % 3/5 M/N oracle 起始：对每个真值目标 ac 维护最近 5 帧的真实检测滑窗，
+    % 滑窗内有 ≥3 个真实检测则用最早+最近两帧的真实检测做两点差分起始。
+    % 所有检测必须来自本帧实际生成的 detList_k，不构造任何虚构数据。
     if frame_id > length(t_grid) || isempty(truth_all)
         return;
     end
-    t_now = t_grid(frame_id);
-    used = false(1, length(detList_k));
+    M_start = get_param(params, 'multi_start_M', 3);
+    N_window = get_param(params, 'multi_start_N', 5);
+
     for ac = 1:length(truth_all)
-        tt = truth_all{ac};
-        if isempty(tt) || size(tt, 1) < 2 || t_now < tt(1,5) || t_now > tt(end,5)
-            continue;
+        % 初始化该 ac 的滑窗（首次访问）
+        if length(init_pool) < ac || ~isfield(init_pool(ac), 'hist')
+            init_pool(ac).hist = struct('frame', {}, 'det', {});
         end
-        tl = interp1(tt(:,5), tt(:,1), t_now, 'linear', 'extrap');
-        tb = interp1(tt(:,5), tt(:,2), t_now, 'linear', 'extrap');
+
+        % 已有活跃航迹则跳过
+        has_track = false;
+        for ti = 1:length(trackList)
+            trk = trackList{ti};
+            if trk.type == 7, continue; end
+            if isfield(trk, 'truth_idx') && trk.truth_idx == ac
+                has_track = true;
+                break;
+            end
+        end
+        if has_track, continue; end
+
+        % 收集本帧 aircraft_id == ac 的真实检测
         best_j = 0;
         best_d = inf;
         for j = 1:length(detList_k)
-            if used(j)
-                continue;
-            end
             dp = detList_k(j);
-            if ~valid_detection(dp)
-                continue;
+            if ~valid_detection(dp), continue; end
+            if isfield(dp, 'is_clutter') && dp.is_clutter, continue; end
+            det_ac = 0;
+            if isfield(dp, 'aircraft_id'), det_ac = double(dp.aircraft_id); end
+            if det_ac ~= ac, continue; end
+            % oracle 已确认这是真实检测，选最近邻作为代表（同帧极少有重复）
+            d = 0;
+            if ~isnan(dp.lat) && ~isnan(dp.lon)
+                tl = interp1(truth_all{ac}(:,5), truth_all{ac}(:,1), t_grid(frame_id), 'linear', 'extrap');
+                tb = interp1(truth_all{ac}(:,5), truth_all{ac}(:,2), t_grid(frame_id), 'linear', 'extrap');
+                d = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb);
             end
-            if isfield(dp, 'is_clutter') && dp.is_clutter
-                continue;
-            end
-            d = sphere_utils_haversine_distance(dp.lon, dp.lat, tl, tb);
             if d < best_d
                 best_d = d;
                 best_j = j;
             end
         end
-        if best_j == 0 || best_d > get_param(params, 'multi_truth_init_gate_m', 120000)
-            continue;
+
+        % 更新滑窗
+        if best_j > 0
+            init_pool(ac).hist(end+1).frame = frame_id;
+            init_pool(ac).hist(end).det = detList_k(best_j);
+        else
+            init_pool(ac).hist(end+1).frame = frame_id;
+            init_pool(ac).hist(end).det = struct();
         end
-        det2 = detList_k(best_j);
-        det1 = make_truth_init_det(tt, t_now - get_param(params, 'dt_sec', 30), ukf_tpl, det2, frame_id - 1);
-        if isempty(det1)
-            det1 = det2;
+        % 保持窗口长度 ≤ N_window
+        if length(init_pool(ac).hist) > N_window
+            init_pool(ac).hist = init_pool(ac).hist(end-N_window+1:end);
         end
-        new_ukf = ukf_dispatch('init', ukf_tpl, det1, det2);
-        new_ukf = post_init_multi(new_ukf, params);
-        new_ukf = set_truth_velocity_multi(new_ukf, tt, t_now);
-        trk = struct('id', next_id, ...
-            'type', 1, ...
-            'lat', det2.lat, ...
-            'lon', det2.lon, ...
-            'ukf', new_ukf, ...
-            'life', 1, ...
-            'quality', get_param(params, 'multi_truth_init_quality', 12), ...
-            'missed', 0, ...
-            'assoc_det', det2, ...
-            'nis_history', [], ...
-            'birth_frame', frame_id, ...
-            'death_frame', [], ...
-            'truth_idx', ac);
-        trackList{end+1} = trk;
-        next_id = next_id + 1;
-        used(best_j) = true;
+
+        % 统计滑窗内真实检测数
+        real_count = 0;
+        for h = 1:length(init_pool(ac).hist)
+            if isfield(init_pool(ac).hist(h).det, 'drange')
+                real_count = real_count + 1;
+            end
+        end
+
+        % 满足 M/N 条件 → 用最早和最近的真实检测做两点差分起始
+        if real_count >= M_start
+            det1 = []; det2 = [];
+            for h = 1:length(init_pool(ac).hist)
+                if isfield(init_pool(ac).hist(h).det, 'drange')
+                    if isempty(det1)
+                        det1 = init_pool(ac).hist(h).det;
+                    end
+                    det2 = init_pool(ac).hist(h).det;
+                end
+            end
+            if isempty(det1) || isempty(det2), continue; end
+            new_ukf = ukf_dispatch('init', ukf_tpl, det1, det2);
+            new_ukf = post_init_multi(new_ukf, params);
+            new_ukf = set_truth_velocity_multi(new_ukf, truth_all{ac}, t_grid(frame_id));
+            trk = struct('id', next_id, ...
+                'type', 1, ...
+                'lat', det2.lat, ...
+                'lon', det2.lon, ...
+                'ukf', new_ukf, ...
+                'life', 1, ...
+                'quality', get_param(params, 'multi_truth_init_quality', 12), ...
+                'missed', 0, ...
+                'assoc_det', det2, ...
+                'nis_history', [], ...
+                'birth_frame', frame_id, ...
+                'death_frame', [], ...
+                'truth_idx', ac);
+            trackList{end+1} = trk;
+            next_id = next_id + 1;
+            fprintf('  [TRUTH-INIT 3/%d] frame=%d target=%d new track #%d (real=%d/%d)\n', ...
+                N_window, frame_id, ac, trk.id, real_count, length(init_pool(ac).hist));
+            init_pool(ac).hist = struct('frame', {}, 'det', {});  % 清空
+        end
     end
-    detList_k = detList_k(~used);
 end
 
 
@@ -372,6 +444,9 @@ end
 
 function det = make_truth_init_det(tt, t_prev, ukf_tpl, ref_det, frame_id)
     det = [];
+    if isempty(ref_det)
+        return;   % 必须有真实检测作为参考，不虚构
+    end
     if t_prev < tt(1,5)
         t_prev = tt(1,5);
     end
@@ -560,6 +635,110 @@ function penalty = miss_penalty(track_type)
         penalty = 1;
     else
         penalty = 1;
+    end
+end
+
+
+% =========================================================================
+% oracle_assoc — 真值辅助关联（按 aircraft_id 直接命中）
+% =========================================================================
+% 每条航迹携带 truth_idx，每帧从检测中找 aircraft_id == truth_idx 的检测：
+%   有则关联（用真实检测的测量值更新滤波器）
+%   无则该航迹纯外推（miss++，对应 Pd=0.6 的漏检）
+% 虚警检测 aircraft_id == 0，自然被过滤。
+% =========================================================================
+function [assoc, det_used_prob] = oracle_assoc(trackList, active_idx, detList_k, params)
+    n_tracks = length(active_idx);
+    n_dets = length(detList_k);
+    assoc = cell(n_tracks, 1);
+    det_used_prob = zeros(1, n_dets);
+
+    for i = 1:n_tracks
+        assoc{i} = empty_assoc_runner(active_idx(i), i);
+    end
+    if n_tracks == 0 || n_dets == 0
+        return;
+    end
+
+    for i = 1:n_tracks
+        trk = trackList{active_idx(i)};
+        ac = 0;
+        if isfield(trk, 'truth_idx') && ~isempty(trk.truth_idx)
+            ac = trk.truth_idx;
+        end
+        if ac <= 0
+            continue;
+        end
+
+        % 找 aircraft_id == ac 的检测，选距离预测位置最近的
+        best_j = 0;
+        best_d = inf;
+        for j = 1:n_dets
+            dp = detList_k(j);
+            det_ac = 0;
+            if isfield(dp, 'aircraft_id')
+                det_ac = double(dp.aircraft_id);
+            end
+            if det_ac ~= ac
+                continue;
+            end
+            if ~isfield(trk, 'x_pred') || ~isfield(trk, 'z_pred') || ~isfield(trk, 'P_zz')
+                continue;
+            end
+            d = sphere_utils_haversine_distance(trk.x_pred(1), trk.x_pred(3), dp.lon, dp.lat);
+            if d < best_d
+                best_d = d;
+                best_j = j;
+            end
+        end
+
+        if best_j > 0
+            dp = detList_k(best_j);
+            innov_vec = [dp.drange - trk.z_pred(1); wrap_angle_local(dp.daz - trk.z_pred(2)); dp.radial_vel_meas - trk.z_pred(3)];
+            assoc{i}.det_indices = best_j;
+            assoc{i}.betas = [1];
+            assoc{i}.beta0 = 0;
+            assoc{i}.innov_w = innov_vec;
+            assoc{i}.nis = innov_vec' * (trk.P_zz \ innov_vec);
+            assoc{i}.best_det_index = best_j;
+            det_used_prob(best_j) = 1;
+        end
+    end
+end
+
+
+function assoc = empty_assoc_runner(track_index, active_position)
+    assoc = struct('track_index', track_index, ...
+        'active_position', active_position, ...
+        'det_indices', [], ...
+        'betas', [], ...
+        'beta0', 1, ...
+        'innov_w', zeros(3, 1), ...
+        'nis', NaN, ...
+        'best_det_index', 0);
+end
+
+
+% =========================================================================
+% post_init_multi — UKF 初始化后的多目标通用字段设置
+% =========================================================================
+function ukf = post_init_multi(ukf, params)
+    ukf.dt = params.dt_sec;
+    ukf.initialized = true;
+    if isfield(ukf, 'ukf_cv')
+        ukf.ukf_cv.dt = params.dt_sec;
+        ukf.ukf_cv.initialized = true;
+        ukf.ukf_ct.dt = params.dt_sec;
+        ukf.ukf_ct.initialized = true;
+    end
+    ukf.nis_history = [];
+    if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
+        if isfield(ukf, 'Q')
+            ukf.Q_base = ukf.Q;
+        end
+    end
+    if ~isfield(ukf, 'Q_ema') || isempty(ukf.Q_ema)
+        ukf.Q_ema = 1.0;
     end
 end
 

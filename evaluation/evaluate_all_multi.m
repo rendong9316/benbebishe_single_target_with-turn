@@ -57,10 +57,13 @@ function errorStats = compute_tracking_errors_multi(trackSnapshots, detList, tru
                 for t = 1:length(snap.trackList)
                     trk = snap.trackList{t};
                     if trk.type == 7 || isnan(trk.lat), continue; end
-                    d = haversine_km_eval(trk.lon, trk.lat, t_true_lon, t_true_lat);
-                    if d < best_ukf_dist && d < 200
-                        best_ukf_dist = d;
-                        best_ukf_lat = trk.lat;
+                    % 优先使用 truth_idx 字段配对（oracle 模式下可靠）
+                    if isfield(trk, 'truth_idx') && trk.truth_idx == a
+                        d = haversine_km_eval(trk.lon, trk.lat, t_true_lon, t_true_lat);
+                        if d < best_ukf_dist
+                            best_ukf_dist = d;
+                            best_ukf_lat = trk.lat;
+                        end
                     end
                 end
                 if ~isinf(best_ukf_dist)

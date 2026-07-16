@@ -687,6 +687,8 @@ params.ukf_P_vel_std   = params.radar1_ukf_P_vel_std;
 params.gate_sigma      = params.radar1_gate_sigma;
 params.gate_vr_ms      = params.radar1_gate_vr_ms;
 params.tracker_K_loss  = params.radar1_tracker_K_loss;
+% 启用真值辅助关联：按 aircraft_id 直接命中，跳过 NN/PDA
+params.multi_single_assoc_mode = 'oracle';
 % ukf_jichu('create'): 创建UKF模板结构体
 %   内部初始化：state_dim(4) + sigma_points + weights + 坐标转换初始化
 %   R矩阵 = diag([σ_range², σ_az²]) （量测噪声协方差）

@@ -286,6 +286,8 @@ params.ukf_P_pos_std = params.radar1_ukf_P_pos_std;
 params.ukf_P_vel_std = params.radar1_ukf_P_vel_std;
 params.gate_sigma = params.radar1_gate_sigma;
 params.gate_vr_ms = params.radar1_gate_vr_ms;
+% 启用真值辅助关联：按 aircraft_id 直接命中，跳过 JPDA
+params.multi_single_assoc_mode = 'oracle';
 ukf1_tpl = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
     params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
 
@@ -307,14 +309,15 @@ trackSnapshots_R1 = cell(n_frames, 1);
 tempPool_R1 = {};
 trackList_R1 = {};
 next_id_R1 = 1;
+init_pool_R1 = struct();
 
 fprintf('  [DIAG] Frame 1 R1 detections: %d\n', length(detList_R1{1}));
 
 for k = 1:n_frames
     dets = detList_R1{k};
-    [trackList_R1, tempPool_R1, trackSnapshots_R1{k}, next_id_R1] = ...
+    [trackList_R1, tempPool_R1, trackSnapshots_R1{k}, next_id_R1, init_pool_R1] = ...
         multi_track_runner_kf(trackList_R1, tempPool_R1, dets, ukf1_tpl, ...
-        params, k, next_id_R1, truth_all_R1, t1_grid);
+        params, k, next_id_R1, init_pool_R1, truth_all_R1, t1_grid);
 end
 fprintf('R1 最终航迹数: %d\n', length(trackList_R1));
 fprintf('--- R2 IMM 多目标跟踪 ---\n');
@@ -322,14 +325,15 @@ trackSnapshots_R2 = cell(n_frames, 1);
 tempPool_R2 = {};
 trackList_R2 = {};
 next_id_R2 = 1;
+init_pool_R2 = struct();
 
 fprintf('  [DIAG] Frame 1 R2 detections: %d\n', length(detList_R2{1}));
 
 for k = 1:n_frames
     dets = detList_R2{k};
-    [trackList_R2, tempPool_R2, trackSnapshots_R2{k}, next_id_R2] = ...
+    [trackList_R2, tempPool_R2, trackSnapshots_R2{k}, next_id_R2, init_pool_R2] = ...
         multi_track_runner_kf(trackList_R2, tempPool_R2, dets, ukf2_tpl, ...
-        params_r2, k, next_id_R2, truth_all_R2, t2_grid);
+        params_r2, k, next_id_R2, init_pool_R2, truth_all_R2, t2_grid);
 end
 fprintf('R2 最终航迹数: %d\n', length(trackList_R2));
 
