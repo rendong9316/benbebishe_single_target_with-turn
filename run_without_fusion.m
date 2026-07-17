@@ -1,7 +1,7 @@
 function result = run_without_fusion(scenario_name)
     if nargin < 1 || isempty(scenario_name)
         % scenario_name = 'multi_cross';
-        scenario_name = 'single_uturn';
+        scenario_name = 'single_turn';
     end
 
     addpath(genpath('.'));

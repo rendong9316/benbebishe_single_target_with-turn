@@ -325,7 +325,7 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
             snaps = trackSnapshots_R2;
             clr = [0.7 0 0];
         end
-        for ac = 1:3
+        for ac = 1:length(truthTrajs)
             fe = build_single_frame_errors_multi(snaps, truthTrajs{ac}, frame_times);
             if ~isempty(fe) && sum(~isnan(fe)) > 2
                 smoothed = movmean(fe, 10, 'omitnan');
@@ -351,7 +351,7 @@ function plot_multi_fusion_result(true_track_A, true_track_B, true_track_C, ...
             ft = snap.trackList{1};
             if isnan(ft.lat), continue; end
             best_d = inf;
-            for ac = 1:3
+            for ac = 1:length(truthTrajs)
                 truth_ac = truthTrajs{ac};
                 t_lon = interp1(truth_ac.time_sec, truth_ac.lon, frame_times(k), 'linear', 'extrap');
                 t_lat = interp1(truth_ac.time_sec, truth_ac.lat, frame_times(k), 'linear', 'extrap');
