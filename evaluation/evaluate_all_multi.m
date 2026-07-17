@@ -226,22 +226,15 @@ function fusion_eval = evaluate_fusion_multi(all_fused_snapshots, method_names, 
     % Step 2: Compute fusion track errors frame by frame
     fusion_errs = cell(n_methods, n_ac);
     n_pairs = size(all_fused_snapshots, 1);
-    % 判断索引顺序: {method, pair} (单目标 4×1) vs {pair, method} (多目标 3×4)
-    is_multi = (n_pairs > 1);
 
     for m = 1:n_methods
         for a = 1:n_ac
             fusion_errs{m, a} = [];
         end
         for p = 1:n_pairs
-            if is_multi
-                fused_snaps = all_fused_snapshots{p, m};
-            else
-                fused_snaps = all_fused_snapshots{m};
-            end
-            % 多目标场景下，pair p 对应的 aircraft = pair_to_aircraft(p)
+            fused_snaps = all_fused_snapshots{p, m};
             ac = 0;
-            if is_multi && p <= length(pair_to_aircraft)
+            if p <= length(pair_to_aircraft)
                 ac = pair_to_aircraft(p);
             end
             if ac == 0, continue; end

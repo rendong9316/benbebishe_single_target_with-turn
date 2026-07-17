@@ -6,6 +6,12 @@ function trackList = Fun_UpdateTrackByAsscResult_Oracle(trackList, pointList, TP
             continue;
         end
         trk = trackList{ti};
+        if ~isfield(trk, 'nis_history') || isempty(trk.nis_history)
+            trk.nis_history = [];
+        end
+        if ~isfield(trk, 'asscPointList') || isempty(trk.asscPointList)
+            trk.asscPointList = {};
+        end
         if pi > 0
             dp = pointList(pi);
             innov = [dp.drange - trk.z_pred(1); wrap_angle_oracle(dp.daz - trk.z_pred(2)); dp.radial_vel_meas - trk.z_pred(3)];

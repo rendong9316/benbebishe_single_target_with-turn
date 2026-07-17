@@ -1,7 +1,7 @@
 function result = run_without_fusion(scenario_name)
     if nargin < 1 || isempty(scenario_name)
         % scenario_name = 'multi_cross';
-        scenario_name = 'single_turn';
+        scenario_name = 'single_uturn';
     end
 
     addpath(genpath('.'));
@@ -38,8 +38,8 @@ function result = run_without_fusion(scenario_name)
     print_detection_summary_without_fusion(detList_R2, 'R2');
 
     fprintf('%s========== Phase 3: 南阳式 Oracle 起始、关联与滤波 ==========%s', newline, newline);
-    params_r1 = radar_params_without_fusion(params, 1);
-    params_r2 = radar_params_without_fusion(params, 2);
+    params_r1 = radar_params(params, 1);
+    params_r2 = radar_params(params, 2);
     ukf1_tpl = ukf_imm('create', params_r1, params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
     ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
@@ -54,8 +54,8 @@ function result = run_without_fusion(scenario_name)
     print_track_summary_without_fusion(trackList_R2, 'R2', params);
     print_consumption_summary(detList_R1, trackList_R1, 'R1');
     print_consumption_summary(detList_R2, trackList_R2, 'R2');
-    validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1);
-    validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2);
+    validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1, trackList_R1);
+    validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2, trackList_R2);
     fprintf('Oracle lifecycle invariants: R1/R2 通过%s', newline);
 
     fprintf('%s========== Phase 4: 单站滤波 RMSE ==========%s', newline, newline);
@@ -141,8 +141,19 @@ function [dr1_est, da1_est, dr2_est, da2_est] = calibrate_bias_without_fusion(pa
                 randn()*params.radar2_azimuth_noise_std_deg - az);
         end
     end
+    if isempty(dr1_list) || isempty(da1_list)
+        error('run_without_fusion:calibrationNoSamples', ...
+            'R1 ADS-B 标定没有雷达覆盖内的有效样本');
+    end
+    if isempty(dr2_list) || isempty(da2_list)
+        error('run_without_fusion:calibrationNoSamples', ...
+            'R2 ADS-B 标定没有雷达覆盖内的有效样本');
+    end
     dr1_est = mean(dr1_list); da1_est = mean(da1_list);
     dr2_est = mean(dr2_list); da2_est = mean(da2_list);
+    if any(~isfinite([dr1_est, da1_est, dr2_est, da2_est]))
+        error('run_without_fusion:calibrationInvalid', 'ADS-B 标定结果包含非有限值');
+    end
 end
 
 function detList = generate_radar_detections_without_fusion(radar_id, params, truth_all, t_grid, n_frames, dr_est, da_est)
@@ -160,7 +171,6 @@ function detList = generate_radar_detections_without_fusion(radar_id, params, tr
     end
     for k = 1:n_frames
         states = build_target_states_at_time(truth_all, t_grid(k));
-        if isempty(states), detList{k} = []; continue; end
         raw = generate_frame_detections_multi(rx_lon, rx_lat, tx_lon, tx_lat, states, ...
             k, t_grid(k), range_bias, az_bias, beam, params, range_noise, az_noise);
         dets = cell(1, length(raw));
@@ -181,18 +191,6 @@ function detList = generate_radar_detections_without_fusion(radar_id, params, tr
     end
 end
 
-function params_r = radar_params_without_fusion(params, radar_id)
-    params_r = params;
-    prefix = sprintf('radar%d_', radar_id);
-    params_r.ukf_range_std_m = params.([prefix 'range_noise_std_m']);
-    params_r.ukf_azimuth_std_deg = params.([prefix 'azimuth_noise_std_deg']);
-    params_r.ukf_Q_scale = params.([prefix 'ukf_Q_scale']);
-    params_r.ukf_P_pos_std = params.([prefix 'ukf_P_pos_std']);
-    params_r.ukf_P_vel_std = params.([prefix 'ukf_P_vel_std']);
-    params_r.gate_sigma = params.([prefix 'gate_sigma']);
-    params_r.gate_vr_ms = params.([prefix 'gate_vr_ms']);
-    params_r.tracker_K_loss = params.([prefix 'tracker_K_loss']);
-end
 
 function [trackList, tempTrackList, snapshots, diagList] = run_oracle_tracker_without_fusion(detList, ukf_tpl, params, truth_all, t_grid)
     n_frames = length(detList);
@@ -206,6 +204,7 @@ function [trackList, tempTrackList, snapshots, diagList] = run_oracle_tracker_wi
                 k, n_frames, count_active_without_fusion(trackList), length(trackList), newline);
         end
     end
+    trackList = sortTrackList_oracle(trackList);
 end
 
 function n = count_active_without_fusion(trackList)

@@ -1,6 +1,23 @@
 function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, frame_id, next_id, truth_idx, real_hist)
-    if nargin < 8
-        real_hist = struct('frameID', {}, 'point', {}, 'origIndex', {});
+    if nargin < 8 || isempty(real_hist) || length(real_hist) < params.oracle_QUALIFY_NUM
+        error('fun_create_new_track_oracle:invalidHistory', ...
+            '创建可靠航迹需要完整的 3/7 实际检测历史');
+    end
+    history_frames = [real_hist.frameID];
+    if any(diff(history_frames) <= 0) || history_frames(end) ~= frame_id || ...
+            frame_id - history_frames(1) + 1 > params.oracle_TOLERANT_NUM
+        error('fun_create_new_track_oracle:invalidHistory', ...
+            '起始检测历史必须按帧递增、以确认帧结束且位于 3/7 窗口内');
+    end
+    for i = 1:length(real_hist)
+        dp = real_hist(i).point;
+        if isempty(dp) || ~isstruct(dp) || ~isfield(dp, 'aircraft_id') || ...
+                double(dp.aircraft_id) ~= double(truth_idx) || ...
+                (isfield(dp, 'is_clutter') && dp.is_clutter) || ...
+                double(dp.frameID) ~= double(real_hist(i).frameID)
+            error('fun_create_new_track_oracle:invalidHistory', ...
+                '起始历史包含无效、虚警或 truth 不匹配的检测');
+        end
     end
 
     new_ukf = ukf_dispatch('init', ukf_tpl, det1, det2);
@@ -10,9 +27,6 @@ function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, fra
     asscPointList = cell(1, length(real_hist));
     for i = 1:length(real_hist)
         asscPointList{i} = real_hist(i).point;
-    end
-    if isempty(asscPointList)
-        asscPointList = {det1, det2};
     end
 
     birth_frame = double(real_hist(1).frameID);

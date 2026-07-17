@@ -21,7 +21,7 @@ function run_oracle_lifecycle_tests()
 
     tempTrackList = struct([]);
     truth_all = {[0, 0, 0, 0, 0; 1, 1, 0, 0, 100]};
-    ukf_tpl = ukf_jichu('create', params_for_ukf(params), 113, 33.5, 109, 33.5, params.dt_sec);
+    ukf_tpl = ukf_jichu('create', radar_params(params, 1), 113, 33.5, 109, 33.5, params.dt_sec);
     next_id = 1;
     frames_with_detection = [1, 3, 5];
     created = {};
@@ -72,7 +72,102 @@ function run_oracle_lifecycle_tests()
         assert(isempty(new_tracks));
     end
 
+    test_current_hit_required(params, ukf_tpl, truth_all);
+    test_association_frame_and_duplicate_candidates(params);
+    test_truth_termination_switch(params, ukf_tpl);
+    test_invalid_creation_history(params, ukf_tpl);
+
     disp('oracle lifecycle tests ok');
+end
+
+function test_current_hit_required(params, ukf_tpl, truth_all)
+    tempTrackList = struct([]);
+    next_id = 1;
+    for frame_id = 1:4
+        if frame_id <= 3
+            remaining = fixture_detection(frame_id, 1);
+            original_index = 1;
+            n_original = 1;
+        else
+            remaining = [];
+            original_index = [];
+            n_original = 0;
+        end
+        [tempTrackList, new_tracks, next_id] = trackStarter_logic_oracle( ...
+            tempTrackList, remaining, original_index, params, 3, 7, ukf_tpl, ...
+            params, frame_id, next_id, truth_all, 0:30:120, {}, n_original);
+        if frame_id < 3
+            assert(isempty(new_tracks));
+        elseif frame_id == 3
+            assert(length(new_tracks) == 1);
+        else
+            assert(isempty(new_tracks));
+        end
+    end
+
+    preloaded = struct('truth_idx', 1, 'pointHistory', ...
+        struct('frameID', {1,2,3}, ...
+        'point', {fixture_detection(1,1), fixture_detection(2,1), fixture_detection(3,1)}, ...
+        'origIndex', {1,1,1}), 'missCount', 0);
+    [~, new_tracks] = trackStarter_logic_oracle(preloaded, [], [], params, 3, 7, ...
+        ukf_tpl, params, 4, 1, truth_all, 0:30:120, {}, 0);
+    assert(isempty(new_tracks));
+end
+
+function test_association_frame_and_duplicate_candidates(params)
+    trk = fixture_track(params);
+    trk.x_pred = [129.02; 0; 31.02; 0];
+    stale = fixture_detection(1, 1);
+    current_far = fixture_detection(2, 1);
+    current_far.lon = 130;
+    current_far.lat = 32;
+    current_near = fixture_detection(2, 1);
+    current_near.lon = 129.021;
+    current_near.lat = 31.021;
+    clutter = fixture_detection(2, 0);
+    clutter.is_clutter = true;
+    [matches, remaining, used] = PointTrackAssociation_Oracle( ...
+        {trk}, [stale, current_far, current_near, clutter], 2);
+    assert(matches(1,2) == 3);
+    assert(isequal(find(used), 3));
+    assert(isequal(remaining, [1,2,4]));
+end
+
+function test_truth_termination_switch(params, ukf_tpl)
+    truth_all = {[0,0,0,0,0; 1,1,0,0,30]};
+    t_grid = [0,30,60];
+    trk = fixture_track(params);
+    trk.ukf = ukf_tpl;
+    trk.ukf = ukf_dispatch('init', trk.ukf, ...
+        fixture_detection(1,1), fixture_detection(2,1));
+    trk.asscPointList = {fixture_detection(1,1), fixture_detection(2,1)};
+
+    enabled = params;
+    enabled.oracle_truth_terminate_enable = true;
+    [tracks, ~, ~, ~, diag] = Track_Process_for_HighRate_Oracle( ...
+        {trk}, struct([]), [], ukf_tpl, enabled, 3, 2, truth_all, t_grid);
+    assert(tracks{1}.Type == params.HISTORY_TRACK);
+    assert(strcmp(tracks{1}.death_reason, 'truth_ended'));
+    assert(length(diag.lifecycle_events) == 1);
+
+    disabled = params;
+    disabled.oracle_truth_terminate_enable = false;
+    [tracks, ~, ~, ~, diag] = Track_Process_for_HighRate_Oracle( ...
+        {trk}, struct([]), [], ukf_tpl, disabled, 3, 2, truth_all, t_grid);
+    assert(tracks{1}.Type ~= params.HISTORY_TRACK);
+    assert(isempty(diag.lifecycle_events));
+end
+
+function test_invalid_creation_history(params, ukf_tpl)
+    failed = false;
+    try
+        fun_create_new_track_oracle(fixture_detection(1,1), ...
+            fixture_detection(2,1), ukf_tpl, params, 2, 1, 1, struct([]));
+    catch exception
+        failed = strcmp(exception.identifier, ...
+            'fun_create_new_track_oracle:invalidHistory');
+    end
+    assert(failed);
 end
 
 function track = fixture_track(params)
@@ -93,13 +188,4 @@ function dp = fixture_detection(frame_id, aircraft_id)
         'daz', 90 + frame_id*0.01, 'lat', 31 + frame_id*0.01, ...
         'lon', 129 + frame_id*0.01, 'is_clutter', false, ...
         'aircraft_id', int32(aircraft_id));
-end
-
-function p = params_for_ukf(params)
-    p = params;
-    p.ukf_range_std_m = p.radar1_range_noise_std_m;
-    p.ukf_azimuth_std_deg = p.radar1_azimuth_noise_std_deg;
-    p.ukf_Q_scale = p.radar1_ukf_Q_scale;
-    p.ukf_P_pos_std = p.radar1_ukf_P_pos_std;
-    p.ukf_P_vel_std = p.radar1_ukf_P_vel_std;
 end

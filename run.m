@@ -50,8 +50,8 @@ function result = run(scenario_name)
         detList_R2, ukf2_tpl, params_r2, truth_all, t2_grid);
     print_track_summary(trackList_R1, 'R1', params);
     print_track_summary(trackList_R2, 'R2', params);
-    validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1);
-    validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2);
+    validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1, trackList_R1);
+    validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2, trackList_R2);
     fprintf('Oracle lifecycle invariants: R1/R2 通过%s', newline);
 
     fprintf('%s========== Phase 5: 航迹级时间对齐 ==========%s', newline, newline);
@@ -243,10 +243,19 @@ function [dr1_est, da1_est, dr2_est, da2_est] = calibrate_bias(params)
             da2_list(end+1) = wrap_angle_run(az_meas - az_true);
         end
     end
+    if isempty(dr1_list) || isempty(da1_list)
+        error('run:calibrationNoSamples', 'R1 ADS-B 标定没有雷达覆盖内的有效样本');
+    end
+    if isempty(dr2_list) || isempty(da2_list)
+        error('run:calibrationNoSamples', 'R2 ADS-B 标定没有雷达覆盖内的有效样本');
+    end
     dr1_est = mean(dr1_list);
     da1_est = mean(da1_list);
     dr2_est = mean(dr2_list);
     da2_est = mean(da2_list);
+    if any(~isfinite([dr1_est, da1_est, dr2_est, da2_est]))
+        error('run:calibrationInvalid', 'ADS-B 标定结果包含非有限值');
+    end
 end
 
 function detList = generate_radar_detections(radar_id, params, truth_all, t_grid, n_frames, dr_est, da_est)
@@ -269,10 +278,6 @@ function detList = generate_radar_detections(radar_id, params, truth_all, t_grid
 
     for k = 1:n_frames
         tgt_states = build_target_states_at_time(truth_all, t_grid(k));
-        if isempty(tgt_states)
-            detList{k} = [];
-            continue;
-        end
         detRaw = generate_frame_detections_multi(rx_lon, rx_lat, tx_lon, tx_lat, tgt_states, ...
             k, t_grid(k), range_bias, az_bias, beam_center, params, range_noise, az_noise);
         dets = cell(1, length(detRaw));
@@ -301,29 +306,6 @@ function detList = generate_radar_detections(radar_id, params, truth_all, t_grid
     end
 end
 
-function params_r = radar_params(params, radar_id)
-    params_r = params;
-    if radar_id == 1
-        params_r.ukf_range_std_m = params.radar1_range_noise_std_m;
-        params_r.ukf_azimuth_std_deg = params.radar1_azimuth_noise_std_deg;
-        params_r.ukf_Q_scale = params.radar1_ukf_Q_scale;
-        params_r.ukf_P_pos_std = params.radar1_ukf_P_pos_std;
-        params_r.ukf_P_vel_std = params.radar1_ukf_P_vel_std;
-        params_r.gate_sigma = params.radar1_gate_sigma;
-        params_r.gate_vr_ms = params.radar1_gate_vr_ms;
-        params_r.tracker_K_loss = params.radar1_tracker_K_loss;
-    else
-        params_r.ukf_range_std_m = params.radar2_range_noise_std_m;
-        params_r.ukf_azimuth_std_deg = params.radar2_azimuth_noise_std_deg;
-        params_r.ukf_Q_scale = params.radar2_ukf_Q_scale;
-        params_r.ukf_P_pos_std = params.radar2_ukf_P_pos_std;
-        params_r.ukf_P_vel_std = params.radar2_ukf_P_vel_std;
-        params_r.gate_sigma = params.radar2_gate_sigma;
-        params_r.gate_vr_ms = params.radar2_gate_vr_ms;
-        params_r.tracker_K_loss = params.radar2_tracker_K_loss;
-    end
-end
-
 function [trackList, tempTrackList, trackSnapshots, diagList] = run_oracle_tracker(detList, ukf_tpl, params, truth_all, t_grid)
     n_frames = length(detList);
     trackSnapshots = cell(n_frames, 1);
@@ -338,6 +320,7 @@ function [trackList, tempTrackList, trackSnapshots, diagList] = run_oracle_track
             fprintf('  frame %3d/%3d: active=%d, total=%d%s', k, n_frames, count_active_tracks(trackList), length(trackList), newline);
         end
     end
+    trackList = sortTrackList_oracle(trackList);
 end
 
 function n = count_active_tracks(trackList)

@@ -6,6 +6,7 @@ function track = fun_track_quality_management_and_info_completion_oracle(track, 
     if ~isfield(track, 'Quality'), track.Quality = get_field_or_default(track, 'quality', params.oracle_confirm_quality); end
     if ~isfield(track, 'life'), track.life = 0; end
     if ~isfield(track, 'death_reason'), track.death_reason = ''; end
+    if ~isfield(track, 'death_frame'), track.death_frame = []; end
 
     has_assoc = ~isempty(asscPoint);
     track.TotalPointCnt = track.TotalPointCnt + 1;
