@@ -1,0 +1,6 @@
+function [trackList, tempTrackList, snap, next_id, diagInfo] = TRACK_MAIN_ORACLE( ...
+        trackList, tempTrackList, pointList, ukf_tpl, params, frame_id, next_id, truth_all, t_grid)
+
+    [trackList, tempTrackList, snap, next_id, diagInfo] = Track_Process_for_HighRate_Oracle( ...
+        trackList, tempTrackList, pointList, ukf_tpl, params, frame_id, next_id, truth_all, t_grid);
+end
