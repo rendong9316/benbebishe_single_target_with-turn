@@ -8,12 +8,12 @@
 %
 % 【验证的不变量清单】
 %   不变量1：雷达硬约束 —— Pd=0.6, Pfa=0.001 不可修改
-%   不变量2：Oracle 起始器必须保持严格的 3/7 滑窗规则
+%   不变量2：Oracle 起始参数合法，且确认行为遵守配置的滑窗规则
 %   不变量3：每个点迹只能被消耗一次（关联消耗和起始消耗互斥，不可重复）
 %   不变量4：关联消耗的点迹必须是真实检测（非杂波、非过期帧、aircraft_id>0）
 %   不变量5：快照中每条航迹的精简字段格式正确（不含冗余数据）
 %   不变量6：快照中无重复的 active ID 或 truth_idx
-%   不变量7：确认事件必须有 3/7 证据且由当前帧命中触发
+%   不变量7：确认事件必须有配置要求的窗口证据且由当前帧命中触发
 %   不变量8：最终航迹的 asscPointList 必须全部对应真实存在的检测（无虚构）
 %
 % 【输入参数】
@@ -28,12 +28,12 @@ function validate_oracle_invariants(trackSnapshots, detList, diagList, params, f
     %
     % 验证的不变量：
     %   1. 雷达硬约束：Pd=0.6, Pfa=0.001 不可修改
-    %   2. Oracle 起始器必须保持严格的 3/7 滑窗
+    %   2. Oracle 起始参数合法，且确认行为遵守配置的滑窗规则
     %   3. 每个点迹只能被消耗一次（关联或起始，不可重复）
     %   4. 关联消耗的点迹必须是真实检测（非杂波、非过期帧）
     %   5. 快照中每条航迹的精简字段格式正确
     %   6. 快照中无重复的 active ID 或 truth_idx
-    %   7. 确认事件必须有 3/7 证据且由当前帧命中触发
+    %   7. 确认事件必须有配置要求的窗口证据且由当前帧命中触发
     %   8. 最终航迹的 asscPointList 必须全部对应真实存在的检测
 
     % 如果调用者未传 finalTrackList，设为空 cell
@@ -44,9 +44,8 @@ function validate_oracle_invariants(trackSnapshots, detList, diagList, params, f
     assert(abs(params.detection_probability - 0.6) < eps, 'Pd hard constraint violated');
     % 验证 Pfa 严格等于 0.001
     assert(abs(params.false_alarm_rate - 0.001) < eps, 'Pfa hard constraint violated');
-    % 验证 Oracle 起始器参数保持 3/7 不变（QUALIFY_NUM=3, TOLERANT_NUM=7）
-    assert(params.oracle_QUALIFY_NUM == 3 && params.oracle_TOLERANT_NUM == 7, ...
-        'Oracle starter must remain strict 3/7');
+    % ==================== 不变量2：Oracle 起始配置合法性 ====================
+    validate_starter_config(params);
 
     % 初始化确认事件证据收集器
     % 按 truth_id 索引，每个元素是一个 cell，记录该飞机的确认帧历史
@@ -118,7 +117,7 @@ function validate_oracle_invariants(trackSnapshots, detList, diagList, params, f
 
         % ==================== 收集确认事件证据 ====================
         % 从当前帧的生命周期事件中提取确认相关信息
-        % 调用 record_confirmation_hits 收集 3/7 滑窗内的命中证据
+        % 调用 record_confirmation_hits 收集配置滑窗内的命中证据
         [confirmation_hits, frame_events] = record_confirmation_hits( ...
             confirmation_hits, diag.lifecycle_events, detList, k, params);
         % 验证生命周期事件的合法性
@@ -127,6 +126,24 @@ function validate_oracle_invariants(trackSnapshots, detList, diagList, params, f
 
     % ==================== 验证最终航迹列表的不变量 ====================
     validate_final_tracks(finalTrackList, detList, params);
+end
+
+function validate_starter_config(params)
+    % 验证可配置的确认数和窗口长度，不限制为某个固定组合
+    required = {'oracle_QUALIFY_NUM', 'oracle_TOLERANT_NUM'};
+    for i = 1:length(required)
+        assert(isfield(params, required{i}), ...
+            'Oracle starter config missing field %s', required{i});
+    end
+
+    qualify_num = params.oracle_QUALIFY_NUM;
+    tolerant_num = params.oracle_TOLERANT_NUM;
+    valid_qualify = isnumeric(qualify_num) && isscalar(qualify_num) && ...
+        isfinite(qualify_num) && qualify_num >= 1 && qualify_num == floor(qualify_num);
+    valid_tolerant = isnumeric(tolerant_num) && isscalar(tolerant_num) && ...
+        isfinite(tolerant_num) && tolerant_num >= 1 && tolerant_num == floor(tolerant_num);
+    assert(valid_qualify && valid_tolerant && qualify_num <= tolerant_num, ...
+        'Oracle starter config must use positive integers with QUALIFY_NUM <= TOLERANT_NUM');
 end
 
 % =========================================================================
@@ -198,12 +215,12 @@ function validate_consumed_detections(dets, diag, frame_id)
 end
 
 % =========================================================================
-% record_confirmation_hits — 收集确认事件的 3/7 证据
+% record_confirmation_hits — 收集确认事件的配置窗口证据
 % =========================================================================
 % 【功能】
 %   遍历当前帧的所有生命周期事件，对于每个 'confirmed' 事件：
-%     1. 回溯检查 TOLERANT_NUM=7 帧窗口内的检测命中情况
-%     2. 验证窗口内至少有 QUALIFY_NUM=3 次真实检测命中
+%     1. 回溯检查配置窗口内的检测命中情况
+%     2. 验证窗口内真实检测命中数达到配置阈值
 %     3. 验证当前帧确实有一次命中（确认必须由当前帧触发）
 %
 % 【返回值】
@@ -221,7 +238,7 @@ function [hits, events] = record_confirmation_hits(hits, events, detList, frame_
         % 如果 truth_id 超出 hits 数组范围，扩展数组
         if truth_id > length(hits), hits{truth_id} = []; end
         current_hit = false;  % 标记当前帧是否有命中
-        % 计算 3/7 滑窗的起始帧号
+        % 计算配置滑窗的起始帧号
         start_frame = max(1, event.confirm_frame - params.oracle_TOLERANT_NUM + 1);
         hit_frames = [];  % 记录窗口内的命中帧号
         % 遍历滑窗内的每一帧
@@ -238,9 +255,10 @@ function [hits, events] = record_confirmation_hits(hits, events, detList, frame_
                 end
             end
         end
-        % 断言：窗口内命中次数不少于 QUALIFY_NUM=3
+        % 断言：窗口内命中次数达到配置的确认阈值
         assert(length(hit_frames) >= params.oracle_QUALIFY_NUM, ...
-            'Frame %d confirmation lacks 3/7 evidence', frame_id);
+            'Frame %d confirmation lacks configured window evidence (%d/%d)', ...
+            frame_id, params.oracle_QUALIFY_NUM, params.oracle_TOLERANT_NUM);
         % 断言：确认必须由当前帧命中触发
         assert(current_hit, 'Frame %d confirmation was not triggered by a current hit', frame_id);
         % 记录该飞机的确认证据
@@ -365,10 +383,11 @@ function validate_lifecycle_events(events, params, frame_id)
             assert(event.birth_frame <= event.confirm_frame && ...
                 event.confirm_frame == frame_id, ...
                 'Frame %d invalid confirmation timing', frame_id);
-            % 确认帧 - 出生帧 + 1 不能超过 7（3/7 窗口约束）
+            % 确认帧与出生帧的物理跨度不能超过配置窗口
             assert(event.confirm_frame - event.birth_frame + 1 <= ...
                 params.oracle_TOLERANT_NUM, ...
-                'Frame %d confirmation exceeds 3/7 window', frame_id);
+                'Frame %d confirmation exceeds configured window (%d)', ...
+                frame_id, params.oracle_TOLERANT_NUM);
             % TotalPointCnt 应该等于窗口跨度
             assert(event.TotalPointCnt == event.confirm_frame - event.birth_frame + 1, ...
                 'Frame %d confirmation span mismatch', frame_id);

@@ -1,30 +1,32 @@
 function [tempTrackList, valid_tracks, next_id, starter_used_original] = trackStarter_logic_oracle( ...
-        tempTrackList, remainingPointList, pointOriginalIndex, sysPara, QUALIFY_NUM, TOLERANT_NUM, ...
-        ukf_tpl, params, frame_id, next_id, truth_all, t_grid, activeTrackList, n_original_points)
+        tempTrackList, remainingPointList, pointOriginalIndex, ukf_tpl, params, ...
+        frame_id, next_id, truth_all, ~, activeTrackList, n_original_points)
 
-    % Oracle 模式航迹起始模块 — 基于 3/7 滑窗的最近邻确认机制
+    % Oracle 模式航迹起始模块 — 基于可配置滑窗的确认机制
     %
     % 核心逻辑：
     %   1. 按真值 ID 维护独立的滑窗缓冲区（每个目标一个 tempTrackEntry）
     %   2. 每帧：若有点迹命中 → 记录到对应真值的滑窗；若无 → 记空
-    %   3. 滑窗跨度 TOLERANT_NUM=7 帧，要求其中至少 QUALIFY_NUM=3 帧
-    %      有真实检测（非杂波、非过期帧）→ 触发航迹确认
+    %   3. 滑窗长度和最少命中数由 params 中的 Oracle 起始参数配置
     %   4. 确认时使用两点法初始化 UKF：最早有效检测 + 当前帧检测
     %
     % 与普通起始器的区别：
     %   - Oracle 模式下已知每个候选点迹的 aircraft_id（真值身份），
     %     无需聚类或 GNN，直接按真值 ID 分组
-    %   - 起始不依赖距离门限，而是依赖"最近 N 帧内有 M 次检测"
+    %   - 起始不依赖距离门限，而是依赖配置窗口内的真实命中次数
     %   - 每个真值 ID 有独立的滑窗，互不干扰
 
-    % ---- 兼容旧版调用：自动推导 n_original_points ----
-    % 旧版调用可能不传 n_original_points 参数，此时从 pointOriginalIndex 中推导
-    if nargin < 14
+    % ---- 兼容省略 n_original_points 的调用 ----
+    % 未传 n_original_points 时，从 pointOriginalIndex 中推导
+    if nargin < 11
         n_original_points = 0;
         if ~isempty(pointOriginalIndex)
             n_original_points = max(pointOriginalIndex);
         end
     end
+
+    % ---- 从唯一配置源读取并验证起始参数 ----
+    [QUALIFY_NUM, TOLERANT_NUM] = validate_starter_params(params);
 
     n_targets = length(truth_all);
 
@@ -76,20 +78,19 @@ function [tempTrackList, valid_tracks, next_id, starter_used_original] = trackSt
             tempTrackList(ac).missCount = tempTrackList(ac).missCount + 1;
         end
 
-        % 滑动窗口截断：保持最近 TOLERANT_NUM=7 个物理帧
+        % 滑动窗口截断：保持最近配置数量的物理帧
         % 超出窗口的旧检测被丢弃，防止滑窗无限增长
         if length(tempTrackList(ac).pointHistory) > TOLERANT_NUM
             tempTrackList(ac).pointHistory = ...
                 tempTrackList(ac).pointHistory(end-TOLERANT_NUM+1:end);
         end
 
-        % ---- 3/7 确认逻辑 ----
+        % ---- 可配置窗口确认逻辑 ----
         % 收集滑窗中的真实检测（非空点迹）
-        % collect_real_history 过滤掉空条目和杂波，只保留有效检测
+        % collect_real_history 过滤掉空条目和无效结构，只保留有效检测
         real_hist = collect_real_history(tempTrackList(ac).pointHistory);
 
-        % 当前帧命中 + 窗口内真实检测数 >= QUALIFY_NUM=3 → 触发确认
-        % 这是 3/7 起始准则：7 帧窗口内至少 3 次真实检测才确认航迹
+        % 当前帧命中且窗口内真实检测数达到配置阈值时触发确认
         if current_hit && length(real_hist) >= QUALIFY_NUM
             % 两点法初始化：最早检测 + 当前检测
             % det1 提供初始位置，det2 提供最新位置，两者差分得到初始速度
@@ -106,6 +107,28 @@ function [tempTrackList, valid_tracks, next_id, starter_used_original] = trackSt
             tempTrackList(ac).pointHistory = empty_history();
             tempTrackList(ac).missCount = 0;
         end
+    end
+end
+
+function [qualify_num, tolerant_num] = validate_starter_params(params)
+    % 起始参数只允许由 params 提供，避免调用方另传阈值造成配置分叉
+    required = {'oracle_QUALIFY_NUM', 'oracle_TOLERANT_NUM'};
+    for i = 1:length(required)
+        if ~isfield(params, required{i})
+            error('trackStarter_logic_oracle:missingConfig', ...
+                '缺少 Oracle 航迹起始参数 %s', required{i});
+        end
+    end
+
+    qualify_num = params.oracle_QUALIFY_NUM;
+    tolerant_num = params.oracle_TOLERANT_NUM;
+    valid_qualify = isnumeric(qualify_num) && isscalar(qualify_num) && ...
+        isfinite(qualify_num) && qualify_num >= 1 && qualify_num == floor(qualify_num);
+    valid_tolerant = isnumeric(tolerant_num) && isscalar(tolerant_num) && ...
+        isfinite(tolerant_num) && tolerant_num >= 1 && tolerant_num == floor(tolerant_num);
+    if ~valid_qualify || ~valid_tolerant || qualify_num > tolerant_num
+        error('trackStarter_logic_oracle:invalidConfig', ...
+            'Oracle 起始参数必须为正整数且 QUALIFY_NUM 不大于 TOLERANT_NUM');
     end
 end
 

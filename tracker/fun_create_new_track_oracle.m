@@ -4,7 +4,7 @@ function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, fra
     % 输入：
     %   det1     — 最早有效检测（滑窗中的第一条）
     %   det2     — 当前帧检测（滑窗中的最后一条，即确认帧）
-    %   real_hist — 滑窗中所有真实检测的历史（至少 QUALIFY_NUM=3 条）
+    %   real_hist — 滑窗中所有真实检测的历史（数量达到配置确认阈值）
     %
     % 创建流程：
     %   1. 验证 real_hist 的有效性（帧号递增、在窗口内、truth 一致）
@@ -13,11 +13,10 @@ function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, fra
     %   4. 设置初始状态：RELIABLE_TRACK, Quality=confirm_quality
 
     % ---- 历史有效性校验 ----
-    % 必须有完整的 3/7 滑窗检测历史
-    % real_hist 包含至少 QUALIFY_NUM=3 帧的真实检测，确保航迹起始可靠性
+    % 真实检测数量必须达到配置的确认阈值
     if nargin < 8 || isempty(real_hist) || length(real_hist) < params.oracle_QUALIFY_NUM
         error('fun_create_new_track_oracle:invalidHistory', ...
-            '创建可靠航迹需要完整的 3/7 实际检测历史');
+            '创建可靠航迹需要达到配置确认阈值的实际检测历史');
     end
 
     % 检查帧号严格递增、以当前帧结束、窗口跨度 <= TOLERANT_NUM
@@ -26,7 +25,7 @@ function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, fra
     if any(diff(history_frames) <= 0) || history_frames(end) ~= frame_id || ...
             frame_id - history_frames(1) + 1 > params.oracle_TOLERANT_NUM
         error('fun_create_new_track_oracle:invalidHistory', ...
-            '起始检测历史必须按帧递增、以确认帧结束且位于 3/7 窗口内');
+            '起始检测历史必须按帧递增、以确认帧结束且位于配置窗口内');
     end
 
     % 逐一验证每个历史点迹：非空、非杂波、aircraft_id 匹配 truth_idx

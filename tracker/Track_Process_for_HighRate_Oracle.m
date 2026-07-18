@@ -117,16 +117,14 @@ function [trackList, tempTrackList, snap, next_id, diagInfo] = Track_Process_for
 
     % trackStarter_logic_oracle 的核心逻辑：
     %   1. 按真值 ID 对剩余点迹分组
-    %   2. 对每个未激活的真值目标，维护一个滑动窗口（TOLERANT_NUM=7）
-    %      的候选点迹历史
-    %   3. 当窗口内真实命中数 >= QUALIFY_NUM=3 时，触发航迹确认
+    %   2. 对每个未激活的真值目标，按 params 中配置的物理帧长度维护滑窗
+    %   3. 当窗口内真实命中数达到配置阈值时，触发航迹确认
     %   4. 使用两点法初始化 UKF（det1=最早有效检测, det2=当前帧）
     %      并创建新的 RELIABLE_TRACK
     %   5. 返回确认的新航迹 valid_tracks 和起始模块消耗的点迹掩码
     [tempTrackList, valid_tracks, next_id, starter_used_det] = ...
         trackStarter_logic_oracle(tempTrackList, remainingPointList, ...
-        pointOriginalIndex, params, params.oracle_QUALIFY_NUM, ...
-        params.oracle_TOLERANT_NUM, ukf_tpl, params, frame_id, next_id, ...
+        pointOriginalIndex, ukf_tpl, params, frame_id, next_id, ...
         truth_all, t_grid, stillActiveTrackList, n_points);
 
     % 收集起始确认事件

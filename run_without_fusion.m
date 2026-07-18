@@ -9,7 +9,7 @@ function result = run_without_fusion(scenario_name)
 
     if nargin < 1 || isempty(scenario_name)
         % 默认使用回头弯场景（单目标、高机动）
-        scenario_name = 'single_turn';
+        scenario_name = 'multi_cross';
     end
 
     addpath(genpath('.'));

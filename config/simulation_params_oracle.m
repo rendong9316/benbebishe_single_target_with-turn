@@ -163,10 +163,11 @@ function params = simulation_params_oracle()
     % 对应门限下的理论 Pd，赋给 imm.Pg
     params.pda_pd_gate        = 0.8647;
 
-    % ==================== Oracle 起始器滑窗参数 ====================
-    % 3/7 滑窗起始规则：在最近 7 个物理帧中，至少有 3 帧有真实命中才确认航迹
-    params.oracle_QUALIFY_NUM   = 3;    % 窗口内最少真实命中帧数
-    params.oracle_TOLERANT_NUM  = 7;    % 窗口跨度（最近的 7 个物理帧）
+    % ==================== Oracle 起始器可配置滑窗参数 ====================
+    % 在最近 TOLERANT_NUM 个物理帧中，至少有 QUALIFY_NUM 帧出现真实命中才确认航迹。
+    % 两者可按需求调整，但必须是正整数且 QUALIFY_NUM <= TOLERANT_NUM。
+    params.oracle_QUALIFY_NUM   = 3;    % 默认最少真实命中帧数
+    params.oracle_TOLERANT_NUM  = 7;    % 默认滑动窗口长度（物理帧）
     % 航迹质量参数（南阳式管理）
     params.oracle_confirm_quality    = 8;   % 确认时赋予的质量分
     params.oracle_maintain_quality  = 4;    % 维持时的质量分

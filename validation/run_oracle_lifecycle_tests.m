@@ -10,15 +10,15 @@
 % 【测试的不变量清单】
 %   1. K_loss 连续漏检终止：SuccLossPointCnt >= 8 时航迹转为 HISTORY
 %      验证：创建空航迹，连续 8 帧无关联 → 第 8 帧 Type 应变为 HISTORY
-%   2. 3/7 滑窗起始：窗口内至少 3 帧有检测才确认航迹
-%      验证：在帧 1,3,5 有检测 → 第 5 帧确认（窗口 [1,5] 内有 3 次命中）
+%   2. 可配置滑窗起始：窗口内至少配置数量的帧有检测才确认航迹
+%      验证：默认配置从 params.oracle_* 读取，并覆盖 2/4、4/8 回归场景
 %   3. 当前帧命中要求：确认必须由当前帧检测触发，不能仅凭历史滑窗确认
-%      验证：在第 3 帧确认后，第 4 帧无新检测 → 不应再次确认
+%      验证：预加载足够历史后，当前帧无检测仍不得确认
 %   4. 关联帧检查和候选去重：同一帧内同一航迹只关联一个点迹
 %      验证：构造过期帧、远距离、近距离、杂波四种候选 → 应选最近的有效帧
 %   5. 真值终止开关：truth_terminate_enable=true 时真值结束 → HISTORY
 %      验证：真值只有 2 帧，第 3 帧时应转为 HISTORY
-%   6. 无效起始历史拒绝：起始历史不满足 3/7 要求时抛出异常
+%   6. 无效起始历史拒绝：起始历史不满足配置要求时抛出异常
 %      验证：传入空的 real_hist → 应抛出 invalidHistory 异常
 %
 % 【测试方法】
@@ -50,20 +50,22 @@ function run_oracle_lifecycle_tests()
     assert(track.death_frame == 8);                    % 死亡帧号为 8
     assert(track.SuccLossPointCnt == 8);               % 连续漏检计数应为 8
 
-    % ==================== 测试2：3/7 滑窗起始 ====================
-    % 在帧 1,3,5 有检测 → 第 5 帧确认
-    % 窗口 [1,5] 共 5 帧，包含 3 次真实命中（满足 QUALIFY_NUM=3）
-    % 窗口跨度 5 ≤ TOLERANT_NUM=7（满足窗口大小约束）
+    % ==================== 测试2：当前配置滑窗起始 ====================
+    % 检测序列和期望结果均由 params.oracle_* 推导，不假设固定参数组合
+    qualify_num = params.oracle_QUALIFY_NUM;
+    tolerant_num = params.oracle_TOLERANT_NUM;
     tempTrackList = struct([]);  % 初始临时航迹列表为空
-    % 真值轨迹：飞机从 (0,0) 开始，每帧移动 (1,1)
-    truth_all = {[0, 0, 0, 0, 0; 1, 1, 0, 0, 100]};
+    truth_all = fixture_truth_through(tolerant_num);
     % 创建 UKF 模板（使用 radar_params 获取 R1 的专属参数）
     ukf_tpl = ukf_jichu('create', radar_params(params, 1), 113, 33.5, 109, 33.5, params.dt_sec);
     next_id = 1;  % 航迹 ID 计数器
-    frames_with_detection = [1, 3, 5];  % 有检测的帧号
+    % 在整个配置窗口内均匀安排恰好 Q 次命中，最后一次位于窗口末帧
+    frames_with_detection = unique(round(linspace(1, tolerant_num, qualify_num)));
+    assert(length(frames_with_detection) == qualify_num);
+    confirm_frame = frames_with_detection(end);
     created = {};  % 记录新生成的航迹
 
-    for frame_id = 1:5
+    for frame_id = 1:confirm_frame
         if ismember(frame_id, frames_with_detection)
             % 有检测的帧：构造一个 fixture 检测点迹
             dp = fixture_detection(frame_id, 1);
@@ -78,13 +80,13 @@ function run_oracle_lifecycle_tests()
         end
         % 调用起始器逻辑：传入临时航迹列表、剩余点迹、参数等
         [tempTrackList, new_tracks, next_id, mask] = trackStarter_logic_oracle( ...
-            tempTrackList, remaining, original_index, params, 3, 7, ukf_tpl, params, ...
-            frame_id, next_id, truth_all, 0:30:120, {}, n_original);
-        if frame_id < 5
-            % 前 4 帧：尚未满足 3/7 确认条件，不应产生新航迹
+            tempTrackList, remaining, original_index, ukf_tpl, params, ...
+            frame_id, next_id, truth_all, 0:params.dt_sec:((confirm_frame-1)*params.dt_sec), {}, n_original);
+        if frame_id < confirm_frame
+            % 确认帧之前尚未满足配置条件，不应产生新航迹
             assert(isempty(new_tracks));
         else
-            % 第 5 帧：满足确认条件，应产生一个新航迹
+            % 配置要求的最后一次命中到达后，应产生一条新航迹
             created = new_tracks;
             % 断言：mask 长度为 1 且为 true（一个点迹被消耗）
             assert(length(mask) == 1 && mask(1));
@@ -95,20 +97,20 @@ function run_oracle_lifecycle_tests()
     trk = created{1};
     % 断言：航迹类型为 RELIABLE_TRACK（可靠航迹）
     assert(trk.Type == params.RELIABLE_TRACK);
-    % 断言：birth_frame=1（第一次检测在帧1），confirm_frame=5
-    assert(trk.birth_frame == 1 && trk.confirm_frame == 5);
-    % 断言：TotalPointCnt=5（5 帧都有记录），AsscPointCnt=3（3 帧有关联）
-    % TotalLostPointCnt=2（2 帧漏检），life=5（寿命 5 帧）
-    assert(trk.TotalPointCnt == 5 && trk.AsscPointCnt == 3 && trk.TotalLostPointCnt == 2);
-    assert(trk.life == 5 && length(trk.asscPointList) == 3);
+    expected_span = confirm_frame - frames_with_detection(1) + 1;
+    assert(trk.birth_frame == frames_with_detection(1) && trk.confirm_frame == confirm_frame);
+    assert(trk.TotalPointCnt == expected_span && ...
+        trk.AsscPointCnt == qualify_num && ...
+        trk.TotalLostPointCnt == expected_span - qualify_num);
+    assert(trk.life == expected_span && length(trk.asscPointList) == qualify_num);
 
-    % ==================== 测试3：3/7 滑窗不满足（检测间隔太稀疏）====================
-    % 在帧 1,2,8 有检测 → 第 8 帧时窗口 [2,8] 内只有 2 次命中（不满足 ≥3）
-    % 验证：即使总共有 3 次检测，但窗口内不足则不确认
+    % ==================== 测试3：默认配置滑窗不满足 ====================
+    % 第三次命中落在配置窗口之外，旧证据淘汰后窗口内命中不足
+    % 验证：即使累计命中达到配置阈值，当前窗口证据不足也不确认
     tempTrackList = struct([]);
     next_id = 1;
-    hits = [1, 2, 8];  % 检测帧号
-    for frame_id = 1:8
+    hits = [1, 2, tolerant_num + 1];  % 第三次命中时帧1证据已淘汰
+    for frame_id = 1:(tolerant_num + 1)
         if ismember(frame_id, hits)
             remaining = fixture_detection(frame_id, 1);
             original_index = 1;
@@ -120,20 +122,23 @@ function run_oracle_lifecycle_tests()
         end
         % 调用起始器逻辑
         [tempTrackList, new_tracks, next_id] = trackStarter_logic_oracle( ...
-            tempTrackList, remaining, original_index, params, 3, 7, ukf_tpl, params, ...
+            tempTrackList, remaining, original_index, ukf_tpl, params, ...
             frame_id, next_id, truth_all, 0:30:210, {}, n_original);
         % 断言：全程不应产生任何航迹（检测太稀疏，窗口内命中不足）
         assert(isempty(new_tracks));
     end
 
     % ==================== 运行其他测试用例 ====================
-    % 测试3：确认必须由当前帧命中触发
+    % 测试4：确认必须由当前帧命中触发
     test_current_hit_required(params, ukf_tpl, truth_all);
-    % 测试4：关联帧检查和候选去重
+    % 测试5-6：2/4 与 4/8 可配置起始端到端回归
+    test_configurable_starter_end_to_end(params, ukf_tpl, 2, 4);
+    test_configurable_starter_end_to_end(params, ukf_tpl, 4, 8);
+    % 测试7：关联帧检查和候选去重
     test_association_frame_and_duplicate_candidates(params);
-    % 测试5：真值终止开关
+    % 测试8：真值终止开关
     test_truth_termination_switch(params, ukf_tpl);
-    % 测试6：无效起始历史拒绝
+    % 测试9：无效起始历史拒绝
     test_invalid_creation_history(params, ukf_tpl);
 
     % 所有测试通过
@@ -152,9 +157,10 @@ end
 function test_current_hit_required(params, ukf_tpl, truth_all)
     tempTrackList = struct([]);
     next_id = 1;
-    % 在帧 1,2,3 有检测，第 4 帧无检测
-    for frame_id = 1:4
-        if frame_id <= 3
+    qualify_num = params.oracle_QUALIFY_NUM;
+    % 前 Q 帧有检测，第 Q+1 帧无检测
+    for frame_id = 1:(qualify_num + 1)
+        if frame_id <= qualify_num
             remaining = fixture_detection(frame_id, 1);
             original_index = 1;
             n_original = 1;
@@ -164,16 +170,17 @@ function test_current_hit_required(params, ukf_tpl, truth_all)
             n_original = 0;
         end
         [tempTrackList, new_tracks, next_id] = trackStarter_logic_oracle( ...
-            tempTrackList, remaining, original_index, params, 3, 7, ukf_tpl, ...
-            params, frame_id, next_id, truth_all, 0:30:120, {}, n_original);
-        if frame_id < 3
-            % 第 1-2 帧：滑窗内命中不足，不确认
+            tempTrackList, remaining, original_index, ukf_tpl, params, ...
+            frame_id, next_id, truth_all, 0:30:120, {}, n_original);
+        if frame_id < qualify_num
+            % 第 1 至 Q-1 帧：滑窗内命中不足，不确认
             assert(isempty(new_tracks));
-        elseif frame_id == 3
-            % 第 3 帧：滑窗 [1,3] 内有 3 次命中，满足确认条件
+        elseif frame_id == qualify_num
+            % 第 Q 帧：窗口内达到配置命中数，满足确认条件
             assert(length(new_tracks) == 1);
+            tempTrackList = struct([]);
         else
-            % 第 4 帧：无新检测，即使滑窗内仍有历史命中也不确认
+            % 第 Q+1 帧：无新检测，即使滑窗内仍有历史命中也不确认
             assert(isempty(new_tracks));
         end
     end
@@ -185,10 +192,124 @@ function test_current_hit_required(params, ukf_tpl, truth_all)
         'point', {fixture_detection(1,1), fixture_detection(2,1), fixture_detection(3,1)}, ...
         'origIndex', {1,1,1}), 'missCount', 0);
     % 在第 4 帧调用起始器，但传入空检测列表
-    [~, new_tracks] = trackStarter_logic_oracle(preloaded, [], [], params, 3, 7, ...
+    [~, new_tracks] = trackStarter_logic_oracle(preloaded, [], [], ...
         ukf_tpl, params, 4, 1, truth_all, 0:30:120, {}, 0);
     % 断言：当前帧无检测，不应确认（即使滑窗已满）
     assert(isempty(new_tracks));
+end
+
+% =========================================================================
+% test_configurable_starter_end_to_end — 可配置 Oracle 起始端到端回归
+% =========================================================================
+% 对明确的 Q/T 组合逐帧调用主处理函数，覆盖确认阈值、窗口边界、
+% 旧证据淘汰和当前帧命中要求。成功场景还交给不变量验证器复核。
+function test_configurable_starter_end_to_end(base_params, ukf_tpl, qualify_num, tolerant_num)
+    params = base_params;
+    params.oracle_QUALIFY_NUM = qualify_num;
+    params.oracle_TOLERANT_NUM = tolerant_num;
+
+    % Q-1 次命中不足以确认。
+    [tracks, ~, ~, ~, diags] = run_oracle_frames( ...
+        params, ukf_tpl, 1:(qualify_num-1), qualify_num-1);
+    assert(isempty(tracks));
+    assert(~has_lifecycle_event(diags, 'confirmed'));
+
+    % 配置窗口跨度恰好为 T，并在第 Q 次（当前帧）命中时确认。
+    exact_span_hits = [1:(qualify_num-1), tolerant_num];
+    [finalTrackList, ~, snapshots, detList, diagList] = run_oracle_frames( ...
+        params, ukf_tpl, exact_span_hits, tolerant_num);
+    assert(length(finalTrackList) == 1);
+    trk = finalTrackList{1};
+    assert(trk.birth_frame == 1);
+    assert(trk.confirm_frame == tolerant_num);
+    assert(trk.AsscPointCnt == qualify_num);
+    assert(trk.TotalPointCnt == tolerant_num);
+    assert(trk.TotalLostPointCnt == tolerant_num - qualify_num);
+    assert(length(trk.asscPointList) == qualify_num);
+    assert(trk.Type == params.RELIABLE_TRACK);
+    for i = 1:length(exact_span_hits)
+        hit_frame = exact_span_hits(i);
+        assert(length(diagList{hit_frame}.starter_used_det) == 1 && ...
+            diagList{hit_frame}.starter_used_det(1));
+        assert(isequaln(trk.asscPointList{i}, detList{hit_frame}(1)));
+    end
+    assert(length(diagList{tolerant_num}.starter_used_det) == 1 && ...
+        diagList{tolerant_num}.starter_used_det(1));
+    events = diagList{tolerant_num}.lifecycle_events;
+    confirmed = events(strcmp({events.event}, 'confirmed'));
+    assert(length(confirmed) == 1);
+    assert(confirmed.track_id == trk.id && ...
+        confirmed.birth_frame == 1 && ...
+        confirmed.confirm_frame == tolerant_num && ...
+        confirmed.AsscPointCnt == qualify_num && ...
+        confirmed.TotalPointCnt == tolerant_num && ...
+        confirmed.TotalLostPointCnt == tolerant_num - qualify_num);
+    validate_oracle_invariants(snapshots, detList, diagList, params, finalTrackList);
+
+    % 跨度 T+1：第一帧旧证据被淘汰，当前窗口只剩 Q-1 次命中。
+    expired_hits = [1:(qualify_num-1), tolerant_num + 1];
+    [tracks, ~, ~, ~, diags] = run_oracle_frames( ...
+        params, ukf_tpl, expired_hits, tolerant_num + 1);
+    assert(isempty(tracks));
+    assert(~has_lifecycle_event(diags, 'confirmed'));
+
+    % 预加载达到 Q 次的实际检测历史，但当前帧无命中，仍不得确认。
+    preloaded_detList = cell(1, qualify_num + 1);
+    point_history = struct('frameID', {}, 'point', {}, 'origIndex', {});
+    for k = 1:qualify_num
+        preloaded_detList{k} = fixture_detection(k, 1);
+        point_history(end+1) = struct('frameID', k, ...
+            'point', preloaded_detList{k}, 'origIndex', 1);
+    end
+    preloaded_detList{qualify_num + 1} = struct([]);
+    preloaded = struct('truth_idx', 1, 'pointHistory', point_history, 'missCount', 0);
+    t_grid = 0:30:(qualify_num * 30);
+    truth_all = fixture_truth_through(qualify_num + 1);
+    [tracks, ~, ~, ~, diag] = Track_Process_for_HighRate_Oracle( ...
+        {}, preloaded, preloaded_detList{qualify_num + 1}, ukf_tpl, params, ...
+        qualify_num + 1, 1, truth_all, t_grid);
+    assert(isempty(tracks));
+    assert(isempty(diag.lifecycle_events));
+end
+
+% 逐帧执行完整 Oracle 主处理链并收集验证器所需产物。
+function [trackList, tempTrackList, snapshots, detList, diagList] = ...
+        run_oracle_frames(params, ukf_tpl, hit_frames, n_frames)
+    trackList = {};
+    tempTrackList = struct([]);
+    snapshots = cell(1, n_frames);
+    detList = cell(1, n_frames);
+    diagList = cell(1, n_frames);
+    next_id = 1;
+    truth_all = fixture_truth_through(n_frames);
+    t_grid = 0:30:((n_frames-1)*30);
+    for frame_id = 1:n_frames
+        if ismember(frame_id, hit_frames)
+            detList{frame_id} = fixture_detection(frame_id, 1);
+        else
+            detList{frame_id} = struct([]);
+        end
+        [trackList, tempTrackList, snapshots{frame_id}, next_id, diagList{frame_id}] = ...
+            Track_Process_for_HighRate_Oracle(trackList, tempTrackList, ...
+            detList{frame_id}, ukf_tpl, params, frame_id, next_id, truth_all, t_grid);
+    end
+end
+
+% 构造覆盖完整测试帧的真值，避免确认后立即触发 truth_ended。
+function truth_all = fixture_truth_through(n_frames)
+    end_time = max(0, (n_frames - 1) * 30);
+    truth_all = {[0, 0, 0, 0, 0; n_frames, n_frames, 0, 0, end_time]};
+end
+
+function tf = has_lifecycle_event(diagList, event_name)
+    tf = false;
+    for k = 1:length(diagList)
+        events = diagList{k}.lifecycle_events;
+        if ~isempty(events) && any(strcmp({events.event}, event_name))
+            tf = true;
+            return;
+        end
+    end
 end
 
 % =========================================================================
