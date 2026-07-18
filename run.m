@@ -1,4 +1,19 @@
 function result = run(scenario_name)
+    % 主入口：双基地 OTH-SWR 单/多目标跟踪仿真全流程
+    %
+    % 完整流水线（Phase 0-10）：
+    %   Phase 0: Oracle 场景初始化（参数 + 真值航迹）
+    %   Phase 1: ADS-B 数据标定系统偏差（dr, da）
+    %   Phase 2: 多目标点迹生成 + 偏差校正
+    %   Phase 3: UKF/IMM 滤波器模板初始化
+    %   Phase 4: 南阳式 Oracle 航迹维护（每站独立）
+    %   Phase 5: 跨雷达航迹时间对齐（R2 → R1 时间基准）
+    %   Phase 6: 跨雷达航迹匹配（双门限法 / 传统法）
+    %   Phase 7: 航迹级融合（SCC/BC/CI/FCI 四种算法）
+    %   Phase 8: RMSE 定量误差评估（单站 + 融合）
+    %   Phase 9: 可视化绘图
+    %   Phase 10: 数据保存
+
     if nargin < 1 || isempty(scenario_name)
         scenario_name = 'single_turn';
     end
@@ -6,8 +21,10 @@ function result = run(scenario_name)
     addpath(genpath('.'));
 
     fprintf('========== Phase 0: Oracle 场景初始化 ==========%s', newline);
+    % 加载全局参数（雷达几何、UKF 噪声、IMM 转移概率、双门限配置等）
     params = simulation_params_oracle();
     rng(params.random_seed);
+    % 根据场景名生成真值航迹（支持 single_straight / single_turn / single_uturn / multi_cross）
     scenario = build_truth_scenario(scenario_name, params);
     truth_all = scenario.truth_all;
     truthTrajs = scenario.truthTrajs;
@@ -19,6 +36,8 @@ function result = run(scenario_name)
     print_truth_summary(truthTrajs);
 
     fprintf('%s========== Phase 1: ADS-B 系统偏差标定 ==========%s', newline, newline);
+    % 从 ADS-B CSV 数据中采样目标位置，计算 R1/R2 的距离和方位偏差估计
+    % 原理：ADS-B 提供高精度位置 → 计算理论群距离/方位角 → 与实际雷达量测比较 → 取均值
     [dr1_est, da1_est, dr2_est, da2_est] = calibrate_bias(params);
     fprintf('R1 偏差估计: dr=%.0fm, da=%.2fdeg (真实: %.0fm, %.2fdeg)%s', ...
         dr1_est, da1_est, params.radar1_range_bias_m, params.radar1_azimuth_bias_deg, newline);
@@ -26,12 +45,15 @@ function result = run(scenario_name)
         dr2_est, da2_est, params.radar2_range_bias_m, params.radar2_azimuth_bias_deg, newline);
 
     fprintf('%s========== Phase 2: 多目标点迹生成 + 偏差校正 ==========%s', newline, newline);
+    % 对每个雷达站，逐帧生成检测点迹（目标+杂波），然后减去估计的系统偏差
     detList_R1 = generate_radar_detections(1, params, truth_all, t1_grid, n_frames, dr1_est, da1_est);
     detList_R2 = generate_radar_detections(2, params, truth_all, t2_grid, n_frames, dr2_est, da2_est);
     print_detection_summary(detList_R1, 'R1');
     print_detection_summary(detList_R2, 'R2');
 
     fprintf('%s========== Phase 3: UKF/IMM 模板初始化 ==========%s', newline, newline);
+    % 从全局参数中提取 R1/R2 各自的雷达专属参数（噪声/Q/门限）
+    % 然后通过 ukf_imm('create') 创建 IMM UKF 模板（内含 CV+CT 两个子 UKF）
     params_r1 = radar_params(params, 1);
     params_r2 = radar_params(params, 2);
     ukf1_tpl = ukf_imm('create', params_r1, params.radar1_lon, params.radar1_lat, ...
@@ -44,21 +66,29 @@ function result = run(scenario_name)
         params_r2.ukf_Q_scale, params_r2.ukf_range_std_m, params_r2.ukf_azimuth_std_deg, newline);
 
     fprintf('%s========== Phase 4: 南阳式 Oracle 航迹维护 ==========%s', newline, newline);
+    % 对每个雷达的校准点迹序列，执行完整的 Oracle 航迹处理：
+    %   航迹生命周期管理 → UKF预测 → Oracle关联 → UKF更新 → 航迹起始
+    % 返回：航迹列表 + 临时起始缓冲区 + 逐帧快照 + 诊断信息
     [trackList_R1, tempTrackList_R1, trackSnapshots_R1, diag_R1] = run_oracle_tracker( ...
         detList_R1, ukf1_tpl, params_r1, truth_all, t1_grid);
     [trackList_R2, tempTrackList_R2, trackSnapshots_R2, diag_R2] = run_oracle_tracker( ...
         detList_R2, ukf2_tpl, params_r2, truth_all, t2_grid);
     print_track_summary(trackList_R1, 'R1', params);
     print_track_summary(trackList_R2, 'R2', params);
+    % 验证 Oracle 不变量：点迹不重复消耗、快照字段完整、生命周期事件合法等
     validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1, trackList_R1);
     validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2, trackList_R2);
     fprintf('Oracle lifecycle invariants: R1/R2 通过%s', newline);
 
     fprintf('%s========== Phase 5: 航迹级时间对齐 ==========%s', newline, newline);
+    % R2 比 R1 晚 dt_offset 秒采样，需要将 R2 航迹状态回退到 R1 的时间网格
+    % 使用 CV 模型逆向传播：x(t-Δt) = F(-Δt) * x(t), P(t-Δt) = FPF' + Q_scaled
     aligned_R2 = time_align_tracks(trackSnapshots_R2, params);
     fprintf('R2 已回退对齐到 R1 时间基准: %.1fs%s', params.time_offset_radar2_sec, newline);
 
     fprintf('%s========== Phase 6: 跨雷达航迹匹配 ==========%s', newline, newline);
+    % 根据配置的匹配方法（dualgate 或传统 matcher）对 R1/R2 航迹进行配对
+    % 匹配结果包含：共现帧数、平均距离、质量评分等
     if isfield(params, 'track_matcher_method') && strcmp(params.track_matcher_method, 'dualgate')
         matched_pairs_struct = track_matcher_dualgate(trackSnapshots_R1, aligned_R2, params);
     else
@@ -67,6 +97,8 @@ function result = run(scenario_name)
     print_match_summary(matched_pairs_struct);
 
     fprintf('%s========== Phase 7: 航迹融合 ==========%s', newline, newline);
+    % 对每对匹配航迹，依次执行 SCC/BC/CI/FCI 四种融合算法
+    % 输出：all_fused_snapshots{pair_idx, method_idx}[frame] → 融合航迹快照
     method_names = {'SCC', 'BC', 'CI', 'FCI'};
     all_fused_snapshots = cell(length(matched_pairs_struct), length(method_names));
     for p = 1:length(matched_pairs_struct)
@@ -80,9 +112,12 @@ function result = run(scenario_name)
     fprintf('融合完成: %d 对 x %d 算法%s', length(matched_pairs_struct), length(method_names), newline);
 
     fprintf('%s========== Phase 8: RMSE 定量误差评估 ==========%s', newline, newline);
+    % 构建匹配上下文（ID→位置立方体映射），用于融合评估中的 pair→aircraft 映射
     matcher_multi = build_matcher_context(matched_pairs_struct, trackSnapshots_R1, aligned_R2, n_frames);
+    % 融合 RMSE：每种算法在所有匹配对上的误差统计
     fusion_eval = evaluate_all_multi('fusion', all_fused_snapshots, method_names, ...
         matched_pairs_struct, trackSnapshots_R1, aligned_R2, truthTrajs, n_frames, params.dt_sec, matcher_multi);
+    % 单站 RMSE：R1/R2 各自的 UKF 跟踪误差
     errorStats_R1 = evaluate_all_multi('tracking_errors', trackSnapshots_R1, detList_R1, ...
         truthTrajs, n_frames, params.dt_sec, 'R1');
     errorStats_R2 = evaluate_all_multi('tracking_errors', aligned_R2, detList_R2, ...
@@ -91,6 +126,7 @@ function result = run(scenario_name)
     print_tracking_rmse(errorStats_R2);
     print_fusion_rmse(fusion_eval);
 
+    % ---- 组装返回结果 ----
     result = struct();
     result.params = params;
     result.scenario = scenario;

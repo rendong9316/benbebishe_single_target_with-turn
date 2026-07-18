@@ -1,7 +1,15 @@
 function result = run_without_fusion(scenario_name)
+    % 无融合模式主入口：执行单站跟踪全流程，不包含跨雷达匹配和融合
+    %
+    % 与 run.m 的区别：
+    %   - 移除了 Phase 5-8（时间对齐、航迹匹配、融合、融合评估）
+    %   - 移除了 Phase 9 的融合可视化
+    %   - 增加了点迹消耗统计（print_consumption_summary）
+    %   - 默认场景为 single_uturn（回头弯）
+
     if nargin < 1 || isempty(scenario_name)
-        % scenario_name = 'multi_cross';
-        scenario_name = 'single_uturn';
+        % 默认使用回头弯场景（单目标、高机动）
+        scenario_name = 'single_turn';
     end
 
     addpath(genpath('.'));
@@ -23,6 +31,7 @@ function result = run_without_fusion(scenario_name)
     print_truth_summary_without_fusion(truthTrajs);
 
     fprintf('%s========== Phase 1: ADS-B 系统偏差标定 ==========%s', newline, newline);
+    % 与 run.m 相同：从 ADS-B 数据估算 R1/R2 的系统偏差
     [dr1_est, da1_est, dr2_est, da2_est] = calibrate_bias_without_fusion(params);
     fprintf('R1 偏差估计: dr=%.0fm, da=%.2fdeg (真实: %.0fm, %.2fdeg)%s', ...
         dr1_est, da1_est, params.radar1_range_bias_m, params.radar1_azimuth_bias_deg, newline);
@@ -30,6 +39,7 @@ function result = run_without_fusion(scenario_name)
         dr2_est, da2_est, params.radar2_range_bias_m, params.radar2_azimuth_bias_deg, newline);
 
     fprintf('%s========== Phase 2: 点迹生成 + 偏差校正 ==========%s', newline, newline);
+    % 生成两站点迹并减去估计的系统偏差，得到校准后的量测
     detList_R1 = generate_radar_detections_without_fusion( ...
         1, params, truth_all, t1_grid, n_frames, dr1_est, da1_est);
     detList_R2 = generate_radar_detections_without_fusion( ...
@@ -38,22 +48,29 @@ function result = run_without_fusion(scenario_name)
     print_detection_summary_without_fusion(detList_R2, 'R2');
 
     fprintf('%s========== Phase 3: 南阳式 Oracle 起始、关联与滤波 ==========%s', newline, newline);
+    % 创建 IMM UKF 模板（CV+CT 双模型）
     params_r1 = radar_params(params, 1);
     params_r2 = radar_params(params, 2);
     ukf1_tpl = ukf_imm('create', params_r1, params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
     ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
+
+    % 执行 Oracle 航迹维护（每站独立）
     fprintf('--- R1 Oracle 航迹维护 ---%s', newline);
     [trackList_R1, tempTrackList_R1, trackSnapshots_R1, diag_R1] = ...
         run_oracle_tracker_without_fusion(detList_R1, ukf1_tpl, params_r1, truth_all, t1_grid);
     fprintf('--- R2 Oracle 航迹维护 ---%s', newline);
     [trackList_R2, tempTrackList_R2, trackSnapshots_R2, diag_R2] = ...
         run_oracle_tracker_without_fusion(detList_R2, ukf2_tpl, params_r2, truth_all, t2_grid);
+
     print_track_summary_without_fusion(trackList_R1, 'R1', params);
     print_track_summary_without_fusion(trackList_R2, 'R2', params);
+    % 输出点迹消耗统计：多少个校准点被航迹关联，多少个未使用
     print_consumption_summary(detList_R1, trackList_R1, 'R1');
     print_consumption_summary(detList_R2, trackList_R2, 'R2');
+
+    % 验证 Oracle 不变量
     validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1, trackList_R1);
     validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2, trackList_R2);
     fprintf('Oracle lifecycle invariants: R1/R2 通过%s', newline);

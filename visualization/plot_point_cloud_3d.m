@@ -39,34 +39,37 @@
 % =========================================================================
 
 function plot_point_cloud_3d(detList, title_str, out_path)
-    % 创建图窗
+    % 创建图窗，指定位置和大小：左下角(50,50)，宽1400px，高750px
     fig = figure('Position', [50, 50, 1400, 750]);
-    hold on;
+    hold on;  % 保持当前坐标系，允许后续绘图叠加在同一 axes 上
 
     % 初始化目标点迹和杂波点迹的存储数组
+    % 分别用 range/az/frame 三个一维数组存储目标点和杂波点的三维坐标
     range_tgt = []; az_tgt = []; frame_tgt = [];
     range_clt = []; az_clt = []; frame_clt = [];
 
     % 遍历所有帧，将检测结果按目标/杂波分类存储
     for k = 1:length(detList)
-        dets = detList{k};
-        if isempty(dets), continue; end
+        dets = detList{k};       % 取出第 k 帧的所有检测点
+        if isempty(dets), continue; end  % 空帧跳过，避免后续索引报错
         for d = 1:length(dets)
             % 根据 is_clutter 标记分类：杂波 vs 目标
+            % 杂波点存入 range_clt/az_clt/frame_clt，目标点存入 range_tgt/az_tgt/frame_tgt
             if dets(d).is_clutter
-                range_clt(end+1) = dets(d).prange / 1000;  % m → km
-                az_clt(end+1) = dets(d).paz;
-                frame_clt(end+1) = k;
+                range_clt(end+1) = dets(d).prange / 1000;  % m → km：群距离单位转换
+                az_clt(end+1) = dets(d).paz;                 % 方位角直接使用，单位 deg
+                frame_clt(end+1) = k;                        % 帧号作为 z 轴坐标
             else
-                range_tgt(end+1) = dets(d).prange / 1000;  % m → km
-                az_tgt(end+1) = dets(d).paz;
-                frame_tgt(end+1) = k;
+                range_tgt(end+1) = dets(d).prange / 1000;  % m → km：群距离单位转换
+                az_tgt(end+1) = dets(d).paz;                 % 方位角直接使用，单位 deg
+                frame_tgt(end+1) = k;                        % 帧号作为 z 轴坐标
             end
         end
     end
 
     % ---- 绘制真实目标点迹：蓝色圆点(bo)，MarkerFaceColor 填充蓝色 ----
     % 使用 plot3 在三维(Rg, Az, Frame)空间中标记目标检出
+    % 目标点迹沿时间维呈现连续性，在三维图中应能看出聚集趋势
     if ~isempty(range_tgt)
         plot3(range_tgt, az_tgt, frame_tgt, 'bo', ...
             'MarkerSize', 4, 'MarkerFaceColor', 'b', 'DisplayName', '目标检出');
@@ -74,6 +77,7 @@ function plot_point_cloud_3d(detList, title_str, out_path)
 
     % ---- 绘制虚警杂波：红色叉号(rx)，用于区分真实目标 ----
     % 杂波点通常呈随机分布，在三维视角中可观察其空间分布特性
+    % 虚警密集的区域可能对应海杂波或地物回波较强的方向
     if ~isempty(range_clt)
         plot3(range_clt, az_clt, frame_clt, 'rx', ...
             'MarkerSize', 3, 'DisplayName', '虚警杂波');
@@ -84,8 +88,8 @@ function plot_point_cloud_3d(detList, title_str, out_path)
     ylabel('方位角 az (deg)');     % 到达方位角
     zlabel('帧号 k');              % 时间维度（每帧对应一个采样时刻）
     title(sprintf('%s — 点迹分布 (R-A-Frame)', title_str));
-    legend('Location', 'best');
-    grid on;
+    legend('Location', 'best');    % 自动选择最不遮挡数据的图例位置
+    grid on;                       % 开启网格辅助观察坐标
 
     % 设置三维视角：方位角 45°，仰角 30°
     % 这个角度可以同时观察 R-A 平面的分布和随帧号的变化
@@ -93,7 +97,7 @@ function plot_point_cloud_3d(detList, title_str, out_path)
 
     % 启用三维旋转交互，用户可手动拖动视角
     rotate3d on;
-    drawnow;
+    drawnow;  % 强制刷新图形，确保窗口立即渲染
 
     % 图窗已弹出，不再保存为PNG文件
 end
