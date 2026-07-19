@@ -200,19 +200,29 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, ukf] = prepare_ukf(ukf)
     [x_pred, P_pred, X_pred, ukf] = predict_step_ukf(ukf);
 
     % ---- Step 2: 量测预测及协方差计算 ----
-    % 将预测状态通过量测函数 h(x) 得到预测量测
-    z_pred = measurement_ukf(ukf, x_pred);
     % 将所有 Sigma 点通过量测函数，得到量测空间的 Sigma 点
     Z_pred = zeros(ukf.m, 2 * ukf.n + 1);
     for s = 1:(2 * ukf.n + 1)
         Z_pred(:, s) = measurement_ukf(ukf, X_pred(:, s));
     end
 
+    % 标准 UKF 量测均值：Sigma 量测按均值权重加权。
+    % 方位是圆周变量，以中心 Sigma 点为参考局部展开，避免 0/360 跨界；
+    % 这种写法也适用于 scaled-UT 的负中心权重。
+    z_pred = Z_pred * ukf.Wm;
+    az_ref = Z_pred(2, 1);
+    az_delta = zeros(1, size(Z_pred, 2));
+    for s = 1:size(Z_pred, 2)
+        az_delta(s) = wrap_angle_ukf(Z_pred(2, s) - az_ref);
+    end
+    z_pred(2) = mod(az_ref + az_delta * ukf.Wm, 360.0);
+
     % 计算量测协方差 P_zz = E[(z-z_pred)(z-z_pred)']
     % 初始值为量测噪声 R，加上 Sigma 点的加权散度
     P_zz = ukf.R;
     for s = 1:(2 * ukf.n + 1)
         dz = Z_pred(:, s) - z_pred;
+        dz(2) = wrap_angle_ukf(dz(2));
         P_zz = P_zz + ukf.Wc(s) * (dz * dz');
     end
     % NaN 守卫：如果量测函数出现异常，回退到仅使用 R
@@ -265,6 +275,7 @@ function [lon, lat, ukf] = update_with_innov(ukf, innov_w)
     P_xz = zeros(ukf.n, ukf.m);
     for i = 1:(2 * ukf.n + 1)
         dz = Z_pred(:, i) - z_pred;
+        dz(2) = wrap_angle_ukf(dz(2));
         dx = X_pred(:, i) - x_pred;
         P_xz = P_xz + ukf.Wc(i) * (dx * dz');
     end
@@ -427,6 +438,11 @@ function X = sigma_points_ukf(x, P, n, lam)
         X(:, i + 1) = x + sqrtP(:, i);     % 正方向
         X(:, i + 1 + n) = x - sqrtP(:, i); % 负方向
     end
+end
+
+
+function angle = wrap_angle_ukf(angle)
+    angle = mod(angle + 180.0, 360.0) - 180.0;
 end
 
 

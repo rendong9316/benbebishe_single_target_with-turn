@@ -77,9 +77,9 @@ function result = run_without_fusion(scenario_name)
 
     fprintf('%s========== Phase 4: 单站滤波 RMSE ==========%s', newline, newline);
     errorStats_R1 = evaluate_all_multi('tracking_errors', trackSnapshots_R1, detList_R1, ...
-        truthTrajs, n_frames, params.dt_sec, 'R1');
+        truthTrajs, t1_grid, t1_grid, 'R1');
     errorStats_R2 = evaluate_all_multi('tracking_errors', trackSnapshots_R2, detList_R2, ...
-        truthTrajs, n_frames, params.dt_sec, 'R2');
+        truthTrajs, t2_grid, t2_grid, 'R2');
     print_tracking_rmse_without_fusion(errorStats_R1);
     print_tracking_rmse_without_fusion(errorStats_R2);
 

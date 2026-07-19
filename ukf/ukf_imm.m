@@ -285,14 +285,15 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
         ukf_jichu('prepare', imm.ukf_ct);
 
     % ---- Step 3: 计算组合预测（内部使用） ----
-    % 状态组合：按模型概率加权
-    x_pred_comb = mu(1) * x_pred_cv + mu(2) * x_pred_ct;
+    % 本帧预测必须使用 Markov 传播后的模型先验概率 c_bar，
+    % 而不是上一帧后验概率 mu。
+    x_pred_comb = c_bar(1) * x_pred_cv + c_bar(2) * x_pred_ct;
     % 协方差组合：包含模型间离散项，确保不低估不确定性
-    P_pred_comb = combine_cov_imm({x_pred_cv, x_pred_ct}, {P_pred_cv, P_pred_ct}, mu, x_pred_comb);
+    P_pred_comb = combine_cov_imm({x_pred_cv, x_pred_ct}, {P_pred_cv, P_pred_ct}, c_bar, x_pred_comb);
     % 量测预测组合
-    z_pred_comb = mu(1) * z_pred_cv + mu(2) * z_pred_ct;
+    z_pred_comb = c_bar(1) * z_pred_cv + c_bar(2) * z_pred_ct;
     % 量测协方差组合
-    P_zz_comb = combine_meas_cov_imm({z_pred_cv, z_pred_ct}, {P_zz_cv, P_zz_ct}, mu, z_pred_comb);
+    P_zz_comb = combine_meas_cov_imm({z_pred_cv, z_pred_ct}, {P_zz_cv, P_zz_ct}, c_bar, z_pred_comb);
 
     % ---- Step 4: 返回组合预测给 tracker，关联中心与 IMM 后验一致 ----
     x_pred = x_pred_comb;

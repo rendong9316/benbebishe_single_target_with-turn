@@ -119,9 +119,9 @@ function result = run(scenario_name)
         matched_pairs_struct, trackSnapshots_R1, aligned_R2, truthTrajs, n_frames, params.dt_sec, matcher_multi);
     % 单站 RMSE：R1/R2 各自的 UKF 跟踪误差
     errorStats_R1 = evaluate_all_multi('tracking_errors', trackSnapshots_R1, detList_R1, ...
-        truthTrajs, n_frames, params.dt_sec, 'R1');
-    errorStats_R2 = evaluate_all_multi('tracking_errors', aligned_R2, detList_R2, ...
-        truthTrajs, n_frames, params.dt_sec, 'R2');
+        truthTrajs, t1_grid, t1_grid, 'R1');
+    errorStats_R2 = evaluate_all_multi('tracking_errors', trackSnapshots_R2, detList_R2, ...
+        truthTrajs, t2_grid, t2_grid, 'R2');
     print_tracking_rmse(errorStats_R1);
     print_tracking_rmse(errorStats_R2);
     print_fusion_rmse(fusion_eval);

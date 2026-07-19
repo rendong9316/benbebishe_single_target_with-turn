@@ -61,19 +61,21 @@ end
 %   trackSnapshots — cell 数组，每帧一个 snapshot 结构体，含 trackList
 %   detList        — cell 数组，每帧一个检测点迹数组
 %   truthTrajs     — cell 数组，每架飞机一条真值轨迹（含 time_sec, lat, lon）
-%   n_frames       — 仿真总帧数
-%   dt_sec         — 帧间隔（秒）
+%   snapshot_times — 航迹快照对应的显式时间网格（秒）
+%   detection_times — 检测点迹对应的显式时间网格（秒）
 %   radar_label    — 雷达标签字符串（'R1' 或 'R2'）
 %
 % 【输出】
 %   errorStats — 包含逐飞机和全局误差统计的结构体
 % =========================================================================
 function errorStats = compute_tracking_errors_multi(trackSnapshots, detList, truthTrajs, ...
-        n_frames, dt_sec, radar_label)
-    % 获取飞机数量（真值轨迹条数）
+        snapshot_times, detection_times, radar_label)
     n_ac = length(truthTrajs);
-    % 生成所有帧的时间戳数组 [0, dt, 2*dt, ..., (n_frames-1)*dt]
-    frame_times = (0:n_frames-1) * dt_sec;
+    snapshot_times = validate_time_grid_eval(snapshot_times, length(trackSnapshots), ...
+        'snapshot_times');
+    detection_times = validate_time_grid_eval(detection_times, length(detList), ...
+        'detection_times');
+    n_frames = length(trackSnapshots);
 
     % 预分配六组 cell 数组：三组存误差（km），三组存纬度
     ukf_errs  = cell(n_ac, 1);   % 每架飞机的 UKF 误差序列
@@ -91,75 +93,65 @@ function errorStats = compute_tracking_errors_multi(trackSnapshots, detList, tru
         ukf_errs{a} = [];  det_errs{a} = [];  raw_errs{a} = [];
         ukf_lats{a} = [];  det_lats{a} = [];  raw_lats{a} = [];
 
-        % ===== 内层循环：遍历每一帧 =====
-        for k = 1:n_frames
-            % 当前帧对应的仿真时刻
-            tnow = frame_times(k);
-            % 如果当前时刻超出真值轨迹的时间范围，跳过（真值已结束或未开始）
+        % ===== UKF 快照：使用快照自身的时间网格 =====
+        for k = 1:length(trackSnapshots)
+            tnow = snapshot_times(k);
             if tnow < tt.time_sec(1) || tnow > tt.time_sec(end)
                 continue;
             end
-            % 用线性插值从真值轨迹中获取当前时刻的真值经纬度
             t_true_lat = interp1(tt.time_sec, tt.lat, tnow, 'linear');
             t_true_lon = interp1(tt.time_sec, tt.lon, tnow, 'linear');
-            % 如果插值结果为 NaN（可能真值数据有间断），跳过
             if isnan(t_true_lat) || isnan(t_true_lon)
                 continue;
             end
 
-            % 取出当前帧的航迹快照
             snap = trackSnapshots{k};
-            % ===== UKF 误差计算 =====
             if ~isempty(snap.trackList)
-                % 初始化：最近距离设为无穷大，最佳航迹纬度暂为空
                 best_ukf_dist = inf;
                 best_ukf_lat = NaN;
-                % 遍历当前帧的所有 UKF 航迹
                 for t = 1:length(snap.trackList)
                     trk = snap.trackList{t};
-                    % 跳过非 UKF 类型的航迹（type==7 表示 HISTORY 航迹）
-                    % 以及纬度为 NaN 的无效航迹
                     if trk.type == 7 || isnan(trk.lat), continue; end
-                    % 【关键关联逻辑】优先使用 truth_idx 字段进行航迹-飞机配对
-                    % 这是 oracle 模式下最可靠的关联方式，避免用位置猜对的歧义
                     if isfield(trk, 'truth_idx') && trk.truth_idx == a
-                        % 计算该航迹估计位置与真值位置的球面距离
                         d = haversine_km_eval(trk.lon, trk.lat, t_true_lon, t_true_lat);
-                        % 取距离最小的航迹作为该帧的匹配结果
                         if d < best_ukf_dist
                             best_ukf_dist = d;
                             best_ukf_lat = trk.lat;
                         end
                     end
                 end
-                % 如果找到了匹配的 UKF 航迹（距离不是无穷大），记录误差
                 if ~isinf(best_ukf_dist)
                     ukf_errs{a}(end+1) = best_ukf_dist;
                     ukf_lats{a}(end+1) = best_ukf_lat;
                 end
             end
+        end
 
-            % ===== 检测点迹误差计算 =====
+        % ===== 检测点迹：使用检测自身的时间网格 =====
+        for k = 1:length(detList)
+            tnow = detection_times(k);
+            if tnow < tt.time_sec(1) || tnow > tt.time_sec(end)
+                continue;
+            end
+            t_true_lat = interp1(tt.time_sec, tt.lat, tnow, 'linear');
+            t_true_lon = interp1(tt.time_sec, tt.lon, tnow, 'linear');
+            if isnan(t_true_lat) || isnan(t_true_lon)
+                continue;
+            end
+
             dets = detList{k};
-            % 遍历当前帧的所有检测点迹
             for d = 1:length(dets)
                 dp = dets(d);
-                % 跳过杂波（clutter）
                 if dp.is_clutter, continue; end
-                % 只处理属于当前飞机的点迹（aircraft_id 字段标记归属）
                 if ~isfield(dp, 'aircraft_id') || dp.aircraft_id ~= a, continue; end
-                % 【校准点迹】如果存在校准后的经纬度字段
                 if isfield(dp, 'lat') && ~isnan(dp.lat)
-                    % 计算校准点迹与真值的球面距离
-                    d_cal = haversine_km_eval(dp.lon, dp.lat, t_true_lon, t_true_lat);
-                    det_errs{a}(end+1) = d_cal;
+                    det_errs{a}(end+1) = haversine_km_eval( ...
+                        dp.lon, dp.lat, t_true_lon, t_true_lat);
                     det_lats{a}(end+1) = dp.lat;
                 end
-                % 【原始点迹】如果存在原始（未校准）经纬度字段
                 if isfield(dp, 'raw_lat') && ~isnan(dp.raw_lat)
-                    % 计算原始点迹与真值的球面距离
-                    d_raw = haversine_km_eval(dp.raw_lon, dp.raw_lat, t_true_lon, t_true_lat);
-                    raw_errs{a}(end+1) = d_raw;
+                    raw_errs{a}(end+1) = haversine_km_eval( ...
+                        dp.raw_lon, dp.raw_lat, t_true_lon, t_true_lat);
                     raw_lats{a}(end+1) = dp.raw_lat;
                 end
             end
@@ -200,12 +192,27 @@ function errorStats = compute_tracking_errors_multi(trackSnapshots, detList, tru
     % 组装返回结构体
     errorStats = struct(...
         'radar', radar_label, ...           % 雷达标签
-        'n_frames', n_frames, ...            % 总帧数
+        'n_frames', n_frames, ...            % 航迹快照总帧数
+        'snapshot_times', snapshot_times, ...
+        'detection_times', detection_times, ...
         'ukf_errors_km', {ukf_errs}, ...     % 每架飞机的 UKF 误差序列
         'det_errors_km', {det_errs}, ...     % 每架飞机的校准点迹误差序列
         'raw_errors_km', {raw_errs}, ...     % 每架飞机的原始点迹误差序列
         'summary', summary, ...              % 逐飞机统计
         'overall', overall);                 % 全局统计
+end
+
+
+function times = validate_time_grid_eval(times, expected_length, name)
+    times = double(times(:)');
+    if numel(times) ~= expected_length
+        error('evaluate_all_multi:timeGridLength', ...
+            '%s 长度必须等于对应数据帧数', name);
+    end
+    if any(~isfinite(times)) || (numel(times) > 1 && any(diff(times) <= 0))
+        error('evaluate_all_multi:invalidTimeGrid', ...
+            '%s 必须有限且严格递增', name);
+    end
 end
 
 
