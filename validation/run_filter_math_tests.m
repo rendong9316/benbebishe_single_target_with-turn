@@ -1,8 +1,16 @@
 function run_filter_math_tests()
+% RUN_FILTER_MATH_TESTS 滤波器数学验证测试套件。
+%
+% 测试覆盖：
+%   1. UKF Sigma 点传播和量测均值计算（含方位角绕环处理）
+%   2. IMM 模型混合权重和组合预测
+%   3. IMM 双向转弯模型（左转/右转）
+%   4. 跟踪误差时间网格对齐
+
     % 测试入口：依次运行三个数学验证测试
     test_ukf_sigma_measurement_mean();   % 验证 UKF Sigma 点传播和量测均值计算的正确性
     test_imm_prediction_weights();       % 验证 IMM 模型混合权重和组合预测的正确性
-    test_imm_bidirectional_turn_models();
+    test_imm_bidirectional_turn_models();  % 验证双向转弯模型
     test_tracking_error_time_grids();    % 验证时间网格对齐和误差计算的正确性
     disp('filter math tests ok');        % 全部通过则打印成功消息
 end
