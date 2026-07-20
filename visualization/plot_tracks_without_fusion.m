@@ -23,7 +23,8 @@ function plot_tracks_without_fusion(truth_all, detList_R1, detList_R2, ...
 
     % 创建图窗，设置标题和尺寸
     % 图窗分为两部分：左侧 70% 为地图区域，右侧 30% 为图层控制面板
-    fig = figure('Name', 'Figure 4 - Oracle 单站航迹维护', 'Position', [50, 50, 1400, 750]);
+    fig = figure('Name', 'Figure 4 - Track fusion and bridge reconstruction', ...
+        'Position', [50, 50, 1400, 750]);
     try
         % 尝试使用 darkwater 暗色底图
         ax = geoaxes('Units', 'normalized', 'Position', [0.04, 0.10, 0.70, 0.88]);
@@ -91,8 +92,11 @@ function plot_tracks_without_fusion(truth_all, detList_R1, detList_R2, ...
     geoplot(ax, params.radar2_tx_lat, params.radar2_tx_lon, 'r^', ...
         'MarkerSize', 10, 'DisplayName', 'R2 Tx');
 
-    title(ax, 'Oracle单站航迹维护：校准点迹、航迹提取点与UKF输出');
-    legend(ax, 'Location', 'northeastoutside');  % 图例放在地图区域外右上角
+    title(ax, 'Track fragments, supported fusion, and virtual bridge reconstruction');
+    [legend_handles, legend_names] = visible_legend_layers(h_layers, layer_names);
+    if ~isempty(legend_handles)
+        legend(ax, legend_handles, legend_names, 'Location', 'northeastoutside');
+    end
     % 安装图层控制复选框（右侧面板）
     install_layer_controls(fig, h_layers, layer_names, trackList_R1, trackList_R2, params);
     drawnow;  % 强制刷新图形显示
@@ -347,20 +351,124 @@ function [h_layers, names] = plot_study_layers(ax, study, h_layers, names)
         end
         idx = ismember(seg.raw_frames, seg.tail_frames);
         if sum(idx) >= 2
-            h = geoplot(ax, seg.lats(idx), seg.lons(idx), '--', 'Color', 0.65*color+0.35, 'LineWidth', 1.8, ...
+            h = geoplot(ax, seg.lats(idx), seg.lons(idx), ':', ...
+                'Color', [0.60 0.60 0.60], 'LineWidth', 1.4, ...
                 'DisplayName', sprintf('R%d段%d coasting tail', seg.radar_id, seg.segment_id));
             [h_layers, names] = add_layer(h_layers, names, h, sprintf('R%d段%d tail', seg.radar_id, seg.segment_id));
         end
     end
-    if isfield(study, 'published')
-        for i = 1:numel(study.published)
-            pub = study.published(i); [lat, lon] = fused_line(pub.snapshots);
-            if sum(isfinite(lat)) < 2, continue; end
-            h = geoplot(ax, lat, lon, '-', 'Color', [0.20 0.90 0.35], 'LineWidth', 3.4, ...
-                'DisplayName', sprintf('Group%d %s RMSE %.2fkm', pub.group_id, pub.method, pub.rmse_km));
-            [h_layers, names] = add_layer(h_layers, names, h, sprintf('G%d最佳%s %.2fkm', pub.group_id, pub.method, pub.rmse_km));
+    if isfield(study, 'edges') && ~isempty(study.edges)
+        edge_types = {'overlap', 'successor', 'handoff'};
+        edge_colors = {[0.55 0.20 0.70], [0.35 0.35 0.35], [0.00 0.55 0.45]};
+        for t = 1:numel(edge_types)
+            [lat, lon] = relation_lines(study.segments, study.edges, edge_types{t});
+            if isempty(lat), continue; end
+            h = geoplot(ax, lat, lon, ':', 'Color', edge_colors{t}, 'LineWidth', 1.4, ...
+                'DisplayName', sprintf('%s关系', edge_types{t}));
+            [h_layers, names] = add_layer(h_layers, names, h, sprintf('%s关系', edge_types{t}));
         end
     end
+    if isfield(study, 'fusion_results')
+        method_colors = {[0.10 0.65 0.25], [0.85 0.25 0.15], ...
+            [0.55 0.20 0.75], [0.05 0.55 0.75]};
+        for g = 1:numel(study.fusion_results)
+            fusion = study.fusion_results(g);
+            for m = 1:numel(fusion.methods)
+                method = fusion.methods(m);
+                [lat, lon] = fused_line(method.snapshots);
+                if sum(isfinite(lat)) < 2, continue; end
+                rmse = evaluation_rmse(study, fusion.group_id, method.method);
+                h = geoplot(ax, lat, lon, '-', 'Color', method_colors{m}, 'LineWidth', 3.0, ...
+                    'DisplayName', sprintf('Group%d %s supported RMSE %.2fkm', fusion.group_id, method.method, rmse));
+                if ~strcmp(method.method, 'SCC'), h.Visible = 'off'; end
+                [h_layers, names] = add_layer(h_layers, names, h, ...
+                    sprintf('G%d %s supported %.2fkm', fusion.group_id, method.method, rmse));
+
+                if ~isfield(method, 'bridge_snapshots'), continue; end
+                visible = strcmp(method.method, 'SCC');
+                [h_layers, names] = plot_bridge_layer(ax, method.snapshots, ...
+                    method.bridge_snapshots, method.bridge_diag, method_colors{m}, ...
+                    fusion.group_id, method.method, 'IMM', visible, h_layers, names);
+                if isfield(method, 'bridge_methods') && numel(method.bridge_methods) >= 1
+                    baseline = method.bridge_methods(1);
+                    [h_layers, names] = plot_bridge_layer(ax, method.snapshots, ...
+                        baseline.bridge_snapshots, baseline.diagnostics, method_colors{m}, ...
+                        fusion.group_id, method.method, 'RTS', false, h_layers, names);
+                end
+            end
+        end
+    end
+end
+
+function [h_layers, names] = plot_bridge_layer(ax, supported, bridge, diagnostics, ...
+        color, group_id, fusion_method, bridge_method, visible, h_layers, names)
+confidence_names = {'high', 'low'};
+styles = {'--', '-.'};
+for q = 1:numel(confidence_names)
+    confidence = confidence_names{q};
+    [lat, lon, endpoint_lat, endpoint_lon] = bridge_line( ...
+        supported, bridge, diagnostics, confidence);
+    if sum(isfinite(lat)) < 3, continue; end
+    h1 = geoplot(ax, lat, lon, styles{q}, 'Color', color, 'LineWidth', 2.5, ...
+        'DisplayName', sprintf('Group%d %s %s bridge %s', ...
+        group_id, fusion_method, bridge_method, confidence));
+    h2 = geoplot(ax, endpoint_lat, endpoint_lon, 'o', 'LineStyle', 'none', ...
+        'Color', color, 'MarkerSize', 7, 'LineWidth', 1.4, ...
+        'HandleVisibility', 'off');
+    h = [h1, h2];
+    if ~visible, set(h, 'Visible', 'off'); end
+    [h_layers, names] = add_layer(h_layers, names, h, sprintf( ...
+        'G%d %s %s bridge %s', group_id, fusion_method, bridge_method, confidence));
+end
+end
+
+function [lat, lon, endpoint_lat, endpoint_lon] = bridge_line( ...
+        supported, bridge, diagnostics, confidence)
+lat = []; lon = []; endpoint_lat = []; endpoint_lon = [];
+for q = 1:numel(diagnostics)
+    diag = diagnostics(q);
+    if ~strcmp(diag.confidence, confidence), continue; end
+    frames = diag.left_frame:diag.right_frame;
+    gap_lat = nan(size(frames)); gap_lon = nan(size(frames));
+    for j = 1:numel(frames)
+        frame = frames(j);
+        if frame == diag.left_frame || frame == diag.right_frame
+            snap = supported{frame};
+        else
+            snap = bridge{frame};
+        end
+        if isempty(snap) || isempty(snap.trackList), continue; end
+        gap_lat(j) = snap.trackList{1}.lat;
+        gap_lon(j) = snap.trackList{1}.lon;
+    end
+    lat = [lat, gap_lat, NaN]; %#ok<AGROW>
+    lon = [lon, gap_lon, NaN]; %#ok<AGROW>
+    endpoint_lat = [endpoint_lat, gap_lat([1,end])]; %#ok<AGROW>
+    endpoint_lon = [endpoint_lon, gap_lon([1,end])]; %#ok<AGROW>
+end
+end
+
+function [lat, lon] = relation_lines(segments, edges, kind)
+lat = []; lon = [];
+for e = 1:numel(edges)
+    if ~strcmp(edges(e).edge_type, kind), continue; end
+    a = segments(edges(e).a); b = segments(edges(e).b);
+    ia = find(a.raw_frames == a.last_support_frame, 1);
+    ib = find(b.raw_frames == b.first_support_frame, 1);
+    if isempty(ia) || isempty(ib), continue; end
+    lat = [lat, a.lats(ia), b.lats(ib), NaN]; %#ok<AGROW>
+    lon = [lon, a.lons(ia), b.lons(ib), NaN]; %#ok<AGROW>
+end
+end
+
+function rmse = evaluation_rmse(study, group_id, method_name)
+rmse = NaN;
+if ~isfield(study, 'evaluation') || ~isfield(study.evaluation, 'groups'), return; end
+idx = find([study.evaluation.groups.group_id] == group_id, 1);
+if isempty(idx), return; end
+methods = study.evaluation.groups(idx).methods;
+m = find(strcmp({methods.method}, method_name), 1);
+if ~isempty(m), rmse = methods(m).rmse_km; end
 end
 
 function [lat, lon] = fused_line(snapshots)
@@ -391,6 +499,19 @@ function [h_layers, names] = add_layer(h_layers, names, h, name)
     names{end+1} = name;  % 将图层名追加到名称列表末尾
 end
 
+function [handles, names_out] = visible_legend_layers(h_layers, names)
+handles = gobjects(0);
+names_out = {};
+for i = 1:numel(h_layers)
+    h = h_layers{i};
+    if isempty(h) || ~isgraphics(h(1)) || strcmp(h(1).Visible, 'off')
+        continue;
+    end
+    handles(end+1) = h(1); %#ok<AGROW>
+    names_out{end+1} = names{i}; %#ok<AGROW>
+end
+end
+
 % =========================================================================
 % install_layer_controls — 安装右侧图层控制面板
 % =========================================================================
@@ -406,8 +527,9 @@ function install_layer_controls(fig, h_layers, names, trackList_R1, trackList_R2
     row_h = min(0.055, 0.92 / rows);
     for i = 1:length(names)
         ypos = 0.97 - i * row_h;
+        initial_value = strcmp(h_layers{i}(1).Visible, 'on');
         cb(i) = uicontrol('Parent', panel, 'Style', 'checkbox', 'String', names{i}, ...
-            'Value', 1, 'Units', 'normalized', 'Position', [0.02, ypos, 0.96, row_h], ...
+            'Value', initial_value, 'Units', 'normalized', 'Position', [0.02, ypos, 0.96, row_h], ...
             'FontSize', 8, 'BackgroundColor', [1 1 1], ...
             'Callback', @(src, ~) set_layer_visibility(h_layers{i}, src.Value));
     end

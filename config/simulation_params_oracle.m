@@ -295,6 +295,46 @@ function params = simulation_params_oracle()
     % 外推时几乎不加额外噪声，保持外推精度
     params.tracklet_prediction_q = 1e-8;
 
+    % ==================== 可控航迹碎片实验配置 ====================
+    % 每个场景目标在每部雷达上必须自然形成的有效本地片段数。
+    % 该值只供实验夹具规划衰落窗口，禁止进入匹配、分组和融合判据。
+    params.fragmentation.enabled = true;
+    params.fragmentation.segments_per_target_per_radar = 2;
+    params.fragmentation.require_exact_count = true;
+    % 每次衰落至少覆盖 K_loss 帧，确保旧航迹由原生命周期逻辑自然死亡。
+    params.fragmentation.fade_length_frames = params.tracker_K_loss;
+    % 计入目标片段数的最低有效区间和真实量测支持帧数。
+    params.fragmentation.min_effective_frames = params.dualgate_M;
+    params.fragmentation.min_support_frames = params.oracle_QUALIFY_NUM;
+    % 两部雷达使用独立、可复现的窗口规划随机流。
+    params.fragmentation.seed_r1 = 1101;
+    params.fragmentation.seed_r2 = 2202;
+    % 确定性回溯搜索的最大候选试验次数。
+    params.fragmentation.max_search_nodes = 10000;
+
+    % 跨站无充分重叠时的时序接力门限。
+    params.tracklet_handoff_max_gap_frames = 18;
+    params.tracklet_handoff_distance_km = 100;
+    params.tracklet_handoff_mahal_gate = 25;
+    params.tracklet_handoff_score_min = 0.02;
+
+    % 全局候选 group 枚举与歧义判定。
+    params.tracklet_group_max_hypotheses = 10000;
+    params.tracklet_group_ambiguity_margin = 0.05;
+
+    % Fusion-center offline bridge smoothing. Local tails are excluded.
+    params.bridge.enabled = true;
+    params.bridge.earth_radius_m = 6371000;
+    params.bridge.turn_rate_rad_per_sec = 1.0 * pi / 180;
+    params.bridge.accel_std_mps2 = 0.35;
+    % Model order: CV, CT-left, CT-right.
+    params.bridge.mode_transition = [0.96 0.02 0.02; ...
+                                     0.08 0.90 0.02; ...
+                                     0.08 0.02 0.90];
+    params.bridge.mode_probability_init = [0.80 0.10 0.10];
+    % Chi-square 99%% gate with four state dimensions; diagnostic only.
+    params.bridge.confidence_mahal_gate = 13.2767;
+
     % ==================== 数据源与随机种子 ====================
     % ADS-B 原始数据 CSV 文件路径（用于生成真值轨迹）
     % 文件名含日期时间戳，便于追溯数据来源

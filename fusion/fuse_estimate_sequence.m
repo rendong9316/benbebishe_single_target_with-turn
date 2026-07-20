@@ -54,7 +54,8 @@ function result = fuse_estimate_sequence(group, segments, params)
     % .methods  — 空结构体，后续填充四种算法的结果
     % .best_method — 空字符串，后续填入最佳算法名
     % .best_rmse_km — inf，后续被更小的 RMSE 替换
-    result = struct('group_id', group.group_id, 'methods', struct([]), 'best_method', '', 'best_rmse_km', inf);
+    result = struct('group_id', group.group_id, 'status', 'SUCCESS', ...
+        'methods', struct([]));
 
     % 遍历四种融合算法，逐一执行
     for m = 1:numel(methods)
@@ -64,12 +65,28 @@ function result = fuse_estimate_sequence(group, segments, params)
         % 将融合结果存入 result.methods(m)
         result.methods(m).method = methods{m};
         result.methods(m).snapshots = snapshots;
+        result.methods(m).supported_snapshots = snapshots;
+
+        bridge = bridge_smoother(snapshots, params);
+        result.methods(m).bridge_methods = [bridge.rts, bridge.imm];
+        result.methods(m).bridge_snapshots = bridge.bridge_snapshots;
+        result.methods(m).reconstructed_snapshots = bridge.reconstructed_snapshots;
+        result.methods(m).bridge_diag = bridge.diagnostics;
+        result.methods(m).bridge_frame_count = bridge.imm.bridge_frame_count;
+        result.methods(m).reconstructed_coverage_frames = ...
+            bridge.imm.reconstructed_coverage_frames;
+        result.methods(m).low_confidence_bridge_count = ...
+            bridge.imm.low_confidence_bridge_count;
 
         % 统计有效融合帧数（有融合结果的帧数）
         result.methods(m).coverage_frames = count_fused_frames(snapshots);
 
+        result.methods(m).source_stats = count_sources(snapshots);
+
         % RMSE 暂时设为 NaN，后续由评估脚本计算填充
         result.methods(m).rmse_km = NaN;
+        result.methods(m).bridge_rmse_km = NaN;
+        result.methods(m).reconstructed_rmse_km = NaN;
     end
 end
 
@@ -181,8 +198,13 @@ function snapshots = fuse_method(group, segments, params, method)
         % --- 构建融合后的航迹结构体 ---
         % 将融合结果打包为航迹结构体，写入本帧快照
         % 从状态向量 x=[lon; v_lon; lat; v_lat] 中提取经纬度
-        trk = struct('id', group.group_id, 'group_id', group.group_id, 'lat', x(3), 'lon', x(1), ...
-            'ukf', struct('x', x, 'P', P), 'source', source, 'segment_ids', [members.segment_id]);
+        r1_ids = [members([members.radar_id] == 1).track_id];
+        r2_ids = [members([members.radar_id] == 2).track_id];
+        trk = struct('id', group.group_id, 'group_id', group.group_id, ...
+            'r1_id', first_or_nan(r1_ids), 'r2_id', first_or_nan(r2_ids), ...
+            'lat', x(3), 'lon', x(1), 'ukf', struct('x', x, 'P', P), ...
+            'ukf_x', x, 'ukf_P', P, 'source', source, ...
+            'segment_ids', [members.segment_id]);
 
         % 将融合航迹写入本帧快照的 trackList
         snap.trackList{1} = trk;
@@ -335,4 +357,23 @@ function n = count_fused_frames(snapshots)
         % 只有当本帧快照非空且 trackList 非空时才计数
         if ~isempty(snapshots{k}) && ~isempty(snapshots{k}.trackList), n = n + 1; end
     end
+end
+
+function stats = count_sources(snapshots)
+stats = struct('both', 0, 'R1_only', 0, 'R2_only', 0);
+for k = 1:numel(snapshots)
+    if isempty(snapshots{k}) || isempty(snapshots{k}.trackList), continue; end
+    source = snapshots{k}.trackList{1}.source;
+    if strcmp(source, 'both')
+        stats.both = stats.both + 1;
+    elseif strcmp(source, 'R1_only')
+        stats.R1_only = stats.R1_only + 1;
+elseif strcmp(source, 'R2_only')
+        stats.R2_only = stats.R2_only + 1;
+    end
+end
+end
+
+function value = first_or_nan(values)
+if isempty(values), value = NaN; else, value = values(1); end
 end
