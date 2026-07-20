@@ -473,7 +473,8 @@ end
 % state_transition_ct_ukf — CT 协调转弯模型状态转移（已知转弯率 ω）
 %
 % 状态 x = [lon, lon_dot, lat, lat_dot]'
-% 对右转 ω>0，对左转 ω<0
+% In the local east/north state convention, left turn uses omega>0 and
+% right turn uses omega<0.
 %
 % F_CT(Δt, ω) = [
 %   1,  sin(ωΔt)/ω,          0,  -(1-cos(ωΔt))/ω;

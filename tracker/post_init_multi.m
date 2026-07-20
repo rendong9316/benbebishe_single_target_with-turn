@@ -10,8 +10,7 @@
 %     5. Q_ema — 初始化为 1.0（自适应 Q 的 EMA 平滑因子）
 %
 % 【IMM 特殊处理】
-%   如果 ukf 内部包含 ukf_cv 和 ukf_ct 子滤波器（IMM 模式），
-%   需要对两个子 UKF 同样注入 dt 和 initialized 标志。
+%   如果 ukf 为 IMM 模式，需要对 CV 和左右 CT 子 UKF 同步初始化。
 % =========================================================================
 function ukf = post_init_multi(ukf, params)
     % 注入时间步长和初始化标志
@@ -27,6 +26,10 @@ function ukf = post_init_multi(ukf, params)
         ukf.ukf_cv.initialized = true;
         ukf.ukf_ct.dt = params.dt_sec;
         ukf.ukf_ct.initialized = true;
+        if isfield(ukf, 'ukf_ct_right')
+            ukf.ukf_ct_right.dt = params.dt_sec;
+            ukf.ukf_ct_right.initialized = true;
+        end
     end
 
     % 清空 NIS 历史（新航迹尚无观测数据，NIS 列表为空）

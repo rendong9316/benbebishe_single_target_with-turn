@@ -141,13 +141,16 @@ function params = simulation_params_oracle()
     % 直接使用径向速度噪声标准差作为 UKF 的多普勒噪声输入
     params.ukf_rv_std_ms = params.radial_vel_noise_std_ms;
 
-    % ==================== IMM 双模型（CV/CT）参数 ====================
+    % ==================== IMM 三模型（CV/CT-left/CT-right）参数 ====================
     % CV = Constant Velocity（常速模型），CT = Constant Turn（恒转弯模型）
     % 模型转移概率：直线飞行时极少切换到转弯模型
     % CV→CT 转移概率 0.001 意味着平均 1000 帧（约 5 分钟）才切换一次
     params.imm_Pi_CV_to_CT = 0.001;     % CV→CT 转移概率（平均 1000 帧切换一次）
     % CT→CV 转移概率同样为 0.001，转弯后大概率回到常速模式
     params.imm_Pi_CT_to_CV = 0.001;     % CT→CV 转移概率
+    % Single-station IMM uses CV, fixed-rate left CT, and fixed-rate right CT.
+    % Only the positive magnitude is configured; the right-turn model uses -omega.
+    params.imm_turn_rate_rad_per_sec = 1.0 * pi / 180;
     % 自适应模式选择：'3in1' = CV 瞬态增益 + CT 固定高机动 + IMM 慢概率融合
     % 三种机制协同：瞬态增益应对突发机动，CT 模型跟踪持续转弯，IMM 平滑过渡
     params.imm_adapt_mode  = '3in1';

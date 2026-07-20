@@ -3,7 +3,7 @@
 % =========================================================================
 % 【功能概述】
 %   根据 ukf 结构体内部特征字段，自动路由到对应的滤波器实现：
-%     ukf.ukf_cv 存在       → ukf_imm     (IMM: CV+CT 双模型)
+%     ukf.ukf_cv 存在       → ukf_imm     (IMM: CV+左右CT 三模型)
 %     ukf.maneuver_active   → ukf_zishiying (机动自适应 UKF)
 %     以上均不存在           → ukf_jichu    (基础 UKF)
 %
@@ -25,7 +25,7 @@ function varargout = ukf_dispatch(action, ukf, varargin)
     % 首先检查是否存在 ukf_cv 字段（IMM 特有的嵌套结构）
     % isstruct 确保它是结构体而非空数组或其他类型
     if isfield(ukf, 'ukf_cv') && isstruct(ukf.ukf_cv)
-        % IMM 类型: 内部包含两个 ukf_jichu 实例（CV 和 CT 模型）
+        % IMM 类型: 内部包含 CV、CT-left、CT-right 三个 ukf_jichu 实例
         fh = @ukf_imm;
     % 检查是否为自适应类型
     % 条件1: filter_type == 'zishiying'（create 时显式标记）

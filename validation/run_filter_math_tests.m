@@ -2,6 +2,7 @@ function run_filter_math_tests()
     % 测试入口：依次运行三个数学验证测试
     test_ukf_sigma_measurement_mean();   % 验证 UKF Sigma 点传播和量测均值计算的正确性
     test_imm_prediction_weights();       % 验证 IMM 模型混合权重和组合预测的正确性
+    test_imm_bidirectional_turn_models();
     test_tracking_error_time_grids();    % 验证时间网格对齐和误差计算的正确性
     disp('filter math tests ok');        % 全部通过则打印成功消息
 end
@@ -77,8 +78,10 @@ function test_imm_prediction_weights()
     imm = ukf_imm('init', imm, det1, det2);
 
     % 设置非平凡的模型概率和转移矩阵
-    imm.mu = [0.85; 0.15];  % CV 占 85%, CT 占 15%
-    imm.Pi = [0.65, 0.35; 0.10, 0.90];  % 非对角占优
+    imm.mu = [0.75; 0.15; 0.10];
+    imm.Pi = [0.60, 0.25, 0.15;
+              0.20, 0.75, 0.05;
+              0.10, 0.10, 0.80];
     % 计算 Markov 传播后的先验概率
     c_bar = imm.Pi' * imm.mu;
     % 验证 c_bar 与 mu 不同（转移矩阵改变了模型概率分布）
@@ -88,9 +91,12 @@ function test_imm_prediction_weights()
     [x_pred, P_pred, ~, z_pred, ~, P_zz, imm] = ukf_imm('prepare', imm);
     cache = imm.cache;
     % 验证组合状态使用 c_bar 加权（而非 mu）
-    expected_x = c_bar(1) * cache.x_pred_cv + c_bar(2) * cache.x_pred_ct;
-    old_x = imm.mu(1) * cache.x_pred_cv + imm.mu(2) * cache.x_pred_ct;
-    expected_z = c_bar(1) * cache.z_pred_cv + c_bar(2) * cache.z_pred_ct;
+    expected_x = c_bar(1) * cache.x_pred_cv + ...
+        c_bar(2) * cache.x_pred_ct + c_bar(3) * cache.x_pred_ct_right;
+    old_x = imm.mu(1) * cache.x_pred_cv + ...
+        imm.mu(2) * cache.x_pred_ct + imm.mu(3) * cache.x_pred_ct_right;
+    expected_z = c_bar(1) * cache.z_pred_cv + ...
+        c_bar(2) * cache.z_pred_ct + c_bar(3) * cache.z_pred_ct_right;
     assert(norm(x_pred - expected_x) < 1e-12);   % 状态组合误差 < 1pm
     assert(norm(x_pred - old_x) > 1e-10);        % 确认使用了 c_bar 而非 mu
     assert(norm(z_pred - expected_z) < 1e-8);    % 量测组合误差 < 10nm
@@ -104,12 +110,58 @@ function test_imm_prediction_weights()
     imm_identity = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
     imm_identity = ukf_imm('init', imm_identity, det1, det2);
-    imm_identity.mu = [0.85; 0.15];
-    imm_identity.Pi = eye(2);  % 模型间不转移
+    imm_identity.mu = [0.75; 0.15; 0.10];
+    imm_identity.Pi = eye(3);
     [x_identity, ~, ~, ~, ~, ~, imm_identity] = ukf_imm('prepare', imm_identity);
     expected_identity = imm_identity.mu(1) * imm_identity.cache.x_pred_cv + ...
-        imm_identity.mu(2) * imm_identity.cache.x_pred_ct;
+        imm_identity.mu(2) * imm_identity.cache.x_pred_ct + ...
+        imm_identity.mu(3) * imm_identity.cache.x_pred_ct_right;
     assert(norm(x_identity - expected_identity) < 1e-12);
+end
+
+function test_imm_bidirectional_turn_models()
+    params = radar_params(simulation_params_oracle(), 1);
+    imm = ukf_imm('create', params, params.radar1_lon, params.radar1_lat, ...
+        params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
+    assert(imm.M == 3 && isequal(size(imm.Pi), [3, 3]));
+    assert(all(abs(sum(imm.Pi, 2) - 1) < 1e-12));
+    assert(imm.ukf_ct.turn_rate_rad_per_sec > 0);
+    assert(imm.ukf_ct_right.turn_rate_rad_per_sec < 0);
+    assert(abs(imm.ukf_ct.turn_rate_rad_per_sec + ...
+        imm.ukf_ct_right.turn_rate_rad_per_sec) < eps);
+    assert(abs(imm.ukf_ct.turn_rate_rad_per_sec - ...
+        params.imm_turn_rate_rad_per_sec) < eps);
+
+    det1 = fixture_detection(1, 0, 128.0, 31.0, imm.ukf_cv);
+    det2 = fixture_detection(3, 60, 128.1, 31.0, imm.ukf_cv);
+    imm = ukf_imm('init', imm, det1, det2);
+    x0 = [128; 1e-3; 31; 0];
+    P0 = diag([1e-4, 1e-8, 1e-4, 1e-8]);
+    imm.ukf_cv.x = x0; imm.ukf_cv.P = P0;
+    imm.ukf_ct.x = x0; imm.ukf_ct.P = P0;
+    imm.ukf_ct_right.x = x0; imm.ukf_ct_right.P = P0;
+    imm.mu = [0.02; 0.49; 0.49];
+    imm.Pi = eye(3);
+
+    [~, ~, ~, ~, ~, ~, imm] = ukf_imm('prepare', imm);
+    left_delta = imm.cache.x_pred_ct - x0;
+    right_delta = imm.cache.x_pred_ct_right - x0;
+    assert(left_delta(4) > 0 && right_delta(4) < 0);
+    assert(abs(left_delta(4) + right_delta(4)) < 1e-12);
+    assert(abs(left_delta(3) + right_delta(3)) < 1e-8, ...
+        'Left/right CT latitude increments are not symmetric enough.');
+
+    left_innov = imm.cache.z_pred_ct - imm.cache.z_pred_comb;
+    right_innov = imm.cache.z_pred_ct_right - imm.cache.z_pred_comb;
+    [~, ~, imm_left] = ukf_imm('update', imm, left_innov);
+    [~, ~, imm_right] = ukf_imm('update', imm, right_innov);
+    assert(imm_left.mu(2) > imm_left.mu(3));
+    assert(imm_right.mu(3) > imm_right.mu(2));
+
+    [~, ~, imm] = ukf_imm('update', imm, []);
+    assert(numel(imm.mu) == 3 && all(isfinite(imm.mu)));
+    assert(abs(sum(imm.mu) - 1) < 1e-12);
+    assert(size(imm.mu_history, 2) == 3);
 end
 
 % =========================================================================
