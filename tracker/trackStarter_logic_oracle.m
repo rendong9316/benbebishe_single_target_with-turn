@@ -26,15 +26,22 @@ function [tempTrackList, valid_tracks, next_id, starter_used_original] = trackSt
     end
 
     % ---- 从唯一配置源读取并验证起始参数 ----
+    % validate_starter_params 检查 oracle_QUALIFY_NUM 和 oracle_TOLERANT_NUM
+    % 确保它们是正整数且 QUALIFY_NUM <= TOLERANT_NUM
     [QUALIFY_NUM, TOLERANT_NUM] = validate_starter_params(params);
 
+    % 真值目标总数
     n_targets = length(truth_all);
 
     % 确保 tempTrackList 结构完整（每个真值目标一个条目）
     % ensure_temp_track_list 会为缺失的目标创建空的滑窗条目
     tempTrackList = ensure_temp_track_list(tempTrackList, n_targets);
-    valid_tracks = {};  % 本帧确认的新航迹
-    starter_used_original = false(1, n_original_points);  % 起始消耗掩码
+
+    % 初始化本帧确认的新航迹列表
+    valid_tracks = {};
+
+    % 初始化起始消耗掩码（记录哪些原始点迹被起始模块消耗了）
+    starter_used_original = false(1, n_original_points);
 
     % 找出哪些真值目标已有活跃航迹（有 → 跳过该目标的起始）
     % build_active_truth_index 遍历 activeTrackList，标记已有航迹的真值 ID
@@ -69,7 +76,8 @@ function [tempTrackList, valid_tracks, next_id, starter_used_original] = trackSt
             starter_used_original(original_index) = true;
             tempTrackList(ac).pointHistory(end+1) = struct('frameID', frame_id, ...
                 'point', remainingPointList(j), 'origIndex', original_index);
-            tempTrackList(ac).missCount = 0;  % 重置漏检计数
+            % 重置漏检计数（命中了，漏检归零）
+            tempTrackList(ac).missCount = 0;
         else
             % 未命中：记录空条目（区分"漏检"和"滑窗溢出"）
             % 空条目用于保持滑窗的时间连续性，missCount 递增
@@ -78,7 +86,7 @@ function [tempTrackList, valid_tracks, next_id, starter_used_original] = trackSt
             tempTrackList(ac).missCount = tempTrackList(ac).missCount + 1;
         end
 
-        % 滑动窗口截断：保持最近配置数量的物理帧
+        % 滑动窗口截断：保持最近 TOLERANT_NUM 个物理帧
         % 超出窗口的旧检测被丢弃，防止滑窗无限增长
         if length(tempTrackList(ac).pointHistory) > TOLERANT_NUM
             tempTrackList(ac).pointHistory = ...
@@ -112,6 +120,7 @@ end
 
 function [qualify_num, tolerant_num] = validate_starter_params(params)
     % 起始参数只允许由 params 提供，避免调用方另传阈值造成配置分叉
+    % 检查 oracle_QUALIFY_NUM 和 oracle_TOLERANT_NUM 是否存在
     required = {'oracle_QUALIFY_NUM', 'oracle_TOLERANT_NUM'};
     for i = 1:length(required)
         if ~isfield(params, required{i})
@@ -120,12 +129,18 @@ function [qualify_num, tolerant_num] = validate_starter_params(params)
         end
     end
 
+    % 读取参数值
     qualify_num = params.oracle_QUALIFY_NUM;
     tolerant_num = params.oracle_TOLERANT_NUM;
+
+    % 验证 qualify_num 是正整数
     valid_qualify = isnumeric(qualify_num) && isscalar(qualify_num) && ...
         isfinite(qualify_num) && qualify_num >= 1 && qualify_num == floor(qualify_num);
+    % 验证 tolerant_num 是正整数
     valid_tolerant = isnumeric(tolerant_num) && isscalar(tolerant_num) && ...
         isfinite(tolerant_num) && tolerant_num >= 1 && tolerant_num == floor(tolerant_num);
+
+    % 如果验证失败或 QUALIFY_NUM > TOLERANT_NUM，报错
     if ~valid_qualify || ~valid_tolerant || qualify_num > tolerant_num
         error('trackStarter_logic_oracle:invalidConfig', ...
             'Oracle 起始参数必须为正整数且 QUALIFY_NUM 不大于 TOLERANT_NUM');

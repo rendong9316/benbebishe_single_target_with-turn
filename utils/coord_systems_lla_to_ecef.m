@@ -22,21 +22,28 @@
 %      z = (N*(1-E2) + alt) * sin(lat)
 % =========================================================================
 function ecef = coord_systems_lla_to_ecef(lat_deg, lon_deg, alt_m)
-    % 将角度转换为弧度
+    % 将角度从"度"转换为"弧度"，MATLAB 三角函数需要弧度输入
     lat = deg2rad(lat_deg);
     lon = deg2rad(lon_deg);
-    % 计算正弦和余弦
+    % 计算纬度的正弦和余弦值，避免重复计算
     sin_lat = sin(lat);
     cos_lat = cos(lat);
-    % 计算卯酉曲率半径 N
-    % A = 6378137.0 (WGS84 长半轴), E2 = 2*f - f^2 where f = 1/298.257223563
+    % 计算卯酉曲率半径 N（子午圈曲率半径）
+    % WGS84 椭球参数：长半轴 A=6378137.0 米，扁率 f=1/298.257223563
+    % 第一偏心率平方 E2 = 2f - f^2
     f = 1.0 / 298.257223563;
     E2 = 2.0 * f - f^2;
+    % N = A / sqrt(1 - E2 * sin^2(lat))，随纬度变化
+    % 赤道处 N 最大（约 6378km），极点处 N 最小（约 6357km）
     N = 6378137.0 / sqrt(1.0 - E2 * sin_lat^2);
-    % 计算 ECEF 坐标分量
+    % 计算 ECEF 坐标系的 X 分量
+    % X = (N + alt) * cos(lat) * cos(lon)，将地理坐标投影到地心地固坐标系
     x = (N + alt_m) * cos_lat * cos(lon);
+    % 计算 ECEF 坐标系的 Y 分量
     y = (N + alt_m) * cos_lat * sin(lon);
+    % 计算 ECEF 坐标系的 Z 分量
+    % Z = (N*(1-E2) + alt) * sin(lat)，注意 N 乘以 (1-E2) 是因为椭球在 Z 方向被压缩
     z = (N * (1.0 - E2) + alt_m) * sin_lat;
-    % 输出列向量形式
+    % 输出列向量形式 [x; y; z]，符合 MATLAB 向量惯例
     ecef = [x; y; z];
 end

@@ -56,6 +56,7 @@ function ukf = adapt_q(ukf, params, mode)
     end
 
     % 滤波器需要至少 12 帧才启用自适应 Q，避免启动瞬态阶段误判
+    % mature_frames 可通过 params.maneuver_mature_frames 自定义
     mature_frames = 12;
     if isfield(params, 'maneuver_mature_frames')
         mature_frames = params.maneuver_mature_frames;

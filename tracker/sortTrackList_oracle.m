@@ -17,12 +17,14 @@ function trackList = sortTrackList_oracle(trackList)
     if isempty(trackList)
         return;
     end
+
     % 提取所有航迹 ID 到数值数组
     % 遍历 trackList 元胞数组，取出每条航迹的 id 字段
     ids = zeros(1, length(trackList));
     for i = 1:length(trackList)
         ids(i) = trackList{i}.id;
     end
+
     % 按 ID 排序并重新排列航迹列表
     % sort 返回排序后的值和索引 order，用 order 对 trackList 重排
     [~, order] = sort(ids);

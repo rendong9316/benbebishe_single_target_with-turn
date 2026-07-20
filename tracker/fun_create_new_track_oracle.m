@@ -14,6 +14,7 @@ function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, fra
 
     % ---- 历史有效性校验 ----
     % 真实检测数量必须达到配置的确认阈值
+    % 如果 real_hist 为空或检测数不足，说明滑窗中真实命中不够，不能起始
     if nargin < 8 || isempty(real_hist) || length(real_hist) < params.oracle_QUALIFY_NUM
         error('fun_create_new_track_oracle:invalidHistory', ...
             '创建可靠航迹需要达到配置确认阈值的实际检测历史');

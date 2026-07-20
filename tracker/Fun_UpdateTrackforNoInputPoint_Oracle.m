@@ -21,6 +21,7 @@
 % =========================================================================
 function trackList = Fun_UpdateTrackforNoInputPoint_Oracle(trackList, params, frame_id)
     % 遍历所有航迹，对每条执行纯预测更新
+    % 当全帧无检测时，所有航迹都走纯预测路径
     for i = 1:length(trackList)
         trk = trackList{i};
         % ukf_dispatch('update', [], ...) 内部检测到 innov_w 为空时，

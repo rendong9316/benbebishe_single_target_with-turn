@@ -60,7 +60,7 @@ function scenario = build_truth_scenario(scenario_name, params)
             % 单目标拐弯场景：约120°拐角
             labels = {'A'};
             trajs = cell(1, 1);
-            trajs{1} = aircraft_trajectory_create('turn', params);
+            trajs{1} = aircraft_trajectory_create('gradual_turn', params);
         case {'single_uturn', 'single_u_turn'}
             % 单目标回头弯场景：180°左转半圆
             labels = {'A'};

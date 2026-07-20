@@ -176,6 +176,9 @@ function aligned_R2 = time_align_tracks(trackSnapshots_R2, params)
             %   需要再次正则化以确保后续融合算法的安全性
             % ---------------------------------------------------------
             trk.ukf.P = regularize_cov(trk.ukf.P);
+            if isfield(trk, 'P_pred') && ~isempty(trk.P_pred)
+                trk.P_pred = regularize_cov(F * trk.P_pred * F' + Q_dt);
+            end
 
             % ---------------------------------------------------------
             % 更新经纬度字段

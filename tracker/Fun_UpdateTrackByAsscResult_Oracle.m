@@ -15,6 +15,7 @@ function trackList = Fun_UpdateTrackByAsscResult_Oracle(trackList, pointList, TP
     %   trackList      — 更新后的航迹列表
 
     % 遍历关联结果，对每条航迹执行更新或纯预测
+    % TPmatch_result 每行是一个关联对：[航迹索引, 点迹索引]
     for r = 1:size(TPmatch_result, 1)
         ti = TPmatch_result(r, 1);  % 航迹索引（TPmatch_result 第 1 列）
         pi = TPmatch_result(r, 2);  % 点迹索引（0=未关联）
@@ -81,6 +82,7 @@ function a = wrap_angle_oracle(a)
     % 角度归一化：将角度差 wrap 到 [-180, 180] 范围
     % 方位角是周期性量，-180 度和 180 度等价，需要进行 wrap 处理
     % 避免角度跳变导致新息计算错误
+    % 使用 while 循环而非 mod，因为方位角偏差可能远大于 360 度
     while a > 180
         a = a - 360;
     end

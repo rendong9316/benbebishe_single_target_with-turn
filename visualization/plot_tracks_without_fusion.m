@@ -19,7 +19,7 @@
 %   params            — 仿真参数结构体
 % =========================================================================
 function plot_tracks_without_fusion(truth_all, detList_R1, detList_R2, ...
-        trackSnapshots_R1, trackSnapshots_R2, trackList_R1, trackList_R2, params)
+        trackSnapshots_R1, trackSnapshots_R2, trackList_R1, trackList_R2, params, varargin)
 
     % 创建图窗，设置标题和尺寸
     % 图窗分为两部分：左侧 70% 为地图区域，右侧 30% 为图层控制面板
@@ -36,6 +36,8 @@ function plot_tracks_without_fusion(truth_all, detList_R1, detList_R2, ...
 
     h_layers = {};    % 存储所有绘图句柄，供图层控制使用
     layer_names = {}; % 存储图层名称，用于复选框显示
+    study = struct();
+    if ~isempty(varargin), study = varargin{1}; end
     truth_colors = {[1 1 0], [1 0 1], [0 1 1]};  % 真值航迹颜色：黄、品红、青
 
     % ---- 真值航迹 ----
@@ -75,6 +77,8 @@ function plot_tracks_without_fusion(truth_all, detList_R1, detList_R2, ...
     [h_layers, layer_names] = add_layer(h_layers, layer_names, h, 'R2航迹提取点连线');
     h = plot_filter_tracks(ax, trackSnapshots_R2, [0.55 0.00 0.00], 'R2 UKF');
     [h_layers, layer_names] = add_layer(h_layers, layer_names, h, 'R2 UKF航迹');
+
+    [h_layers, layer_names] = plot_study_layers(ax, study, h_layers, layer_names);
 
     % ---- 雷达站标记 ----
     % 接收站用蓝色/红色方块(bs/rs)，发射站用蓝色/红色上三角(b^/r^)
@@ -330,6 +334,45 @@ function [lat, lon] = snapshot_track_line(snapshots, track_id)
     end
 end
 
+function [h_layers, names] = plot_study_layers(ax, study, h_layers, names)
+    if isempty(fieldnames(study)) || ~isfield(study, 'segments'), return; end
+    colors = {[0.15 0.55 1.00], [1.00 0.35 0.20]};
+    for i = 1:numel(study.segments)
+        seg = study.segments(i); color = colors{seg.radar_id};
+        idx = ismember(seg.raw_frames, seg.effective_frames);
+        if sum(idx) >= 2
+            h = geoplot(ax, seg.lats(idx), seg.lons(idx), '-', 'Color', color, 'LineWidth', 2.6, ...
+                'DisplayName', sprintf('R%d段%d #%d有效', seg.radar_id, seg.segment_id, seg.track_id));
+            [h_layers, names] = add_layer(h_layers, names, h, sprintf('R%d段%d有效', seg.radar_id, seg.segment_id));
+        end
+        idx = ismember(seg.raw_frames, seg.tail_frames);
+        if sum(idx) >= 2
+            h = geoplot(ax, seg.lats(idx), seg.lons(idx), '--', 'Color', 0.65*color+0.35, 'LineWidth', 1.8, ...
+                'DisplayName', sprintf('R%d段%d coasting tail', seg.radar_id, seg.segment_id));
+            [h_layers, names] = add_layer(h_layers, names, h, sprintf('R%d段%d tail', seg.radar_id, seg.segment_id));
+        end
+    end
+    if isfield(study, 'published')
+        for i = 1:numel(study.published)
+            pub = study.published(i); [lat, lon] = fused_line(pub.snapshots);
+            if sum(isfinite(lat)) < 2, continue; end
+            h = geoplot(ax, lat, lon, '-', 'Color', [0.20 0.90 0.35], 'LineWidth', 3.4, ...
+                'DisplayName', sprintf('Group%d %s RMSE %.2fkm', pub.group_id, pub.method, pub.rmse_km));
+            [h_layers, names] = add_layer(h_layers, names, h, sprintf('G%d最佳%s %.2fkm', pub.group_id, pub.method, pub.rmse_km));
+        end
+    end
+end
+
+function [lat, lon] = fused_line(snapshots)
+    lat = []; lon = []; previous = NaN;
+    for k = 1:numel(snapshots)
+        if isempty(snapshots{k}) || isempty(snapshots{k}.trackList), continue; end
+        trk = snapshots{k}.trackList{1};
+        if ~isnan(previous) && k > previous + 1, lat(end+1)=NaN; lon(end+1)=NaN; end %#ok<AGROW>
+        lat(end+1)=trk.lat; lon(end+1)=trk.lon; previous=k; %#ok<AGROW>
+    end
+end
+
 % =========================================================================
 % 辅助函数：图层管理和 UI 控制
 % =========================================================================
@@ -356,21 +399,16 @@ end
 %   2. 全部隐藏/全部显示按钮：批量操作
 %   3. 底部状态栏：显示 R1/R2 航迹数量和仿真参数
 function install_layer_controls(fig, h_layers, names, trackList_R1, trackList_R2, params)
-    cb = gobjects(1, length(names));  % 初始化复选框句柄数组
+    panel = uipanel('Parent', fig, 'Units', 'normalized', 'Position', [0.75 0.11 0.24 0.84], ...
+        'BackgroundColor', [1 1 1], 'BorderType', 'none');
+    cb = gobjects(1, length(names));
+    rows = max(length(names), 1);
+    row_h = min(0.055, 0.92 / rows);
     for i = 1:length(names)
-        % 从上到下排列复选框，y 坐标递减
-        % 0.92 是顶部起始位置，每个复选框间距 0.045（归一化单位）
-        ypos = 0.92 - (i-1) * 0.045;
-        if ypos < 0.12
-            break;  % 复选框超出底部边界时停止
-        end
-        % 创建复选框控件
-        % Parent=fig 表示控件属于图窗而非 axes
-        % Units='normalized' 表示 Position 使用相对坐标（0-1）
-        % Callback 使用匿名函数捕获 i 索引，实现按图层切换
-        cb(i) = uicontrol('Parent', fig, 'Style', 'checkbox', 'String', names{i}, ...
-            'Value', 1, 'Units', 'normalized', 'Position', [0.76, ypos, 0.22, 0.040], ...
-            'FontSize', 9, 'BackgroundColor', [1 1 1], ...
+        ypos = 0.97 - i * row_h;
+        cb(i) = uicontrol('Parent', panel, 'Style', 'checkbox', 'String', names{i}, ...
+            'Value', 1, 'Units', 'normalized', 'Position', [0.02, ypos, 0.96, row_h], ...
+            'FontSize', 8, 'BackgroundColor', [1 1 1], ...
             'Callback', @(src, ~) set_layer_visibility(h_layers{i}, src.Value));
     end
     % 全部隐藏按钮：点击后将所有复选框设为 0，所有图层设为不可见
