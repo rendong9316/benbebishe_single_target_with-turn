@@ -106,12 +106,20 @@ function params = simulation_params_oracle()
     % 1e5 的量级使 UKF 能更好地适应目标机动，但过大会引入噪声
     params.radar1_ukf_Q_scale   = 1e5;
     params.radar2_ukf_Q_scale   = 2e5;
+    % 新物理过程噪声使用统一的连续白噪声加速度谱密度；同一目标不因
+    % 雷达量测精度不同而具有不同运动噪声。旧 Q_scale 字段仅保留兼容。
+    params.ukf_process_accel_psd_m2_s3 = 0.02;
     % 初始位置协方差标准差（度）（0.05° 约 5.5km 的地面分辨率）
     params.radar1_ukf_P_pos_std = 0.05;
     params.radar2_ukf_P_pos_std = 0.05;
     % 初始速度协方差标准差（度/秒）（0.004°/s 约 0.007m/s² 的加速度不确定度）
     params.radar1_ukf_P_vel_std = 0.004;
     params.radar2_ukf_P_vel_std = 0.005;
+    % 初始化协方差以物理单位配置，并在 UKF 内按当前纬度转换。
+    params.radar1_ukf_init_pos_std_m = 14000.0;
+    params.radar2_ukf_init_pos_std_m = 24000.0;
+    params.radar1_ukf_init_vel_std_ms = 130.0;
+    params.radar2_ukf_init_vel_std_ms = 180.0;
     % 马氏距离关联门限的 sigma 倍数（6σ 覆盖 99.7% 的高斯分布）
     % 即关联门限 = 6 * sqrt(观测噪声方差)，放宽关联条件以减少漏关联
     params.radar1_gate_sigma    = 6;
@@ -130,7 +138,7 @@ function params = simulation_params_oracle()
     % ==================== UKF 共用 UT（Unscented Transform）参数 ====================
     % alpha：Sigma 点散布度参数，越小分布越集中
     % alpha=1e-2 使 Sigma 点靠近均值，减少非线性区域的采样密度
-    params.ukf_alpha = 1e-2;
+    params.ukf_alpha = 0.3;
     % beta：先验分布参数，对于高斯分布 beta=2 是最优的
     % 配合 alpha 确定 Sigma 点的权重分配
     params.ukf_beta  = 2.0;
@@ -158,9 +166,12 @@ function params = simulation_params_oracle()
     % 慢变模式在检测到机动趋势时更快响应，但又不至于频繁震荡
     params.imm_slow_Pi_CV_to_CT = 0.03;
     params.imm_slow_Pi_CT_to_CV = 0.03;
+    % 优先使用具有时间含义的驻留时间生成转移概率。
+    params.imm_cv_dwell_time_sec = 2400.0;
+    params.imm_ct_dwell_time_sec = 360.0;
     % CT 模型的固定过程噪声倍率（高机动时增大 Q）
     % 1.8 倍放大过程噪声使滤波器更信任预测而非观测，适应转弯运动
-    params.imm_ct_fixed_Q_scale = 1.8;
+    params.imm_ct_fixed_Q_scale = 4.5;
     % CV 瞬态增益触发/满量程的 NIS（归一化创新平方）阈值
     % NIS < 3.0 时不触发增益，NIS > 12.0 时增益达到最大
     % 3.0~12.0 之间线性插值增益系数
@@ -168,7 +179,7 @@ function params = simulation_params_oracle()
     params.imm_transient_nis_full    = 12.0;
     % CV 最大增益倍率（NIS 大时临时增大观测权重）
     % 5.0 倍意味着机动时观测更新步长放大 5 倍，加速收敛
-    params.imm_transient_gain_max    = 5.0;
+    params.imm_transient_gain_max    = 7.0;
     % 短时 NIS 的 EWMA（指数加权移动平均）系数
     % 0.65 偏向近期 NIS 值，能快速反映机动状态变化
     params.imm_transient_ewma_alpha  = 0.65;

@@ -67,15 +67,21 @@ function ukf = adapt_q(ukf, params, mode)
     end
 
     nis_history = ukf.nis_history;
+    if isfield(params, 'fuzzy_window_size') && ...
+            numel(nis_history) > params.fuzzy_window_size
+        nis_history = nis_history(end-params.fuzzy_window_size+1:end);
+    end
 
     % ================================================================
     % 模糊自适应 Q：基于 NIS 滑动平均的三角形隶属函数推理
     % ================================================================
-    % 计算 NIS 滑动窗口的平均值，归一化到理论值 2.0（3维量测的 NIS 期望）
-    % NIS 理论期望 = 量测维度 = 3（距离+方位+多普勒），但 NIS ~ chi^2(3)，
-    % 其期望为 3，这里除以 2.0 是一种经验归一化
+    % NIS 理论期望等于量测维数。
     nis_avg = mean(nis_history);
-    nis_ratio = nis_avg / 2.0;  % nis_ratio=1.0 表示 NIS 在理论期望附近
+    measurement_dim = 3.0;
+    if isfield(ukf, 'm') && isfinite(ukf.m) && ukf.m > 0
+        measurement_dim = double(ukf.m);
+    end
+    nis_ratio = nis_avg / measurement_dim;
 
     % 五个三角形隶属函数：VerySmall, Small, Medium, Large, VeryLarge
     % 每个隶属函数将 nis_ratio 映射到 [0,1] 的置信度

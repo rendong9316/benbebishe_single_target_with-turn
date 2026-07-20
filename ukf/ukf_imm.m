@@ -117,6 +117,12 @@ function imm = create_imm(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
             if isfield(params, 'imm_slow_Pi_CV_to_CT'), p_cv_ct = params.imm_slow_Pi_CV_to_CT; end
             if isfield(params, 'imm_slow_Pi_CT_to_CV'), p_ct_cv = params.imm_slow_Pi_CT_to_CV; end
         end
+        if isfield(params, 'imm_cv_dwell_time_sec')
+            p_cv_ct = 1 - exp(-dt / params.imm_cv_dwell_time_sec);
+        end
+        if isfield(params, 'imm_ct_dwell_time_sec')
+            p_ct_cv = 1 - exp(-dt / params.imm_ct_dwell_time_sec);
+        end
         validate_transition_probability(p_cv_ct, 'CV_to_CT');
         validate_transition_probability(p_ct_cv, 'CT_to_CV');
         % p_cv_ct remains the total probability of entering either CT mode.
@@ -176,9 +182,10 @@ end
 % =========================================================================
 % 使用两次量测初始化 CV、CT-left 和 CT-right 三个 UKF 模型
 % 同时设置自适应 Q 相关的初始状态
-function imm = init_imm(imm, meas1, meas2)
+function imm = init_imm(imm, meas1, meas2, varargin)
+    history_args = varargin;
     % 初始化 CV 模型 UKF
-    imm.ukf_cv = ukf_jichu('init', imm.ukf_cv, meas1, meas2);
+    imm.ukf_cv = ukf_jichu('init', imm.ukf_cv, meas1, meas2, history_args{:});
     imm.ukf_cv.dt = imm.dt;
     imm.ukf_cv.initialized = true;
     imm.ukf_cv.Q_base = imm.ukf_cv.Q;  % 保存基线 Q 用于自适应缩放
@@ -187,7 +194,7 @@ function imm = init_imm(imm, meas1, meas2)
     imm.ukf_cv.nis_history = [];  % 重起始时清空 NIS 历史
 
     % 初始化 CT 模型 UKF
-    imm.ukf_ct = ukf_jichu('init', imm.ukf_ct, meas1, meas2);
+    imm.ukf_ct = ukf_jichu('init', imm.ukf_ct, meas1, meas2, history_args{:});
     imm.ukf_ct.dt = imm.dt;
     imm.ukf_ct.initialized = true;
     imm.ukf_ct.Q_base = imm.ukf_ct.Q;
@@ -195,10 +202,11 @@ function imm = init_imm(imm, meas1, meas2)
     if strcmp(get_imm_adapt_mode(imm), '3in1')
         imm.ukf_ct.Q = imm.ukf_ct.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
     end
-    imm.ukf_ct.Q_ema = 1.0;
+    imm.ukf_ct.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
     imm.ukf_ct.nis_history = [];  % 重起始时清空 NIS 历史
 
-    imm.ukf_ct_right = ukf_jichu('init', imm.ukf_ct_right, meas1, meas2);
+    imm.ukf_ct_right = ukf_jichu( ...
+        'init', imm.ukf_ct_right, meas1, meas2, history_args{:});
     imm.ukf_ct_right.dt = imm.dt;
     imm.ukf_ct_right.initialized = true;
     imm.ukf_ct_right.Q_base = imm.ukf_ct_right.Q;
@@ -206,7 +214,8 @@ function imm = init_imm(imm, meas1, meas2)
         imm.ukf_ct_right.Q = imm.ukf_ct_right.Q_base * ...
             get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
     end
-    imm.ukf_ct_right.Q_ema = 1.0;
+    imm.ukf_ct_right.Q_ema = get_param_imm( ...
+        imm.params, 'imm_ct_fixed_Q_scale', 1.8);
     imm.ukf_ct_right.nis_history = [];
 
     % 重置模型概率为均匀分布
@@ -216,6 +225,7 @@ function imm = init_imm(imm, meas1, meas2)
     imm.initialized = true;
     imm.nis_history = [];     % 镜像 CV 的 NIS，供诊断代码读取
     imm.mu_history = zeros(0, 3);
+    imm.log_likelihood_history = zeros(0, 3);
     % 顶层状态初始化为 CV 模型的状态（初始化后 CV 和 CT 状态相同）
     imm.x = imm.ukf_cv.x;     % 顶层组合状态（供时间对齐/融合）
     imm.P = imm.ukf_cv.P;     % 顶层组合协方差
@@ -292,10 +302,12 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
             % 3in1 模式：CV 模型使用瞬态增益自适应，CT 模型使用固定 Q 缩放
             imm.ukf_cv = apply_transient_q_imm(imm.ukf_cv, imm.params);
             imm.ukf_ct.Q = imm.ukf_ct.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-            imm.ukf_ct.Q_ema = 1.0;
+            imm.ukf_ct.Q_ema = get_param_imm( ...
+                imm.params, 'imm_ct_fixed_Q_scale', 1.8);
             imm.ukf_ct_right.Q = imm.ukf_ct_right.Q_base * ...
                 get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-            imm.ukf_ct_right.Q_ema = 1.0;
+            imm.ukf_ct_right.Q_ema = get_param_imm( ...
+                imm.params, 'imm_ct_fixed_Q_scale', 1.8);
         elseif strcmp(adapt_mode, 'fuzzy_only')
             % fuzzy_only 模式：两个模型都使用模糊自适应
             imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'fuzzy_only');
@@ -326,6 +338,8 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
     % 量测预测组合
     z_pred_comb = c_bar(1) * z_pred_cv + c_bar(2) * z_pred_ct + ...
         c_bar(3) * z_pred_ct_right;
+    z_pred_comb(2) = circular_mean_imm( ...
+        [z_pred_cv(2), z_pred_ct(2), z_pred_ct_right(2)], c_bar);
     % 量测协方差组合
     P_zz_comb = combine_meas_cov_imm( ...
         {z_pred_cv, z_pred_ct, z_pred_ct_right}, ...
@@ -381,10 +395,8 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
         imm.ukf_cv = keep_prediction(imm.ukf_cv, cache, 'cv');
         imm.ukf_ct = keep_prediction(imm.ukf_ct, cache, 'ct');
         imm.ukf_ct_right = keep_prediction(imm.ukf_ct_right, cache, 'ct_right');
-        % 似然度使用未检测概率
-        L_cv = imm.L_no_det;
-        L_ct = imm.L_no_det;
-        L_ct_right = imm.L_no_det;
+        % 未检测不提供模型区分信息，仅保留 Markov 先验传播。
+        log_likelihood = zeros(3, 1);
     else
         % ---- 重建加权量测（innov_w 相对于 tracker 使用的组合 z_pred） ----
         % 将相对新息还原为绝对量测值
@@ -431,17 +443,13 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
         end
         imm.nis_history = imm.ukf_cv.nis_history;  % 镜像供诊断
 
-        % ---- Pd-IPDA 似然度（Musicki 2008） ----
-        % 似然度 = Pd * Pg * N(z; z_pred, P_zz) + (1-Pd*Pg)
-        % 其中 N 是高斯密度函数，nis 是马氏距离
-        % log_norm 是高斯密度的对数归一化常数
-        log_norm = -0.5 * (nz * log(2*pi) + log(max(det(cache.P_zz_cv), 1e-30)));
-        L_cv = imm.Pd_Pg * exp(log_norm - 0.5 * nis_cv_val);
-        log_norm = -0.5 * (nz * log(2*pi) + log(max(det(cache.P_zz_ct), 1e-30)));
-        L_ct = imm.Pd_Pg * exp(log_norm - 0.5 * nis_ct_val);
-        log_norm = -0.5 * (nz * log(2*pi) + ...
-            log(max(det(cache.P_zz_ct_right), 1e-30)));
-        L_ct_right = imm.Pd_Pg * exp(log_norm - 0.5 * nis_ct_right_val);
+        % Oracle 已给出唯一关联量测，使用条件高斯模型似然。
+        % Cholesky 对数形式避免 det/exp 在混合量纲下上下溢。
+        log_likelihood = [gaussian_log_likelihood_imm( ...
+            cache.P_zz_cv, innov_cv, nz); ...
+            gaussian_log_likelihood_imm(cache.P_zz_ct, innov_ct, nz); ...
+            gaussian_log_likelihood_imm( ...
+            cache.P_zz_ct_right, innov_ct_right, nz)];
 
         % 3in1 模式保持 IMM 原生似然更新，不用自适应 Q 反向改写模型概率。
     end
@@ -449,17 +457,11 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
     % ---- 贝叶斯模型概率更新 ----
     % mu_new(j) ∝ L_j * Σ_i Pi(i,j) * mu_i
     % 即：新概率 = 似然度 × 混合概率，再归一化
-    weighted_likelihood = [L_cv; L_ct; L_ct_right] .* cache.c_bar;
-    c_total = sum(weighted_likelihood);
-    if c_total > 1e-30
-        mu_new = weighted_likelihood / c_total;
-    else
-        mu_new = imm.mu;
-    end
-    % 概率钳位：防止概率坍缩到 0 或 1
-    imm.mu = max(imm.mu_min, min(imm.mu_max, mu_new));
-    % 归一化：确保概率之和为 1
-    imm.mu = imm.mu / sum(imm.mu);
+    log_weight = log_likelihood + log(max(cache.c_bar, realmin));
+    log_weight = log_weight - max(log_weight);
+    weighted_likelihood = exp(log_weight);
+    mu_new = weighted_likelihood / sum(weighted_likelihood);
+    imm.mu = project_bounded_probability_imm(mu_new, imm.mu_min, imm.mu_max);
 
     % ---- 组合状态 ----
     % 按更新后的模型概率加权组合
@@ -480,6 +482,65 @@ function [lon, lat, imm] = update_imm(imm, innov_w)
     imm.Q_ema = imm.mu(1) * imm.ukf_cv.Q_ema + ...
         imm.mu(2) * imm.ukf_ct.Q_ema + imm.mu(3) * imm.ukf_ct_right.Q_ema;
     imm.mu_history(end+1, :) = imm.mu';  % 记录模型概率历史
+    imm.log_likelihood_history(end+1, :) = log_likelihood';
+end
+
+
+function mean_deg = circular_mean_imm(angles_deg, weights)
+    weights = weights(:) / sum(weights);
+    reference = angles_deg(1);
+    delta = arrayfun(@(a) wrap_angle_imm(a - reference), angles_deg(:));
+    mean_deg = mod(reference + weights' * delta, 360.0);
+end
+
+
+function angle = wrap_angle_imm(angle)
+    angle = mod(angle + 180.0, 360.0) - 180.0;
+end
+
+
+function value = gaussian_log_likelihood_imm(P, innov, dimension)
+    P = (P + P') / 2;
+    [L, flag] = chol(P, 'lower');
+    if flag ~= 0
+        P = regularize_cov_imm(P);
+        [L, flag] = chol(P, 'lower');
+    end
+    if flag ~= 0
+        value = -realmax;
+        return;
+    end
+    whitened = L \ innov;
+    log_det = 2 * sum(log(diag(L)));
+    value = -0.5 * (dimension * log(2*pi) + log_det + whitened' * whitened);
+end
+
+
+function probability = project_bounded_probability_imm(probability, lower, upper)
+    probability = max(0, probability(:));
+    if sum(probability) <= 0
+        probability(:) = 1 / numel(probability);
+    else
+        probability = probability / sum(probability);
+    end
+    probability = min(upper, max(lower, probability));
+    for iteration = 1:10
+        residual = 1 - sum(probability);
+        if abs(residual) < 1e-14
+            break;
+        end
+        if residual > 0
+            capacity = max(0, upper - probability);
+        else
+            capacity = max(0, probability - lower);
+        end
+        if sum(capacity) <= 0
+            break;
+        end
+        probability = probability + residual * capacity / sum(capacity);
+        probability = min(upper, max(lower, probability));
+    end
+    probability = probability / sum(probability);
 end
 
 

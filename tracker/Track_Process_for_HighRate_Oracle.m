@@ -45,7 +45,7 @@ function [trackList, tempTrackList, snap, next_id, diagInfo] = Track_Process_for
         trk = activeTrackList{i};
         % 注入时间步长和生命计数（用于自适应 Q 的成熟度检查）
         trk.ukf.dt = params.dt_sec;
-        trk.trk.life_count = trk.life + 1;
+        trk.ukf.life_count = trk.life + 1;
         % 调用 UKF prepare：返回 7 个输出
         %   x_pred, P_pred — 预测状态和协方差
         %   X_pred         — 预测后的 Sigma 点矩阵
@@ -318,7 +318,11 @@ function snap = make_snap(activeTrackList, frame_id)
     for i = 1:length(activeTrackList)
         trk = activeTrackList{i};
         % 提取 UKF 核心状态
-        slim_ukf = struct('x', trk.ukf.x, 'P', trk.ukf.P, 'Q', trk.ukf.Q);
+        slim_ukf = struct('x', trk.ukf.x, 'P', trk.ukf.P, 'Q', trk.ukf.Q, ...
+            'Q_ema', diagnostic_field(trk.ukf, 'Q_ema', NaN), ...
+            'mu', diagnostic_field(trk.ukf, 'mu', nan(3, 1)), ...
+            'model_nis', latest_model_nis(trk.ukf), ...
+            'log_likelihood', latest_log_likelihood(trk.ukf));
         % 优先使用预测协方差，不存在则回退到当前协方差
         if isfield(trk, 'P_pred') && ~isempty(trk.P_pred)
             P_pred = trk.P_pred;
@@ -331,4 +335,33 @@ function snap = make_snap(activeTrackList, frame_id)
             'ukf', slim_ukf);
     end
     snap = struct('trackList', {slim_tracks}, 'frameID', frame_id);
+end
+
+
+function value = diagnostic_field(source, name, fallback)
+    value = fallback;
+    if isfield(source, name) && ~isempty(source.(name))
+        value = source.(name);
+    end
+end
+
+
+function values = latest_model_nis(ukf)
+    values = nan(1, 3);
+    names = {'ukf_cv', 'ukf_ct', 'ukf_ct_right'};
+    for i = 1:3
+        if isfield(ukf, names{i}) && isfield(ukf.(names{i}), 'nis_history') && ...
+                ~isempty(ukf.(names{i}).nis_history)
+            values(i) = ukf.(names{i}).nis_history(end);
+        end
+    end
+end
+
+
+function values = latest_log_likelihood(ukf)
+    values = nan(1, 3);
+    if isfield(ukf, 'log_likelihood_history') && ...
+            ~isempty(ukf.log_likelihood_history)
+        values = ukf.log_likelihood_history(end, :);
+    end
 end

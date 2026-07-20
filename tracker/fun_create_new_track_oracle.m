@@ -46,7 +46,7 @@ function newTrack = fun_create_new_track_oracle(det1, det2, ukf_tpl, params, fra
     % 用最早检测(det1)和当前检测(det2)的差分计算初始速度
     % det1 和 det2 的时间差决定了速度估计的精度
     % ukf_dispatch('init') 内部完成 Sigma 点采样和初始协方差设置
-    new_ukf = ukf_dispatch('init', ukf_tpl, det1, det2);
+    new_ukf = ukf_dispatch('init', ukf_tpl, det1, det2, real_hist);
 
     % 后初始化：注入 dt、初始化标志、NIS 历史、Q_ema 等
     % post_init_multi 会在 UKF 结构体中添加必要的元数据字段

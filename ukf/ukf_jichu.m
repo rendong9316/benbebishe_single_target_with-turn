@@ -92,18 +92,15 @@ function ukf = create_ukf(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
                   params.ukf_azimuth_std_deg^2, ...
                   params.ukf_rv_std_ms^2]);
 
-    % 第5部分：构建过程噪声协方差矩阵 Q (4x4)
-    % 基础 Q 是对角阵，四个状态分量的噪声强度不同
-    % 位置和速度的先验不确定性差异很大（1e-9 vs 1e-13）
-    % 最后乘以 ukf_Q_scale 进行整体缩放
-    Q_base = diag([1e-9, 1e-13, 1e-9, 1e-13]);
-    ukf.Q = Q_base * params.ukf_Q_scale;
+    % 第5部分：过程噪声由物理加速度谱密度按 dt 离散化。模板阶段以
+    % 雷达纬度构造占位值，实际预测前会按当前目标纬度刷新。
+    ukf.Q_ema = 1.0;
+    ukf.Q_base = process_noise_geo_ukf(params, radar_lat, dt, 6371000.0);
+    ukf.Q = ukf.Q_base;
 
     % 第6部分：构建初始状态协方差矩阵 P (4x4)
     % 初始不确定性由参数 ukf_P_pos_std 和 ukf_P_vel_std 决定
-    pp = params.ukf_P_pos_std;
-    pv = params.ukf_P_vel_std;
-    ukf.P = diag([pp^2, pv^2, pp^2, pv^2]);
+    ukf.P = initial_covariance_geo_ukf(params, radar_lat, 6371000.0);
 
     % 第7部分：初始化状态向量 x (4x1) 和初始化标志
     ukf.x = zeros(4, 1);
@@ -125,7 +122,7 @@ end
 %   - 位置：通过量测反解经纬度
 %   - 速度：两点差分法（如果有两次不同帧的量测）
 %   - 速度范围钳位：50-500 m/s，超出则回退到 v=0
-function ukf = init_ukf(ukf, meas, meas2)
+function ukf = init_ukf(ukf, meas, meas2, varargin)
     % 步骤1：用最新可用量测反解初始位置
     % 若两点起始中有meas2，优先用meas2（当前帧，不过时）
     % 若仅有单点，用meas
@@ -171,16 +168,129 @@ function ukf = init_ukf(ukf, meas, meas2)
         % 异常速度仍回退到 v=0，由 UKF 自行收敛
     end
 
-    % 组装初始状态：[经度, 经度速度, 纬度, 纬度速度]
-    ukf.x = [lon; lon_dot; lat; lat_dot];
-
-    % 步骤3：构建初始协方差矩阵
-    pp = ukf.params.ukf_P_pos_std;
-    pv = ukf.params.ukf_P_vel_std;
-    ukf.P = diag([pp^2, pv^2, pp^2, pv^2]);
+    % 优先使用起始窗口全部位置和多普勒约束；接口缺少窗口时保留两点法。
+    initialized_from_window = false;
+    if ~isempty(varargin) && ~isempty(varargin{1})
+        [initialized_from_window, x_window, P_window] = ...
+            initialize_from_window_ukf(ukf, varargin{1});
+    end
+    if initialized_from_window
+        ukf.x = x_window;
+        ukf.P = P_window;
+        ukf.init_method = 'window_wls_doppler';
+    else
+        ukf.x = [lon; lon_dot; lat; lat_dot];
+        ukf.P = initial_covariance_geo_ukf(ukf.params, lat, ukf.R_EARTH);
+        ukf.init_method = 'two_point';
+    end
 
     % 步骤4：标记滤波器已初始化
     ukf.initialized = true;
+end
+
+
+function [ok, x_init, P_init] = initialize_from_window_ukf(ukf, real_history)
+    ok = false;
+    x_init = zeros(4, 1);
+    P_init = eye(4);
+    points = {};
+    for i = 1:numel(real_history)
+        if isfield(real_history(i), 'point') && ...
+                ~isempty(real_history(i).point)
+            points{end+1} = real_history(i).point; %#ok<AGROW>
+        end
+    end
+    if numel(points) < 3
+        return;
+    end
+
+    count = numel(points);
+    longitude = zeros(count, 1);
+    latitude = zeros(count, 1);
+    time_sec = zeros(count, 1);
+    for i = 1:count
+        [longitude(i), latitude(i)] = meas_to_latlon_ukf( ...
+            ukf, points{i}.range_meas, points{i}.azimuth_meas);
+        if isfield(points{i}, 'time_sec') && isfinite(points{i}.time_sec)
+            time_sec(i) = double(points{i}.time_sec);
+        else
+            time_sec(i) = double(points{i}.frameID) * ukf.dt;
+        end
+    end
+    if any(diff(time_sec) <= 0)
+        return;
+    end
+
+    reference_lon = longitude(end);
+    reference_lat = latitude(end);
+    centered_time = time_sec - time_sec(end);
+    east = ukf.R_EARTH * cosd(reference_lat) * ...
+        deg2rad(arrayfun(@wrap_angle_ukf, longitude - reference_lon));
+    north = ukf.R_EARTH * deg2rad(latitude - reference_lat);
+
+    position_std = hypot(ukf.params.ukf_range_std_m, ...
+        0.5 * median(cellfun(@(p) p.range_meas, points)) * ...
+        deg2rad(ukf.params.ukf_azimuth_std_deg));
+    position_std = max(position_std, 1000.0);
+    doppler_std = max(ukf.params.ukf_rv_std_ms, 0.1);
+    A = zeros(3 * count, 4);
+    b = zeros(3 * count, 1);
+    row = 0;
+    for i = 1:count
+        row = row + 1;
+        A(row, :) = [1, centered_time(i), 0, 0] / position_std;
+        b(row) = east(i) / position_std;
+        row = row + 1;
+        A(row, :) = [0, 0, 1, centered_time(i)] / position_std;
+        b(row) = north(i) / position_std;
+
+        lon_rate_east = rad2deg(1 / (ukf.R_EARTH * ...
+            max(abs(cosd(latitude(i))), 1e-6)));
+        lat_rate_north = rad2deg(1 / ukf.R_EARTH);
+        coeff_east = measurement_ukf(ukf, ...
+            [longitude(i); lon_rate_east; latitude(i); 0]);
+        coeff_north = measurement_ukf(ukf, ...
+            [longitude(i); 0; latitude(i); lat_rate_north]);
+        row = row + 1;
+        A(row, :) = [0, coeff_east(3), 0, coeff_north(3)] / doppler_std;
+        b(row) = points{i}.radial_vel_meas / doppler_std;
+    end
+
+    information = A' * A;
+    if rcond(information) < 1e-12
+        return;
+    end
+    estimate = information \ (A' * b);
+    speed = hypot(estimate(2), estimate(4));
+    if ~all(isfinite(estimate)) || speed < 20 || speed > 600
+        return;
+    end
+
+    displacement = hypot(estimate(1), estimate(3));
+    if displacement > 0
+        bearing = mod(atan2d(estimate(1), estimate(3)), 360.0);
+        [lon_est, lat_est] = sphere_utils_destination_point( ...
+            reference_lon, reference_lat, displacement, bearing);
+    else
+        lon_est = reference_lon;
+        lat_est = reference_lat;
+    end
+    [lon_rate, lat_rate] = enu_to_geo_rates_ukf( ...
+        estimate(2), estimate(4), lat_est, ukf.R_EARTH);
+    x_init = [wrap_longitude_ukf(lon_est); lon_rate; lat_est; lat_rate];
+
+    covariance_metric = inv(information);
+    pos_floor = 0.35 * ukf.params.ukf_init_pos_std_m;
+    vel_floor = 0.35 * ukf.params.ukf_init_vel_std_ms;
+    covariance_metric = covariance_metric + ...
+        diag([pos_floor^2, vel_floor^2, pos_floor^2, vel_floor^2]);
+    scale_lon = rad2deg(1 / (ukf.R_EARTH * ...
+        max(abs(cosd(lat_est)), 1e-6)));
+    scale_lat = rad2deg(1 / ukf.R_EARTH);
+    transform = diag([scale_lon, scale_lon, scale_lat, scale_lat]);
+    P_init = transform * covariance_metric * transform';
+    P_init = regularize_cov_ukf(P_init, x_init);
+    ok = true;
 end
 
 
@@ -311,7 +421,7 @@ function [lon, lat, ukf] = update_with_innov(ukf, innov_w)
 
     % ---- Step 6: 协方差正则化（数值稳定性维护） ----
     % 确保 P 保持对称正定（防止浮点误差导致发散）
-    ukf.P = regularize_cov_ukf(ukf.P);
+    ukf.P = regularize_cov_ukf(ukf.P, ukf.x);
 
     % ---- Step 7: 提取滤波输出 ----
     lon = ukf.x(1);
@@ -338,12 +448,13 @@ function [x_pred, P_pred, X_pred, ukf] = predict_step_ukf(ukf)
     % CT 模型且转弯率不为 0 时使用协调转弯模型
     if strcmp(ukf.model_type, 'CT') && abs(ukf.turn_rate_rad_per_sec) > 1e-12
         for i = 1:(2 * ukf.n + 1)
-            X_pred(:, i) = state_transition_ct_ukf(X(:, i), ukf.dt, ukf.turn_rate_rad_per_sec);
+            X_pred(:, i) = state_transition_ct_ukf( ...
+                X(:, i), ukf.dt, ukf.turn_rate_rad_per_sec, ukf.R_EARTH);
         end
     else
         % 否则使用 CV（匀速直线）模型
         for i = 1:(2 * ukf.n + 1)
-            X_pred(:, i) = state_transition_ukf(X(:, i), ukf.dt);
+            X_pred(:, i) = state_transition_ukf(X(:, i), ukf.dt, ukf.R_EARTH);
         end
     end
 
@@ -354,6 +465,13 @@ function [x_pred, P_pred, X_pred, ukf] = predict_step_ukf(ukf)
     % 子步骤4：计算预测协方差矩阵 P_pred
     % P_pred = Q + Σ Wc_i * (X_pred_i - x_pred)(X_pred_i - x_pred)'
     % Q 是过程噪声协方差，第二项是 Sigma 点的加权散度
+    ukf.Q_base = process_noise_geo_ukf( ...
+        ukf.params, x_pred(3), ukf.dt, ukf.R_EARTH);
+    q_multiplier = 1.0;
+    if isfield(ukf, 'Q_ema') && isfinite(ukf.Q_ema) && ukf.Q_ema > 0
+        q_multiplier = ukf.Q_ema;
+    end
+    ukf.Q = ukf.Q_base * q_multiplier;
     P_pred = ukf.Q;
     for i = 1:(2 * ukf.n + 1)
         dx = X_pred(:, i) - x_pred;
@@ -361,7 +479,7 @@ function [x_pred, P_pred, X_pred, ukf] = predict_step_ukf(ukf)
     end
 
     % 子步骤5：协方差正则化（数值稳定性保障）
-    P_pred = regularize_cov_ukf(P_pred);
+    P_pred = regularize_cov_ukf(P_pred, x_pred);
 end
 
 
@@ -461,12 +579,20 @@ end
 %   lon_dot_next = lon_dot
 %   lat_next = lat + dt * lat_dot
 %   lat_dot_next = lat_dot
-function x_next = state_transition_ukf(x, dt)
-    F = [1.0, dt,  0.0, 0.0; ...
-         0.0, 1.0, 0.0, 0.0; ...
-         0.0, 0.0, 1.0, dt;  ...
-         0.0, 0.0, 0.0, 1.0];
-    x_next = F * x;
+function x_next = state_transition_ukf(x, dt, earth_radius)
+    [v_east, v_north] = geo_rates_to_enu_ukf(x, earth_radius);
+    speed = hypot(v_east, v_north);
+    if speed < 1e-9 || dt <= 0
+        x_next = x;
+        return;
+    end
+    bearing = mod(atan2d(v_east, v_north), 360.0);
+    [lon_next, lat_next] = sphere_utils_destination_point( ...
+        x(1), x(3), speed * dt, bearing);
+    [lon_rate_next, lat_rate_next] = enu_to_geo_rates_ukf( ...
+        v_east, v_north, lat_next, earth_radius);
+    x_next = [wrap_longitude_ukf(lon_next); lon_rate_next; ...
+        lat_next; lat_rate_next];
 end
 
 % =========================================================================
@@ -485,7 +611,12 @@ end
 %
 % 当 ω→0 时，F_CT 退化为 F_CV（用泰勒展开验证）
 % =========================================================================
-function x_next = state_transition_ct_ukf(x, dt, omega)
+function x_next = state_transition_ct_ukf(x, dt, omega, earth_radius)
+    if abs(omega) < 1e-10
+        x_next = state_transition_ukf(x, dt, earth_radius);
+        return;
+    end
+    [v_east, v_north] = geo_rates_to_enu_ukf(x, earth_radius);
     % 计算 ωΔt（无量纲转角）
     wT = omega * dt;
     cos_wT = cos(wT);
@@ -493,12 +624,82 @@ function x_next = state_transition_ct_ukf(x, dt, omega)
     one_m_cos = 1.0 - cos_wT;
     inv_omega = 1.0 / omega;
 
-    % 构建 CT 状态转移矩阵
-    F = [1.0, sin_wT * inv_omega,  0.0, -one_m_cos * inv_omega; ...
-         0.0, cos_wT,              0.0, -sin_wT; ...
-         0.0, one_m_cos * inv_omega, 1.0, sin_wT * inv_omega; ...
-         0.0, sin_wT,              0.0, cos_wT];
-    x_next = F * x;
+    d_east = sin_wT * inv_omega * v_east ...
+        - one_m_cos * inv_omega * v_north;
+    d_north = one_m_cos * inv_omega * v_east ...
+        + sin_wT * inv_omega * v_north;
+    v_east_next = cos_wT * v_east - sin_wT * v_north;
+    v_north_next = sin_wT * v_east + cos_wT * v_north;
+
+    displacement = hypot(d_east, d_north);
+    if displacement > 0
+        bearing = mod(atan2d(d_east, d_north), 360.0);
+        [lon_next, lat_next] = sphere_utils_destination_point( ...
+            x(1), x(3), displacement, bearing);
+    else
+        lon_next = x(1);
+        lat_next = x(3);
+    end
+    [lon_rate_next, lat_rate_next] = enu_to_geo_rates_ukf( ...
+        v_east_next, v_north_next, lat_next, earth_radius);
+    x_next = [wrap_longitude_ukf(lon_next); lon_rate_next; ...
+        lat_next; lat_rate_next];
+end
+
+
+function [v_east, v_north] = geo_rates_to_enu_ukf(x, earth_radius)
+    cos_lat = max(abs(cosd(x(3))), 1e-6);
+    v_east = earth_radius * cos_lat * deg2rad(x(2));
+    v_north = earth_radius * deg2rad(x(4));
+end
+
+
+function [lon_rate, lat_rate] = enu_to_geo_rates_ukf( ...
+        v_east, v_north, latitude, earth_radius)
+    cos_lat = max(abs(cosd(latitude)), 1e-6);
+    lon_rate = rad2deg(v_east / (earth_radius * cos_lat));
+    lat_rate = rad2deg(v_north / earth_radius);
+end
+
+
+function longitude = wrap_longitude_ukf(longitude)
+    longitude = mod(longitude + 180.0, 360.0) - 180.0;
+end
+
+
+function Q = process_noise_geo_ukf(params, latitude, dt, earth_radius)
+    accel_psd = 0.5;
+    if isfield(params, 'ukf_process_accel_psd_m2_s3')
+        accel_psd = params.ukf_process_accel_psd_m2_s3;
+    end
+    accel_psd = max(double(accel_psd), 1e-9);
+    block = accel_psd * [dt^3 / 3, dt^2 / 2; dt^2 / 2, dt];
+    Q_metric = blkdiag(block, block);
+    scale_lon = rad2deg(1 / (earth_radius * max(abs(cosd(latitude)), 1e-6)));
+    scale_lat = rad2deg(1 / earth_radius);
+    transform = diag([scale_lon, scale_lon, scale_lat, scale_lat]);
+    Q = transform * Q_metric * transform';
+    Q = (Q + Q') / 2;
+end
+
+
+function P = initial_covariance_geo_ukf(params, latitude, earth_radius)
+    if isfield(params, 'ukf_init_pos_std_m')
+        pos_std_m = params.ukf_init_pos_std_m;
+    else
+        pos_std_m = params.ukf_P_pos_std * earth_radius * pi / 180;
+    end
+    if isfield(params, 'ukf_init_vel_std_ms')
+        vel_std_ms = params.ukf_init_vel_std_ms;
+    else
+        vel_std_ms = params.ukf_P_vel_std * earth_radius * pi / 180;
+    end
+    scale_lon = rad2deg(1 / (earth_radius * max(abs(cosd(latitude)), 1e-6)));
+    scale_lat = rad2deg(1 / earth_radius);
+    P = diag([(pos_std_m * scale_lon)^2, ...
+              (vel_std_ms * scale_lon)^2, ...
+              (pos_std_m * scale_lat)^2, ...
+              (vel_std_ms * scale_lat)^2]);
 end
 
 
@@ -575,49 +776,44 @@ end
 %   2. 特征值裁剪（确保正定性）
 %   3. NaN/Inf 守卫
 % =========================================================================
-function P_reg = regularize_cov_ukf(P, min_eig)
-    % 允许自定义最小特征值阈值
-    if nargin < 2
-        min_eig = 1e-12;
+function P_reg = regularize_cov_ukf(P, state)
+    if nargin < 2 || isempty(state) || numel(state) ~= 4
+        state = [0; 0; 32; 0];
     end
 
     % NaN 守卫：如果出现 NaN/Inf，直接返回单位矩阵
     if any(isnan(P(:))) || any(isinf(P(:)))
-        P_reg = eye(size(P, 1));
+        P_reg = eye(size(P, 1)) * 1e-6;
         return;
     end
 
     % 步骤1：强制对称化
     P_sym = (P + P') / 2.0;
 
-    % 步骤2：特征值分解
-    [V, D] = eig(P_sym);
+    % 在约 10 km 位置、100 m/s 速度的物理尺度上归一化后裁剪，
+    % 避免位置角度量级决定速度方差下限。
+    earth_radius = 6371000.0;
+    meters_per_lon_degree = earth_radius * pi / 180 * ...
+        max(abs(cosd(state(3))), 1e-6);
+    meters_per_lat_degree = earth_radius * pi / 180;
+    normalizer = diag([meters_per_lon_degree / 1e4, ...
+        meters_per_lon_degree / 100, meters_per_lat_degree / 1e4, ...
+        meters_per_lat_degree / 100]);
+    P_scaled = normalizer * P_sym * normalizer';
+    [V, D] = eig((P_scaled + P_scaled') / 2);
     d = diag(D);
 
     % 步骤3：计算裁剪阈值（双阈值策略）
     % 取 min_eig 和 max_d 的 1e-6 倍中的较大者
     % 这样可以适应不同量级的协方差矩阵
-    max_d = max(d);
-    min_allowed = max(min_eig, 1e-6 * max_d);
+    max_d = max(abs(d));
+    min_allowed = max(1e-12, 1e-10 * max_d);
 
     % 步骤4：裁剪特征值（将过小的特征值提升到 min_allowed）
     d_clip = max(d, min_allowed);
 
     % 步骤5：用裁剪后的特征值重构协方差矩阵
-    P_reg = V * diag(d_clip) * V';
-end
-
-
-% =========================================================================
-% haversine_ukf — Haversine 球面大圆距离
-% 原函数：ukf_haversine
-% =========================================================================
-% 计算地球上两点之间的大圆距离（球面几何）
-% 使用 Haversine 公式，数值稳定性优于直接球面余弦定理
-function d = haversine_ukf(lon1, lat1, lon2, lat2, R)
-    dlon = deg2rad(lon2 - lon1);
-    dlat = deg2rad(lat2 - lat1);
-    a = sin(dlat/2)^2 + cos(deg2rad(lat1)) * cos(deg2rad(lat2)) * sin(dlon/2)^2;
-    a = max(0, min(1, a));  % 钳位到 [0,1] 防止浮点误差导致 acos 域外
-    d = R * 2 * atan2(sqrt(a), sqrt(1 - a));
+    P_scaled = V * diag(d_clip) * V';
+    P_reg = normalizer \ P_scaled / normalizer';
+    P_reg = (P_reg + P_reg') / 2;
 end

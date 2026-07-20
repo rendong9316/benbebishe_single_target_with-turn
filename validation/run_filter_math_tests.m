@@ -11,8 +11,29 @@ function run_filter_math_tests()
     test_ukf_sigma_measurement_mean();   % 验证 UKF Sigma 点传播和量测均值计算的正确性
     test_imm_prediction_weights();       % 验证 IMM 模型混合权重和组合预测的正确性
     test_imm_bidirectional_turn_models();  % 验证双向转弯模型
+    test_physical_process_noise();       % 验证物理 Q 和跨雷达一致性
     test_tracking_error_time_grids();    % 验证时间网格对齐和误差计算的正确性
     disp('filter math tests ok');        % 全部通过则打印成功消息
+end
+
+
+function test_physical_process_noise()
+    params1 = radar_params(simulation_params_oracle(), 1);
+    params2 = radar_params(simulation_params_oracle(), 2);
+    ukf1 = ukf_jichu('create', params1, params1.radar1_lon, params1.radar1_lat, ...
+        params1.radar1_tx_lon, params1.radar1_tx_lat, params1.dt_sec);
+    ukf2 = ukf_jichu('create', params2, params2.radar2_lon, params2.radar2_lat, ...
+        params2.radar2_tx_lon, params2.radar2_tx_lat, params2.dt_sec);
+    state = [129; 0.0015; 31.5; 0.0008];
+    covariance = diag([1e-4, 1e-8, 1e-4, 1e-8]);
+    ukf1.x = state; ukf1.P = covariance; ukf1.initialized = true;
+    ukf2.x = state; ukf2.P = covariance; ukf2.initialized = true;
+    [~, ~, ~, ukf1] = ukf_jichu('predict', ukf1);
+    [~, ~, ~, ukf2] = ukf_jichu('predict', ukf2);
+    assert(ukf1.Q(1, 2) > 0 && ukf1.Q(3, 4) > 0);
+    assert(all(eig((ukf1.Q + ukf1.Q') / 2) > 0));
+    assert(norm(ukf1.Q - ukf2.Q, 'fro') < 1e-12, ...
+        'Target process noise must not depend on radar measurement quality.');
 end
 
 % =========================================================================
@@ -156,8 +177,17 @@ function test_imm_bidirectional_turn_models()
     right_delta = imm.cache.x_pred_ct_right - x0;
     assert(left_delta(4) > 0 && right_delta(4) < 0);
     assert(abs(left_delta(4) + right_delta(4)) < 1e-12);
-    assert(abs(left_delta(3) + right_delta(3)) < 1e-8, ...
-        'Left/right CT latitude increments are not symmetric enough.');
+    earth_radius = 6371000.0;
+    speed_left = hypot(imm.cache.x_pred_ct(2) * earth_radius * pi / 180 * ...
+        cosd(imm.cache.x_pred_ct(3)), ...
+        imm.cache.x_pred_ct(4) * earth_radius * pi / 180);
+    speed_right = hypot(imm.cache.x_pred_ct_right(2) * earth_radius * pi / 180 * ...
+        cosd(imm.cache.x_pred_ct_right(3)), ...
+        imm.cache.x_pred_ct_right(4) * earth_radius * pi / 180);
+    speed_initial = x0(2) * earth_radius * pi / 180 * cosd(x0(3));
+    assert(abs(speed_left - speed_initial) < 0.5);
+    assert(abs(speed_right - speed_initial) < 0.5);
+    assert(abs(speed_left - speed_right) < 0.05);
 
     left_innov = imm.cache.z_pred_ct - imm.cache.z_pred_comb;
     right_innov = imm.cache.z_pred_ct_right - imm.cache.z_pred_comb;

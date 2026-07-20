@@ -1,4 +1,4 @@
-function inputs = prepare_oracle_tracking_inputs(scenario_name)
+function inputs = prepare_oracle_tracking_inputs(scenario_name, param_overrides)
 % PREPARE_ORACLE_TRACKING_INPUTS 构造 Oracle 跟踪所需的公共输入
 %
 % 这是 Oracle 跟踪仿真的统一入口函数，一次性完成:
@@ -21,9 +21,17 @@ function inputs = prepare_oracle_tracking_inputs(scenario_name)
     if nargin < 1 || isempty(scenario_name)
         scenario_name = 'multi_cross';
     end
+    if nargin < 2 || isempty(param_overrides)
+        param_overrides = struct();
+    end
 
     % 加载 Oracle 模式的仿真参数
     params = simulation_params_oracle();
+    override_names = fieldnames(param_overrides);
+    for override_index = 1:numel(override_names)
+        params.(override_names{override_index}) = ...
+            param_overrides.(override_names{override_index});
+    end
 
     % 设置随机数种子，确保仿真结果可复现
     rng(params.random_seed);
