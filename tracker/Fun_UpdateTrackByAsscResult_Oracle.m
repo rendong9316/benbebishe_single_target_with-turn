@@ -32,6 +32,8 @@ function trackList = Fun_UpdateTrackByAsscResult_Oracle(trackList, pointList, TP
         if ~isfield(trk, 'asscPointList') || isempty(trk.asscPointList)
             trk.asscPointList = {};
         end
+        trk.combined_nis_current = NaN;
+        trk.measurement_updated = false;
 
         if pi > 0
             % ---- 有关联点迹：计算新息并执行 Kalman 更新 ----
@@ -45,6 +47,8 @@ function trackList = Fun_UpdateTrackByAsscResult_Oracle(trackList, pointList, TP
 
             % 调用 UKF update：根据滤波器类型自动路由到 IMM/自适应/基础 UKF
             % innov_w 非空 → 执行 Kalman 更新，用新息修正预测状态
+            trk.combined_nis_current = safe_nis(innov, trk.P_zz);
+            trk.measurement_updated = true;
             [~, ~, trk.ukf] = ukf_dispatch('update', trk.ukf, innov);
 
             % 记录关联点迹和 NIS（归一化新息平方）
@@ -52,7 +56,7 @@ function trackList = Fun_UpdateTrackByAsscResult_Oracle(trackList, pointList, TP
             % 如果 NIS 过大，说明量测与预测不一致，可能存在异常
             trk.assoc_det = dp;
             trk.asscPointList{end+1} = dp;
-            trk.nis_history(end+1) = safe_nis(innov, trk.P_zz);
+            trk.nis_history(end+1) = trk.combined_nis_current;
 
             % 航迹质量管理和状态转移（含 Quality 增减、type 转换等）
             trk = fun_track_quality_management_and_info_completion_oracle(trk, dp, params, params, frame_id);

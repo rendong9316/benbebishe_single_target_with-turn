@@ -1,4 +1,8 @@
 function result = run_random_fade_fragment_fusion(config)
+
+clc;
+close all;
+
 % RUN_RANDOM_FADE_FRAGMENT_FUSION 可控多目标碎片实验。
 %
 % 【实验流程】
@@ -18,8 +22,19 @@ function result = run_random_fade_fragment_fusion(config)
 if nargin < 1, config = struct(); end  % 无配置时使用空结构体
 config = defaults(config);  % 填充默认值
 addpath(genpath('.'));  % 加入搜索路径
-inputs = prepare_oracle_tracking_inputs(config.scenario_name);  % 准备输入数据
+inputs = prepare_oracle_tracking_inputs( ...
+    config.scenario_name, config.param_overrides);  % 准备输入数据
 params = inputs.params;
+if isfinite(config.fragment_seed_r1)
+    params.fragmentation.seed_r1 = config.fragment_seed_r1;
+    inputs.params_r1.fragmentation.seed_r1 = config.fragment_seed_r1;
+end
+if isfinite(config.fragment_seed_r2)
+    params.fragmentation.seed_r2 = config.fragment_seed_r2;
+    inputs.params_r2.fragmentation.seed_r2 = config.fragment_seed_r2;
+end
+
+
 
 % ===== 步骤 1: 基线跟踪（无衰落） =====
 [base_r1, ~, base_snap_r1] = run_oracle_tracker_sequence( ...
@@ -44,7 +59,7 @@ fixture_status = first_failure(status_r1, status_r2);  % 检查是否有失败
 if ~strcmp(fixture_status, 'SUCCESS')  % 衰落方案构建失败
     result = fixture_failure_result(fixture_status, config, params, inputs, ...
         det_r1, det_r2, fragment_plan, fragment_validation);
-    print_summary(result);
+    if config.print_summary, print_summary(result); end
     return;
 end
 
@@ -109,7 +124,7 @@ result = struct('status', status, 'config', config, 'params', params, ...
     'grouping', grouping, 'fusion_results', fusion_results, ...
     'evaluation', evaluation);
 
-print_summary(result);  % 打印摘要
+if config.print_summary, print_summary(result); end
 if config.show_figures  % 可视化
     [track_a, track_b, track_c] = truth_tracks_for_legacy(inputs.truth_all);
     plot_scene_overview_multi(track_a, track_b, track_c, params, 'results');
@@ -216,7 +231,9 @@ end
 function config = defaults(config)
 % defaults 填充配置默认值：用户传入的字段覆盖默认值
 defaults_local = struct('scenario_name', 'multi_cross', ...
-    'show_figures', true, 'save_result', true, 'verbose', true);
+    'show_figures', true, 'save_result', true, 'verbose', true, ...
+    'print_summary', true, 'param_overrides', struct(), ...
+    'fragment_seed_r1', NaN, 'fragment_seed_r2', NaN);
 names = fieldnames(defaults_local);
 for i = 1:numel(names)
     if ~isfield(config, names{i}), config.(names{i}) = defaults_local.(names{i}); end

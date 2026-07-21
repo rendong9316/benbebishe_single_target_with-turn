@@ -75,6 +75,7 @@ function params = simulation_params_oracle()
     params.aircraft_waypoints = [127.5, 31.0, 0.0; 130.5, 33.0, 0.0];
     % 民航巡航速度约 Ma0.78 ≈ 230 m/s（高空标准大气条件下）
     params.aircraft_speed_ms  = 230.0;
+    params.truth_turn_rate_deg_per_sec = 1.0;
     % 注意：转弯/U 形场景由 build_truth_scenario 函数覆盖此参数
 
     % ==================== 量测噪声模型（异质传感器）====================

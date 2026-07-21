@@ -309,10 +309,13 @@ end
 function [traj, waypoints] = create_uturn_trajectory(params)
     speed_ms = params.aircraft_speed_ms;
     dt = params.dt_sec;
-    omega_deg = 1.0;  % 1°/s 标准转弯率
+    omega_deg = 1.0;
+    if isfield(params, 'truth_turn_rate_deg_per_sec')
+        omega_deg = params.truth_turn_rate_deg_per_sec;
+    end
     omega_rad = omega_deg * pi / 180.0;
     R_turn_m = speed_ms / omega_rad;  % 转弯半径 (m)
-    turn_dur_sec = 180.0;  % 180°转弯 = 180秒
+    turn_dur_sec = 180.0 / omega_deg;
     arc_length_m = pi * R_turn_m;  % 半圆弧长
 
     % ---- 几何参数（180°左转回头弯） ----
@@ -461,7 +464,10 @@ function [traj, waypoints] = create_gradual_turn_trajectory(params)
 
     speed_ms = params.aircraft_speed_ms;
     dt = params.dt_sec;
-    turn_rate_deg_per_sec = 1.0;  % 民航标准转弯率
+    turn_rate_deg_per_sec = 1.0;
+    if isfield(params, 'truth_turn_rate_deg_per_sec')
+        turn_rate_deg_per_sec = params.truth_turn_rate_deg_per_sec;
+    end
 
     % ---- 第1步：计算入向和出向方位角 ----
     bearing_in  = sphere_utils_azimuth(W1(1), W1(2), W2(1), W2(2));

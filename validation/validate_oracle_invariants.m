@@ -164,7 +164,8 @@ end
 % =========================================================================
 function validate_slim_track(trk, params, frame_id)
     % 定义期望的字段列表
-    expected = {'id','type','life','truth_idx','lat','lon','P_pred','ukf'};
+    expected = {'id','type','life','truth_idx','lat','lon','P_pred', ...
+        'updated','combined_nis','ukf'};
     % 验证字段名排序后与期望完全一致（顺序可能不同，但内容必须相同）
     assert(isequal(sort(fieldnames(trk)), sort(expected(:))), ...
         'Frame %d snapshot track is not lightweight', frame_id);

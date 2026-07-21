@@ -57,16 +57,24 @@ function scenario = build_truth_scenario(scenario_name, params)
             % 单目标直线场景：使用 params.aircraft_waypoints 定义的航路点
             labels = {'A'};
             trajs = {aircraft_trajectory_create(params.aircraft_waypoints, params.aircraft_speed_ms, params.dt_sec)};
-        case 'single_turn'
+        case {'single_turn', 'single_turn_left_short'}
             % 单目标拐弯场景：约120°拐角
             labels = {'A'};
             trajs = cell(1, 1);
             trajs{1} = aircraft_trajectory_create('gradual_turn', params);
-        case {'single_uturn', 'single_u_turn'}
+        case 'single_turn_right_short'
+            labels = {'A'};
+            trajs = {reverse_trajectory_local( ...
+                aircraft_trajectory_create('gradual_turn', params))};
+        case {'single_uturn', 'single_u_turn', 'single_turn_left_sustained'}
             % 单目标回头弯场景：180°左转半圆
             labels = {'A'};
             trajs = cell(1, 1);
             trajs{1} = aircraft_trajectory_create('uturn', params);
+        case 'single_turn_right_sustained'
+            labels = {'A'};
+            trajs = {reverse_trajectory_local( ...
+                aircraft_trajectory_create('uturn', params))};
         otherwise
             error('build_truth_scenario: unknown scenario "%s"', scenario_name);
     end
@@ -110,4 +118,27 @@ function scenario = build_truth_scenario(scenario_name, params)
     scenario.t1_grid = t1_grid;
     scenario.t2_grid = t2_grid;
     scenario.n_frames = n_frames;
+end
+
+
+function reversed = reverse_trajectory_local(traj)
+    reversed = traj;
+    count = numel(traj.segments);
+    segments = cell(count, 1);
+    elapsed = 0;
+    for i = 1:count
+        source = traj.segments{count - i + 1};
+        segments{i} = struct('start', source.end, 'end', source.start, ...
+            'lon_rate', -source.lon_rate, 'lat_rate', -source.lat_rate, ...
+            'dur', source.dur, 't_start', elapsed);
+        elapsed = elapsed + source.dur;
+    end
+    reversed.segments = segments;
+    reversed.duration_sec = elapsed;
+    reversed.n_segments = count;
+    reversed.time_array = 0:traj.dt_sec:elapsed;
+    reversed.n_steps = numel(reversed.time_array);
+    if isfield(traj, 'waypoints')
+        reversed.waypoints = flipud(traj.waypoints);
+    end
 end
