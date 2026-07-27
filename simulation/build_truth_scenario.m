@@ -75,6 +75,34 @@ function scenario = build_truth_scenario(scenario_name, params)
             labels = {'A'};
             trajs = {reverse_trajectory_local( ...
                 aircraft_trajectory_create('uturn', params))};
+        case {'right_rate_0p7', 'single_turn_right_rate_0p7'}
+            % 右转 180° 半圆: turn_rate=0.7 deg/s, 转弯持续约 180/0.7=257s
+            % 半径 R=v/ω≈18.8km。右转由 reverse(左转uturn) 实现。
+            % 用于复现 Phase 1 LHS 报告中的失败场景
+            labels = {'A'};
+            p_local = params;
+            p_local.truth_turn_rate_deg_per_sec = 0.7;
+            trajs = {reverse_trajectory_local( ...
+                aircraft_trajectory_create('uturn', p_local))};
+        case {'left_rate_0p7', 'single_turn_left_rate_0p7'}
+            % 左转 180° 半圆: turn_rate=0.7 deg/s, 转弯持续约 257s, R≈18.8km
+            labels = {'A'};
+            p_local = params;
+            p_local.truth_turn_rate_deg_per_sec = 0.7;
+            trajs = {aircraft_trajectory_create('uturn', p_local)};
+        case {'right_rate_1p3', 'single_turn_right_rate_1p3'}
+            % 右转 180° 半圆: turn_rate=1.3 deg/s, 转弯持续约 180/1.3=138s, R≈10.1km
+            labels = {'A'};
+            p_local = params;
+            p_local.truth_turn_rate_deg_per_sec = 1.3;
+            trajs = {reverse_trajectory_local( ...
+                aircraft_trajectory_create('uturn', p_local))};
+        case {'left_rate_1p3', 'single_turn_left_rate_1p3'}
+            % 左转 180° 半圆: turn_rate=1.3 deg/s, 转弯持续约 138s, R≈10.1km
+            labels = {'A'};
+            p_local = params;
+            p_local.truth_turn_rate_deg_per_sec = 1.3;
+            trajs = {aircraft_trajectory_create('uturn', p_local)};
         otherwise
             error('build_truth_scenario: unknown scenario "%s"', scenario_name);
     end

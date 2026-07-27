@@ -120,7 +120,22 @@ function imm = create_imm(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
         if isfield(params, 'imm_cv_dwell_time_sec')
             p_cv_ct = 1 - exp(-dt / params.imm_cv_dwell_time_sec);
         end
-        if isfield(params, 'imm_ct_dwell_time_sec')
+        % ---- 自适应转移概率方案一: mu_feedback动态调整 ----
+        % 保存base值到imm模板，供prepare_imm使用
+        if isfield(params, 'k_turnrate') && params.k_turnrate > 0
+            imm.adaptive_k = params.k_turnrate;
+            p_ct_cv_base = 1 - exp(-dt / params.imm_ct_dwell_time_sec);
+            imm.base_p_ct_cv = p_ct_cv_base;
+            % 左/右CT可分别配置（默认相同，非对称支持用不同值即可）
+            if isfield(params, 'k_turnrate_right')
+                % 右CT用不同的k值
+                p_ct_right_base = 1 - exp(-dt / (params.imm_ct_dwell_time_sec * params.right_ct_factor));
+                imm.base_p_ct_right = p_ct_right_base;
+            else
+                imm.base_p_ct_right = p_ct_cv_base;
+            end
+            p_ct_cv = p_ct_cv_base;
+        elseif isfield(params, 'imm_ct_dwell_time_sec')
             p_ct_cv = 1 - exp(-dt / params.imm_ct_dwell_time_sec);
         end
         validate_transition_probability(p_cv_ct, 'CV_to_CT');
@@ -251,16 +266,71 @@ function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
     ukf_ct_right = imm.ukf_ct_right;
 
     % ---- Step 1: 模型混合（Mixing） ----
-    % 计算混合概率 mu_mix(i,j) = P(model_i | model_j, prior)
-    % 这是 IMM 算法的核心：根据 Markov 转移概率和先验模型概率，
-    % 计算每个模型在给定当前模型条件下的后验混合概率
-    c_bar = Pi' * mu;  % 归一化常数：c_bar(j) = Σ_i Pi(i,j) * mu(i)
+    % ---- 自适应转移概率: 用local_Pi副本替代imm.Pi ----
+    % 多维反馈:
+    %   1. ct_mu: mu(CT-left)+mu(CT-right)/2 — 当前转弯置信度
+    %   2. ct_trend: mu_history最近N帧的平均CT占比 — 转弯持续性
+    %   3. mu_asymmetric: 左/右CT各自独立反馈（可选）
+    %
+    % 核心函数: adjusted_p = base_p * exp(-k_eff * (ct_mu + w_trend*ct_trend))
+    %   指数衰减比线性倒数响应更强，尤其在ct_mu>0.5时效果显著
+    local_Pi = Pi;
+    if isfield(imm, 'adaptive_k') && imm.adaptive_k > 0
+        ct_mu = (imm.mu(2) + imm.mu(3)) / 2;
+        base_p = imm.base_p_ct_cv;
+
+        % --- 方式A: 指数衰减函数（比1/(1+kx)更陡峭）---
+        mode_local = 'exp_decay';  % 可切换为'linear', 'exp_decay', 'sigmoid'
+        if isfield(imm.params, 'imm_adaptive_mode')
+            mode_local = imm.params.imm_adaptive_mode;
+        end
+
+        if strcmp(mode_local, 'exp_decay')
+            % 指数衰减: p = base_p * exp(-k * ct_mu^power)
+            power = get_param_imm(imm.params, 'power', 1.5);  % 曲率参数（已参数化），增大→拐点更靠后
+            kp = imm.adaptive_k;
+            adj_lev = base_p * exp(-kp * ct_mu^power);
+            if isfield(imm, 'base_p_ct_left')
+                adj_right = imm.base_p_ct_right * exp(-kp * imm.mu(3)^power);
+            else
+                adj_right = adj_lev;
+            end
+
+        elseif strcmp(mode_local, 'sigmoid')
+            % S型曲线: p = base_p / (1 + exp(k*((ct_mu^power) - threshold)))
+            % 方向：ct_mu 高（转弯）→ exp 大 → p 小（压低 CT→CV，让CT模型留住）
+            %       ct_mu 低（直线）→ exp 小 → p ≈ base_p（正常切换）
+            threshold = get_param_imm(imm.params, 'threshold', 0.4);  % 拐点（已参数化）
+            power = get_param_imm(imm.params, 'power', 1.0);          % ct_mu 幂指数（已参数化）
+            kp = imm.adaptive_k * 3;  % S型斜率，乘3放大
+            slev = base_p / (1 + exp(kp * ((ct_mu^power) - threshold)));  % 符号已修复：去负号
+            adj_lev = slev;
+            adj_right = slev;
+
+        else  % linear (原始)
+            adj_lev = base_p / (1 + imm.adaptive_k * ct_mu);
+            adj_right = adj_lev;
+        end
+
+        % 统一钳位
+        adj_lev = max(adj_lev, 0.05 * base_p);
+        adj_lev = min(adj_lev, base_p);
+        adj_right = max(adj_right, 0.05 * base_p);
+        adj_right = min(adj_right, base_p);
+
+        local_Pi(2,1) = adj_lev;   % CT-left -> CV
+        local_Pi(3,1) = adj_right; % CT-right -> CV
+        local_Pi(2,2) = 1 - adj_lev;
+        local_Pi(3,3) = 1 - adj_right;
+    end
+
+    c_bar = local_Pi' * mu;  % 归一化常数：c_bar(j) = Σ_i Pi(i,j) * mu(i)
     mu_mix = zeros(M, M);
     for i = 1:M
         for j = 1:M
             % mu_mix(i,j) = P(model_i 来自 model_j)
             % 注意：分母用 max(c_bar(j), 1e-12) 防止除零
-            mu_mix(i, j) = Pi(i, j) * mu(i) / max(c_bar(j), 1e-12);
+            mu_mix(i, j) = local_Pi(i, j) * mu(i) / max(c_bar(j), 1e-12);
         end
     end
 

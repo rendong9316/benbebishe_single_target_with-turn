@@ -1,0 +1,3534 @@
+========================================
+MC: 真大转弯场景 (180° 半圆)
+Seeds: [1  2  3]
+Scenarios: 4, Configs: 4
+Total runs: 48
+========================================
+
+>>> Seed 1 (1/3)
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=121帧, 平均距离=7.2km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.5km, mean=6.1km, RMSE=7.6km, 95%=14.9km
+  Overall: n=124, median=4.5km, mean=6.1km, RMSE=7.6km, 95%=14.9km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=3.1km, mean=4.8km, RMSE=7.3km, 95%=15.1km
+  Overall: n=121, median=3.1km, mean=4.8km, RMSE=7.3km, 95%=15.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.0      4.3      5.9
+  BC            124      3.0      4.3      5.9
+  CI            124      3.7      5.1      6.9
+  FCI           124      3.3      4.6      6.5
+  R1_only       124      4.5      6.1      7.6
+  R2_only       121      3.0      4.5      6.7
+
+Done.
+  right_rate_0p7     | Default        | RMSE=7.647
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=59帧, 平均距离=5.7km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.2km, mean=5.4km, RMSE=6.8km, 95%=14.3km
+  Overall: n=124, median=4.2km, mean=5.4km, RMSE=6.8km, 95%=14.3km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=3.3km, mean=4.8km, RMSE=8.5km, 95%=9.6km
+  Overall: n=121, median=3.3km, mean=4.8km, RMSE=8.5km, 95%=9.6km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.0      4.1      5.9
+  BC            124      3.0      4.1      5.9
+  CI            124      3.5      4.6      6.3
+  FCI           124      3.2      4.3      5.9
+  R1_only       124      4.2      5.4      6.8
+  R2_only       121      3.2      4.6      8.1
+
+Done.
+  right_rate_0p7     | Cfg51          | RMSE=6.848
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=121帧, 平均距离=8.4km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.4km, mean=6.0km, RMSE=7.9km, 95%=14.1km
+  Overall: n=124, median=4.4km, mean=6.0km, RMSE=7.9km, 95%=14.1km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=3.2km, mean=5.9km, RMSE=8.9km, 95%=20.9km
+  Overall: n=121, median=3.2km, mean=5.9km, RMSE=8.9km, 95%=20.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.8      3.9      6.0
+  BC            124      2.8      3.9      6.0
+  CI            124      3.6      4.9      7.2
+  FCI           124      3.0      4.1      6.4
+  R1_only       124      4.4      6.0      7.9
+  R2_only       121      3.1      5.6      8.3
+
+Done.
+  right_rate_0p7     | SigOnly_k3     | RMSE=7.915
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=58帧, 平均距离=5.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.3km, mean=6.0km, RMSE=8.1km, 95%=15.3km
+  Overall: n=124, median=4.3km, mean=6.0km, RMSE=8.1km, 95%=15.3km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=3.2km, mean=5.1km, RMSE=9.0km, 95%=13.7km
+  Overall: n=121, median=3.2km, mean=5.1km, RMSE=9.0km, 95%=13.7km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.9      4.3      6.8
+  BC            124      2.9      4.3      6.8
+  CI            124      3.4      4.9      7.3
+  FCI           124      3.2      4.5      6.9
+  R1_only       124      4.3      6.0      8.1
+  R2_only       121      3.1      4.9      8.7
+
+Done.
+  right_rate_0p7     | Cfg51_Sig_k3   | RMSE=8.056
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=121帧, 平均距离=6.9km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.4km, mean=5.3km, RMSE=6.2km, 95%=10.5km
+  Overall: n=124, median=4.4km, mean=5.3km, RMSE=6.2km, 95%=10.5km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=2.5km, mean=3.4km, RMSE=4.8km, 95%=8.1km
+  Overall: n=121, median=2.5km, mean=3.4km, RMSE=4.8km, 95%=8.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.0      3.4      4.2
+  BC            124      3.0      3.4      4.2
+  CI            124      3.6      4.2      5.2
+  FCI           124      3.2      3.8      4.5
+  R1_only       124      4.4      5.3      6.2
+  R2_only       121      2.5      3.3      4.4
+
+Done.
+  left_rate_0p7      | Default        | RMSE=6.199
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=121帧, 平均距离=7.0km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.2km, mean=5.3km, RMSE=6.5km, 95%=12.3km
+  Overall: n=124, median=4.2km, mean=5.3km, RMSE=6.5km, 95%=12.3km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=3.6km, mean=4.0km, RMSE=5.9km, 95%=7.2km
+  Overall: n=121, median=3.6km, mean=4.0km, RMSE=5.9km, 95%=7.2km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.9      3.6      4.5
+  BC            124      2.9      3.6      4.5
+  CI            124      3.6      4.2      5.4
+  FCI           124      3.2      3.8      4.7
+  R1_only       124      4.2      5.3      6.5
+  R2_only       121      3.5      3.9      5.5
+
+Done.
+  left_rate_0p7      | Cfg51          | RMSE=6.519
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=64帧, 平均距离=6.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.1km, mean=5.1km, RMSE=6.7km, 95%=11.9km
+  Overall: n=124, median=4.1km, mean=5.1km, RMSE=6.7km, 95%=11.9km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=2.9km, mean=5.1km, RMSE=9.7km, 95%=21.5km
+  Overall: n=121, median=2.9km, mean=5.1km, RMSE=9.7km, 95%=21.5km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.8      4.0      6.5
+  BC            124      2.8      4.0      6.5
+  CI            124      2.9      4.1      6.6
+  FCI           124      3.1      4.2      6.7
+  R1_only       124      4.1      5.1      6.7
+  R2_only       121      2.8      4.9      9.5
+
+Done.
+  left_rate_0p7      | SigOnly_k3     | RMSE=6.674
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=270, 真实=72, 虚警=198, 平均每帧=2.14
+R2 点迹: 总数=265, 真实=79, 虚警=186, 平均每帧=2.10
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=121帧, 平均距离=6.4km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.3km, mean=6.0km, RMSE=8.3km, 95%=13.0km
+  Overall: n=124, median=4.3km, mean=6.0km, RMSE=8.3km, 95%=13.0km
+R2 单站跟踪 RMSE:
+  目标1: n=121, median=2.5km, mean=5.0km, RMSE=9.8km, 95%=21.1km
+  Overall: n=121, median=2.5km, mean=5.0km, RMSE=9.8km, 95%=21.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.0      4.5      8.2
+  BC            124      3.0      4.5      8.2
+  CI            124      3.4      5.0      8.5
+  FCI           124      3.3      4.9      8.5
+  R1_only       124      4.3      6.0      8.3
+  R2_only       121      2.6      4.9      9.6
+
+Done.
+  left_rate_0p7      | Cfg51_Sig_k3   | RMSE=8.303
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=7.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.6km, mean=5.8km, RMSE=6.8km, 95%=13.3km
+  Overall: n=120, median=4.6km, mean=5.8km, RMSE=6.8km, 95%=13.3km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=3.2km, mean=3.5km, RMSE=4.3km, 95%=7.3km
+  Overall: n=117, median=3.2km, mean=3.5km, RMSE=4.3km, 95%=7.3km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      3.2      3.8      4.6
+  BC            120      3.2      3.8      4.6
+  CI            120      3.7      4.5      5.5
+  FCI           120      3.5      4.2      5.1
+  R1_only       120      4.6      5.8      6.8
+  R2_only       117      3.2      3.5      4.1
+
+Done.
+  right_rate_1p3     | Default        | RMSE=6.783
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=6.5km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.4km, mean=5.6km, RMSE=6.6km, 95%=12.7km
+  Overall: n=120, median=4.4km, mean=5.6km, RMSE=6.6km, 95%=12.7km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=3.2km, mean=3.7km, RMSE=4.3km, 95%=7.3km
+  Overall: n=117, median=3.2km, mean=3.7km, RMSE=4.3km, 95%=7.3km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      3.1      3.9      4.6
+  BC            120      3.1      3.9      4.6
+  CI            120      3.5      4.5      5.4
+  FCI           120      3.5      4.2      5.1
+  R1_only       120      4.4      5.6      6.6
+  R2_only       117      3.2      3.6      4.1
+
+Done.
+  right_rate_1p3     | Cfg51          | RMSE=6.565
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=56帧, 平均距离=6.0km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.3km, mean=5.1km, RMSE=5.9km, 95%=10.2km
+  Overall: n=120, median=4.3km, mean=5.1km, RMSE=5.9km, 95%=10.2km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=2.9km, mean=3.7km, RMSE=5.2km, 95%=7.4km
+  Overall: n=117, median=2.9km, mean=3.7km, RMSE=5.2km, 95%=7.4km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      3.0      3.4      4.0
+  BC            120      3.0      3.4      4.0
+  CI            120      3.5      4.0      4.7
+  FCI           120      3.2      3.6      4.3
+  R1_only       120      4.3      5.1      5.9
+  R2_only       117      2.9      3.6      5.0
+
+Done.
+  right_rate_1p3     | SigOnly_k3     | RMSE=5.861
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=6.7km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.2km, mean=4.9km, RMSE=5.7km, 95%=10.3km
+  Overall: n=120, median=4.2km, mean=4.9km, RMSE=5.7km, 95%=10.3km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=3.1km, mean=4.0km, RMSE=5.4km, 95%=8.9km
+  Overall: n=117, median=3.1km, mean=4.0km, RMSE=5.4km, 95%=8.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.9      3.4      4.1
+  BC            120      2.9      3.4      4.1
+  CI            120      3.2      3.8      4.5
+  FCI           120      3.2      3.5      4.2
+  R1_only       120      4.2      4.9      5.7
+  R2_only       117      3.1      3.9      5.2
+
+Done.
+  right_rate_1p3     | Cfg51_Sig_k3   | RMSE=5.658
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=6.5km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.1km, mean=4.7km, RMSE=5.5km, 95%=9.1km
+  Overall: n=120, median=4.1km, mean=4.7km, RMSE=5.5km, 95%=9.1km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=3.0km, mean=3.4km, RMSE=4.3km, 95%=7.4km
+  Overall: n=117, median=3.0km, mean=3.4km, RMSE=4.3km, 95%=7.4km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.8      3.0      3.5
+  BC            120      2.8      3.0      3.5
+  CI            120      3.5      3.7      4.4
+  FCI           120      3.2      3.4      4.0
+  R1_only       120      4.1      4.7      5.5
+  R2_only       117      3.0      3.3      4.1
+
+Done.
+  left_rate_1p3      | Default        | RMSE=5.471
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=6.6km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.1km, mean=4.5km, RMSE=5.2km, 95%=8.5km
+  Overall: n=120, median=4.1km, mean=4.5km, RMSE=5.2km, 95%=8.5km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=2.6km, mean=3.5km, RMSE=4.5km, 95%=8.7km
+  Overall: n=117, median=2.6km, mean=3.5km, RMSE=4.5km, 95%=8.7km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.6      2.8      3.3
+  BC            120      2.6      2.8      3.3
+  CI            120      3.1      3.6      4.2
+  FCI           120      2.9      3.2      3.7
+  R1_only       120      4.1      4.5      5.2
+  R2_only       117      2.6      3.3      4.3
+
+Done.
+  left_rate_1p3      | Cfg51          | RMSE=5.203
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=6.7km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.0km, mean=4.7km, RMSE=5.4km, 95%=9.0km
+  Overall: n=120, median=4.0km, mean=4.7km, RMSE=5.4km, 95%=9.0km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=2.8km, mean=3.6km, RMSE=5.3km, 95%=7.4km
+  Overall: n=117, median=2.8km, mean=3.6km, RMSE=5.3km, 95%=7.4km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.8      2.9      3.5
+  BC            120      2.8      2.9      3.5
+  CI            120      3.1      3.6      4.3
+  FCI           120      3.1      3.3      3.9
+  R1_only       120      4.0      4.7      5.4
+  R2_only       117      2.9      3.4      4.8
+
+Done.
+  left_rate_1p3      | SigOnly_k3     | RMSE=5.440
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=19496m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15526m, da=3.53deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=262, 真实=70, 虚警=192, 平均每帧=2.15
+R2 点迹: 总数=254, 真实=77, 虚警=177, 平均每帧=2.08
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=117帧, 平均距离=6.5km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.9km, mean=4.7km, RMSE=5.9km, 95%=10.1km
+  Overall: n=120, median=3.9km, mean=4.7km, RMSE=5.9km, 95%=10.1km
+R2 单站跟踪 RMSE:
+  目标1: n=117, median=2.7km, mean=3.8km, RMSE=5.4km, 95%=10.6km
+  Overall: n=117, median=2.7km, mean=3.8km, RMSE=5.4km, 95%=10.6km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.5      2.7      3.4
+  BC            120      2.5      2.7      3.4
+  CI            120      2.9      3.5      4.5
+  FCI           120      2.8      3.1      3.9
+  R1_only       120      3.9      4.7      5.9
+  R2_only       117      2.6      3.6      5.0
+
+Done.
+  left_rate_1p3      | Cfg51_Sig_k3   | RMSE=5.870
+  [Seed 1 done, elapsed 262s]
+
+>>> Seed 2 (2/3)
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=55帧, 平均距离=7.9km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.0km, mean=5.0km, RMSE=5.9km, 95%=11.8km
+  Overall: n=123, median=4.0km, mean=5.0km, RMSE=5.9km, 95%=11.8km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=5.9km, mean=7.6km, RMSE=10.2km, 95%=18.5km
+  Overall: n=118, median=5.9km, mean=7.6km, RMSE=10.2km, 95%=18.5km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      3.1      3.9      5.0
+  BC            123      3.1      3.9      5.0
+  CI            123      3.7      4.7      5.9
+  FCI           123      3.4      4.0      5.1
+  R1_only       123      4.0      5.0      5.9
+  R2_only       118      5.8      7.2      9.6
+
+Done.
+  right_rate_0p7     | Default        | RMSE=5.893
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=55帧, 平均距离=7.9km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.0km, mean=5.0km, RMSE=6.2km, 95%=13.7km
+  Overall: n=123, median=4.0km, mean=5.0km, RMSE=6.2km, 95%=13.7km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=5.8km, mean=7.0km, RMSE=9.5km, 95%=15.7km
+  Overall: n=118, median=5.8km, mean=7.0km, RMSE=9.5km, 95%=15.7km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      3.0      3.8      5.1
+  BC            123      3.0      3.8      5.1
+  CI            123      3.9      4.9      6.7
+  FCI           123      3.2      4.2      6.1
+  R1_only       123      4.0      5.0      6.2
+  R2_only       118      5.6      6.6      8.8
+
+Done.
+  right_rate_0p7     | Cfg51          | RMSE=6.199
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=56帧, 平均距离=7.7km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.1km, mean=5.1km, RMSE=7.2km, 95%=11.3km
+  Overall: n=123, median=4.1km, mean=5.1km, RMSE=7.2km, 95%=11.3km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.8km, mean=5.1km, RMSE=6.2km, 95%=10.8km
+  Overall: n=118, median=4.8km, mean=5.1km, RMSE=6.2km, 95%=10.8km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      3.0      4.0      5.8
+  BC            123      3.0      4.0      5.8
+  CI            123      3.5      4.7      6.8
+  FCI           123      3.3      4.3      6.3
+  R1_only       123      4.1      5.1      7.2
+  R2_only       118      4.8      4.9      5.8
+
+Done.
+  right_rate_0p7     | SigOnly_k3     | RMSE=7.233
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=8.3km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.0km, mean=5.1km, RMSE=7.5km, 95%=15.3km
+  Overall: n=123, median=4.0km, mean=5.1km, RMSE=7.5km, 95%=15.3km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=5.7km, mean=7.4km, RMSE=11.0km, 95%=15.9km
+  Overall: n=118, median=5.7km, mean=7.4km, RMSE=11.0km, 95%=15.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      2.8      4.1      6.3
+  BC            123      2.8      4.1      6.3
+  CI            123      3.6      4.8      7.2
+  FCI           123      3.0      4.2      6.3
+  R1_only       123      4.0      5.1      7.5
+  R2_only       118      5.5      7.0     10.5
+
+Done.
+  right_rate_0p7     | Cfg51_Sig_k3   | RMSE=7.547
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=60帧, 平均距离=8.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.3km, mean=5.7km, RMSE=9.0km, 95%=14.3km
+  Overall: n=123, median=4.3km, mean=5.7km, RMSE=9.0km, 95%=14.3km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=5.3km, mean=5.6km, RMSE=7.3km, 95%=11.2km
+  Overall: n=118, median=5.3km, mean=5.6km, RMSE=7.3km, 95%=11.2km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      3.0      4.2      6.5
+  BC            123      3.0      4.2      6.5
+  CI            123      3.8      5.1      8.4
+  FCI           123      3.3      4.4      6.8
+  R1_only       123      4.3      5.7      9.0
+  R2_only       118      5.3      5.4      7.0
+
+Done.
+  left_rate_0p7      | Default        | RMSE=8.999
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=7.8km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.3km, mean=5.4km, RMSE=7.3km, 95%=12.2km
+  Overall: n=123, median=4.3km, mean=5.4km, RMSE=7.3km, 95%=12.2km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=5.2km, mean=6.7km, RMSE=9.1km, 95%=16.8km
+  Overall: n=118, median=5.2km, mean=6.7km, RMSE=9.1km, 95%=16.8km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      2.8      4.1      5.9
+  BC            123      2.8      4.1      5.9
+  CI            123      3.9      5.0      6.8
+  FCI           123      3.3      4.4      6.2
+  R1_only       123      4.3      5.4      7.3
+  R2_only       118      4.9      6.5      8.9
+
+Done.
+  left_rate_0p7      | Cfg51          | RMSE=7.343
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=7.2km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.2km, mean=5.2km, RMSE=7.3km, 95%=12.0km
+  Overall: n=123, median=4.2km, mean=5.2km, RMSE=7.3km, 95%=12.0km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=5.4km, mean=6.2km, RMSE=7.8km, 95%=15.5km
+  Overall: n=118, median=5.4km, mean=6.2km, RMSE=7.8km, 95%=15.5km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      2.8      4.1      5.8
+  BC            123      2.8      4.1      5.8
+  CI            123      3.6      4.7      6.3
+  FCI           123      3.2      4.2      5.9
+  R1_only       123      4.2      5.2      7.3
+  R2_only       118      5.4      6.0      7.3
+
+Done.
+  left_rate_0p7      | SigOnly_k3     | RMSE=7.297
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=275, 真实=76, 虚警=199, 平均每帧=2.18
+R2 点迹: 总数=288, 真实=84, 虚警=204, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=61帧, 平均距离=8.2km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=123, median=4.1km, mean=5.0km, RMSE=6.8km, 95%=10.1km
+  Overall: n=123, median=4.1km, mean=5.0km, RMSE=6.8km, 95%=10.1km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.7km, mean=5.5km, RMSE=6.9km, 95%=12.4km
+  Overall: n=118, median=4.7km, mean=5.5km, RMSE=6.9km, 95%=12.4km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           123      2.6      3.7      5.3
+  BC            123      2.6      3.7      5.3
+  CI            123      3.6      4.6      6.5
+  FCI           123      3.1      4.0      5.7
+  R1_only       123      4.1      5.0      6.8
+  R2_only       118      4.7      5.3      6.4
+
+Done.
+  left_rate_0p7      | Cfg51_Sig_k3   | RMSE=6.800
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=8.2km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=4.1km, mean=5.1km, RMSE=6.3km, 95%=12.0km
+  Overall: n=119, median=4.1km, mean=5.1km, RMSE=6.3km, 95%=12.0km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=5.0km, mean=5.4km, RMSE=7.0km, 95%=11.0km
+  Overall: n=114, median=5.0km, mean=5.4km, RMSE=7.0km, 95%=11.0km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.9      3.5      4.3
+  BC            119      2.9      3.5      4.2
+  CI            119      3.9      4.7      6.2
+  FCI           119      3.4      3.8      4.8
+  R1_only       119      4.1      5.1      6.3
+  R2_only       114      4.8      5.1      6.5
+
+Done.
+  right_rate_1p3     | Default        | RMSE=6.300
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=7.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=4.0km, mean=4.7km, RMSE=5.8km, 95%=12.4km
+  Overall: n=119, median=4.0km, mean=4.7km, RMSE=5.8km, 95%=12.4km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=4.7km, mean=5.3km, RMSE=6.9km, 95%=11.5km
+  Overall: n=114, median=4.7km, mean=5.3km, RMSE=6.9km, 95%=11.5km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.8      3.5      4.3
+  BC            119      2.8      3.5      4.3
+  CI            119      3.4      4.0      5.0
+  FCI           119      3.3      3.6      4.4
+  R1_only       119      4.0      4.7      5.8
+  R2_only       114      4.5      5.0      6.4
+
+Done.
+  right_rate_1p3     | Cfg51          | RMSE=5.838
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=6.9km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=4.1km, mean=4.8km, RMSE=6.1km, 95%=13.0km
+  Overall: n=119, median=4.1km, mean=4.8km, RMSE=6.1km, 95%=13.0km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=5.6km, mean=5.6km, RMSE=6.9km, 95%=12.3km
+  Overall: n=114, median=5.6km, mean=5.6km, RMSE=6.9km, 95%=12.3km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.8      3.7      5.0
+  BC            119      2.8      3.7      5.0
+  CI            119      3.5      4.4      5.9
+  FCI           119      3.1      3.9      5.3
+  R1_only       119      4.1      4.8      6.1
+  R2_only       114      5.3      5.4      6.5
+
+Done.
+  right_rate_1p3     | SigOnly_k3     | RMSE=6.145
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=7.6km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=4.2km, mean=4.9km, RMSE=6.1km, 95%=11.5km
+  Overall: n=119, median=4.2km, mean=4.9km, RMSE=6.1km, 95%=11.5km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=4.7km, mean=5.1km, RMSE=6.7km, 95%=11.0km
+  Overall: n=114, median=4.7km, mean=5.1km, RMSE=6.7km, 95%=11.0km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.7      3.5      4.4
+  BC            119      2.7      3.5      4.4
+  CI            119      3.9      4.3      5.5
+  FCI           119      3.3      3.8      4.6
+  R1_only       119      4.2      4.9      6.1
+  R2_only       114      4.5      4.9      6.2
+
+Done.
+  right_rate_1p3     | Cfg51_Sig_k3   | RMSE=6.077
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=7.4km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=4.0km, mean=4.8km, RMSE=6.3km, 95%=12.6km
+  Overall: n=119, median=4.0km, mean=4.8km, RMSE=6.3km, 95%=12.6km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=4.7km, mean=5.1km, RMSE=6.0km, 95%=11.4km
+  Overall: n=114, median=4.7km, mean=5.1km, RMSE=6.0km, 95%=11.4km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.9      3.4      4.1
+  BC            119      2.9      3.4      4.1
+  CI            119      3.5      4.2      5.3
+  FCI           119      3.2      3.6      4.4
+  R1_only       119      4.0      4.8      6.3
+  R2_only       114      4.4      4.9      5.8
+
+Done.
+  left_rate_1p3      | Default        | RMSE=6.294
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=7.6km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=3.9km, mean=4.6km, RMSE=6.1km, 95%=12.2km
+  Overall: n=119, median=3.9km, mean=4.6km, RMSE=6.1km, 95%=12.2km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=5.1km, mean=5.7km, RMSE=6.9km, 95%=13.2km
+  Overall: n=114, median=5.1km, mean=5.7km, RMSE=6.9km, 95%=13.2km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.4      3.5      4.4
+  BC            119      2.4      3.5      4.4
+  CI            119      3.3      4.4      5.8
+  FCI           119      2.9      3.7      4.8
+  R1_only       119      3.9      4.6      6.1
+  R2_only       114      5.0      5.6      6.7
+
+Done.
+  left_rate_1p3      | Cfg51          | RMSE=6.068
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=8.3km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=4.0km, mean=5.2km, RMSE=7.3km, 95%=15.1km
+  Overall: n=119, median=4.0km, mean=5.2km, RMSE=7.3km, 95%=15.1km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=5.5km, mean=5.8km, RMSE=7.0km, 95%=13.0km
+  Overall: n=114, median=5.5km, mean=5.8km, RMSE=7.0km, 95%=13.0km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.8      3.5      4.4
+  BC            119      2.8      3.5      4.4
+  CI            119      3.5      4.4      5.7
+  FCI           119      3.1      3.6      4.5
+  R1_only       119      4.0      5.2      7.3
+  R2_only       114      5.5      5.7      6.7
+
+Done.
+  left_rate_1p3      | SigOnly_k3     | RMSE=7.257
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20025m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16305m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=268, 真实=74, 虚警=194, 平均每帧=2.20
+R2 点迹: 总数=279, 真实=81, 虚警=198, 平均每帧=2.29
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=114帧, 平均距离=8.2km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=119, median=3.9km, mean=4.7km, RMSE=6.3km, 95%=13.0km
+  Overall: n=119, median=3.9km, mean=4.7km, RMSE=6.3km, 95%=13.0km
+R2 单站跟踪 RMSE:
+  目标1: n=114, median=5.2km, mean=6.2km, RMSE=7.6km, 95%=14.9km
+  Overall: n=114, median=5.2km, mean=6.2km, RMSE=7.6km, 95%=14.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           119      2.3      3.4      4.3
+  BC            119      2.3      3.4      4.3
+  CI            119      3.3      4.3      5.5
+  FCI           119      2.9      3.5      4.5
+  R1_only       119      3.9      4.7      6.3
+  R2_only       114      5.0      6.0      7.3
+
+Done.
+  left_rate_1p3      | Cfg51_Sig_k3   | RMSE=6.296
+  [Seed 2 done, elapsed 422s]
+
+>>> Seed 3 (3/3)
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=6.8km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=3.7km, mean=3.9km, RMSE=4.5km, 95%=7.5km
+  Overall: n=124, median=3.7km, mean=3.9km, RMSE=4.5km, 95%=7.5km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.6km, mean=5.5km, RMSE=6.9km, 95%=11.4km
+  Overall: n=122, median=4.6km, mean=5.5km, RMSE=6.9km, 95%=11.4km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.6      3.1      3.7
+  BC            124      2.6      3.1      3.7
+  CI            124      3.6      3.6      4.1
+  FCI           124      3.2      3.4      3.9
+  R1_only       124      3.7      3.9      4.5
+  R2_only       122      4.2      5.3      6.6
+
+Done.
+  right_rate_0p7     | Default        | RMSE=4.489
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=6.5km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=3.5km, mean=3.8km, RMSE=4.3km, 95%=7.4km
+  Overall: n=124, median=3.5km, mean=3.8km, RMSE=4.3km, 95%=7.4km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.7km, mean=5.3km, RMSE=6.3km, 95%=11.0km
+  Overall: n=122, median=4.7km, mean=5.3km, RMSE=6.3km, 95%=11.0km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.7      3.0      3.5
+  BC            124      2.7      3.0      3.5
+  CI            124      3.3      3.6      4.1
+  FCI           124      3.3      3.4      3.7
+  R1_only       124      3.5      3.8      4.3
+  R2_only       122      4.6      5.1      6.1
+
+Done.
+  right_rate_0p7     | Cfg51          | RMSE=4.349
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=7.0km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=3.7km, mean=3.9km, RMSE=4.6km, 95%=8.0km
+  Overall: n=124, median=3.7km, mean=3.9km, RMSE=4.6km, 95%=8.0km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.7km, mean=5.8km, RMSE=7.3km, 95%=11.9km
+  Overall: n=122, median=4.7km, mean=5.8km, RMSE=7.3km, 95%=11.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.6      3.2      3.8
+  BC            124      2.6      3.2      3.8
+  CI            124      3.5      3.7      4.2
+  FCI           124      3.3      3.4      3.9
+  R1_only       124      3.7      3.9      4.6
+  R2_only       122      4.4      5.5      6.9
+
+Done.
+  right_rate_0p7     | SigOnly_k3     | RMSE=4.565
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: right_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.27E, 31.92N), 终点=(127.04E, 31.58N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=61帧, 平均距离=7.7km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=3.4km, mean=5.0km, RMSE=8.6km, 95%=10.4km
+  Overall: n=124, median=3.4km, mean=5.0km, RMSE=8.6km, 95%=10.4km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.9km, mean=5.6km, RMSE=6.6km, 95%=10.7km
+  Overall: n=122, median=4.9km, mean=5.6km, RMSE=6.6km, 95%=10.7km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.0      4.1      7.1
+  BC            124      3.0      4.1      7.2
+  CI            124      3.4      4.8      8.2
+  FCI           124      3.3      4.5      7.8
+  R1_only       124      3.4      5.0      8.6
+  R2_only       122      4.8      5.5      6.4
+
+Done.
+  right_rate_0p7     | Cfg51_Sig_k3   | RMSE=8.621
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=7.3km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.7km, mean=5.4km, RMSE=7.8km, 95%=11.9km
+  Overall: n=124, median=4.7km, mean=5.4km, RMSE=7.8km, 95%=11.9km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.3km, mean=4.9km, RMSE=6.0km, 95%=11.0km
+  Overall: n=122, median=4.3km, mean=4.9km, RMSE=6.0km, 95%=11.0km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.1      4.1      6.3
+  BC            124      3.1      4.1      6.3
+  CI            124      3.9      5.0      7.2
+  FCI           124      3.7      4.7      7.0
+  R1_only       124      4.7      5.4      7.8
+  R2_only       122      4.1      4.7      5.6
+
+Done.
+  left_rate_0p7      | Default        | RMSE=7.757
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=7.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.1km, mean=5.1km, RMSE=7.4km, 95%=10.8km
+  Overall: n=124, median=4.1km, mean=5.1km, RMSE=7.4km, 95%=10.8km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.6km, mean=5.0km, RMSE=6.0km, 95%=11.1km
+  Overall: n=122, median=4.6km, mean=5.0km, RMSE=6.0km, 95%=11.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.9      3.7      5.6
+  BC            124      2.9      3.7      5.6
+  CI            124      3.7      4.6      6.6
+  FCI           124      3.6      4.3      6.2
+  R1_only       124      4.1      5.1      7.4
+  R2_only       122      4.5      4.7      5.6
+
+Done.
+  left_rate_0p7      | Cfg51          | RMSE=7.429
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=7.4km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=4.5km, mean=5.2km, RMSE=7.1km, 95%=11.3km
+  Overall: n=124, median=4.5km, mean=5.2km, RMSE=7.1km, 95%=11.3km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.2km, mean=5.0km, RMSE=6.1km, 95%=11.1km
+  Overall: n=122, median=4.2km, mean=5.0km, RMSE=6.1km, 95%=11.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      3.0      3.6      4.9
+  BC            124      3.0      3.6      4.9
+  CI            124      3.9      4.6      6.0
+  FCI           124      3.7      4.2      5.4
+  R1_only       124      4.5      5.2      7.1
+  R2_only       122      4.1      4.8      5.7
+
+Done.
+  left_rate_0p7      | SigOnly_k3     | RMSE=7.142
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.58N) 入弯点: (131.44E, 31.58N)
+    终点:  (127.27E, 31.92N) 出弯点: (131.44E, 31.92N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 0.7度/s
+    转弯半径: 18.8 km, 转弯时长: 257 s, 弧长: 59.1 km
+    入弯直线: 418 km, 出弯直线: 393 km, 总航程: 870 km, 总时长: 3783 s
+场景: left_rate_0p7 | 目标数=1 | 帧数=126 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=127, 时长=3780s, 起点=(127.03E, 31.58N), 终点=(127.28E, 31.92N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=288, 真实=81, 虚警=207, 平均每帧=2.29
+R2 点迹: 总数=256, 真实=64, 虚警=192, 平均每帧=2.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+  frame   1/126: active=0, total=0
+  frame  10/126: active=1, total=1
+  frame  20/126: active=1, total=1
+  frame  30/126: active=1, total=1
+  frame  40/126: active=1, total=1
+  frame  50/126: active=1, total=1
+  frame  60/126: active=1, total=1
+  frame  70/126: active=1, total=1
+  frame  80/126: active=1, total=1
+  frame  90/126: active=1, total=1
+  frame 100/126: active=1, total=1
+  frame 110/126: active=1, total=1
+  frame 120/126: active=1, total=1
+  frame 126/126: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=122帧, 平均距离=6.6km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=124, median=3.5km, mean=4.5km, RMSE=7.1km, 95%=9.7km
+  Overall: n=124, median=3.5km, mean=4.5km, RMSE=7.1km, 95%=9.7km
+R2 单站跟踪 RMSE:
+  目标1: n=122, median=4.6km, mean=4.9km, RMSE=6.0km, 95%=11.1km
+  Overall: n=122, median=4.6km, mean=4.9km, RMSE=6.0km, 95%=11.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           124      2.5      3.2      4.6
+  BC            124      2.5      3.2      4.6
+  CI            124      3.1      3.9      5.4
+  FCI           124      3.2      3.6      4.7
+  R1_only       124      3.5      4.5      7.1
+  R2_only       122      4.6      4.7      5.7
+
+Done.
+  left_rate_0p7      | Cfg51_Sig_k3   | RMSE=7.083
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=6.8km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.6km, mean=3.9km, RMSE=4.4km, 95%=7.7km
+  Overall: n=120, median=3.6km, mean=3.9km, RMSE=4.4km, 95%=7.7km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.6km, mean=5.1km, RMSE=5.8km, 95%=9.8km
+  Overall: n=118, median=4.6km, mean=5.1km, RMSE=5.8km, 95%=9.8km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.7      2.9      3.2
+  BC            120      2.8      2.9      3.2
+  CI            120      3.5      3.6      4.0
+  FCI           120      3.2      3.3      3.6
+  R1_only       120      3.6      3.9      4.4
+  R2_only       118      4.5      4.9      5.6
+
+Done.
+  right_rate_1p3     | Default        | RMSE=4.363
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=6.5km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.4km, mean=3.7km, RMSE=4.1km, 95%=6.9km
+  Overall: n=120, median=3.4km, mean=3.7km, RMSE=4.1km, 95%=6.9km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.8km, mean=5.1km, RMSE=5.8km, 95%=9.9km
+  Overall: n=118, median=4.8km, mean=5.1km, RMSE=5.8km, 95%=9.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.8      3.0      3.3
+  BC            120      2.9      3.0      3.3
+  CI            120      3.2      3.5      3.9
+  FCI           120      3.2      3.3      3.6
+  R1_only       120      3.4      3.7      4.1
+  R2_only       118      4.6      5.0      5.7
+
+Done.
+  right_rate_1p3     | Cfg51          | RMSE=4.120
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=7.1km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=4.1km, mean=4.2km, RMSE=4.9km, 95%=7.7km
+  Overall: n=120, median=4.1km, mean=4.2km, RMSE=4.9km, 95%=7.7km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.9km, mean=5.3km, RMSE=6.0km, 95%=9.9km
+  Overall: n=118, median=4.9km, mean=5.3km, RMSE=6.0km, 95%=9.9km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      3.4      3.4      3.9
+  BC            120      3.4      3.4      3.9
+  CI            120      3.9      4.1      4.6
+  FCI           120      3.8      3.8      4.2
+  R1_only       120      4.1      4.2      4.9
+  R2_only       118      4.4      5.1      5.8
+
+Done.
+  right_rate_1p3     | SigOnly_k3     | RMSE=4.866
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: right_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.27E, 31.84N), 终点=(127.04E, 31.66N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=7.2km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.5km, mean=4.1km, RMSE=4.9km, 95%=8.1km
+  Overall: n=120, median=3.5km, mean=4.1km, RMSE=4.9km, 95%=8.1km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.9km, mean=5.4km, RMSE=6.2km, 95%=10.1km
+  Overall: n=118, median=4.9km, mean=5.4km, RMSE=6.2km, 95%=10.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      3.1      3.3      3.7
+  BC            120      3.1      3.3      3.7
+  CI            120      3.5      4.0      4.6
+  FCI           120      3.5      3.6      4.1
+  R1_only       120      3.5      4.1      4.9
+  R2_only       118      4.7      5.3      6.0
+
+Done.
+  right_rate_1p3     | Cfg51_Sig_k3   | RMSE=4.859
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=6.6km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.3km, mean=3.7km, RMSE=4.4km, 95%=8.2km
+  Overall: n=120, median=3.3km, mean=3.7km, RMSE=4.4km, 95%=8.2km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.7km, mean=5.3km, RMSE=6.3km, 95%=10.3km
+  Overall: n=118, median=4.7km, mean=5.3km, RMSE=6.3km, 95%=10.3km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.6      2.9      3.3
+  BC            120      2.6      2.9      3.3
+  CI            120      3.3      3.6      4.1
+  FCI           120      3.1      3.2      3.7
+  R1_only       120      3.3      3.7      4.4
+  R2_only       118      4.5      5.2      6.0
+
+Done.
+  left_rate_1p3      | Default        | RMSE=4.392
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=6.6km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.2km, mean=3.6km, RMSE=4.1km, 95%=7.3km
+  Overall: n=120, median=3.2km, mean=3.6km, RMSE=4.1km, 95%=7.3km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.8km, mean=5.3km, RMSE=6.2km, 95%=10.3km
+  Overall: n=118, median=4.8km, mean=5.3km, RMSE=6.2km, 95%=10.3km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.6      2.8      3.2
+  BC            120      2.6      2.8      3.2
+  CI            120      3.1      3.4      3.8
+  FCI           120      3.0      3.1      3.5
+  R1_only       120      3.2      3.6      4.1
+  R2_only       118      4.6      5.1      6.0
+
+Done.
+  left_rate_1p3      | Cfg51          | RMSE=4.143
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=6.8km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=3.2km, mean=3.9km, RMSE=5.0km, 95%=8.4km
+  Overall: n=120, median=3.2km, mean=3.9km, RMSE=5.0km, 95%=8.4km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.6km, mean=5.3km, RMSE=6.2km, 95%=10.1km
+  Overall: n=118, median=4.6km, mean=5.3km, RMSE=6.2km, 95%=10.1km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.6      3.1      3.9
+  BC            120      2.6      3.1      3.9
+  CI            120      3.1      3.7      4.6
+  FCI           120      3.1      3.4      4.1
+  R1_only       120      3.2      3.9      5.0
+  R2_only       118      4.4      5.1      5.9
+
+Done.
+  left_rate_1p3      | SigOnly_k3     | RMSE=5.012
+  回头弯航迹生成 (180度左转):
+    圆心:  (131.44E, 31.75N) 固定
+    起点:  (127.03E, 31.66N) 入弯点: (131.44E, 31.66N)
+    终点:  (127.27E, 31.84N) 出弯点: (131.44E, 31.84N)
+    入向: 90度(正东) 出向: 270度(正西) 转弯率: 1.3度/s
+    转弯半径: 10.1 km, 转弯时长: 138 s, 弧长: 31.8 km
+    入弯直线: 418 km, 出弯直线: 394 km, 总航程: 843 km, 总时长: 3664 s
+场景: left_rate_1p3 | 目标数=1 | 帧数=122 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=123, 时长=3660s, 起点=(127.03E, 31.66N), 终点=(127.28E, 31.84N)
+R1 偏差估计: dr=20422m, da=-3.00deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-16103m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=281, 真实=79, 虚警=202, 平均每帧=2.30
+R2 点迹: 总数=246, 真实=63, 虚警=183, 平均每帧=2.02
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+  frame   1/122: active=0, total=0
+  frame  10/122: active=1, total=1
+  frame  20/122: active=1, total=1
+  frame  30/122: active=1, total=1
+  frame  40/122: active=1, total=1
+  frame  50/122: active=1, total=1
+  frame  60/122: active=1, total=1
+  frame  70/122: active=1, total=1
+  frame  80/122: active=1, total=1
+  frame  90/122: active=1, total=1
+  frame 100/122: active=1, total=1
+  frame 110/122: active=1, total=1
+  frame 120/122: active=1, total=1
+  frame 122/122: active=1, total=1
+R1 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+R2 航迹: 总数=1, 可靠=1, 临时=0, 历史=0
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 1 对
+匹配到 1 对航迹
+  Pair 1: R1#1 <-> R2#1, 共现=118帧, 平均距离=6.5km
+融合匹配对 1/1: R1#1 <-> R2#1
+融合完成: 1 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#1 <-> R2#1) -> 飞机A
+R1 单站跟踪 RMSE:
+  目标1: n=120, median=2.9km, mean=3.6km, RMSE=4.6km, 95%=8.0km
+  Overall: n=120, median=2.9km, mean=3.6km, RMSE=4.6km, 95%=8.0km
+R2 单站跟踪 RMSE:
+  目标1: n=118, median=4.8km, mean=5.2km, RMSE=6.1km, 95%=10.2km
+  Overall: n=118, median=4.8km, mean=5.2km, RMSE=6.1km, 95%=10.2km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           120      2.6      2.9      3.6
+  BC            120      2.6      2.9      3.6
+  CI            120      3.0      3.5      4.3
+  FCI           120      2.9      3.2      4.0
+  R1_only       120      2.9      3.6      4.6
+  R2_only       118      4.7      5.0      5.9
+
+Done.
+  left_rate_1p3      | Cfg51_Sig_k3   | RMSE=4.589
+  [Seed 3 done, elapsed 571s]
+
+Saved: results/mc_large_turn.mat
+
+
+========================================
+turn_rate 扫描 (mean RMSE km, 跨种子)
+========================================
+场景                   |  0.5°/s  |  0.7°/s  |  1.0°/s  |  1.3°/s  |  1.5°/s  |  2.0°/s 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+right_rate_0p7       |  6.010          |  5.799          |  6.571          |  8.075         {位置 2 处的索引超出数组边界。索引不能超过 4。
+
+出错 mc_large_turn (第 133 行)
+            vals = rmse_mat(sci, ci, :);
+} 
+ERROR: MATLAB error Exit Status: 0x00000001

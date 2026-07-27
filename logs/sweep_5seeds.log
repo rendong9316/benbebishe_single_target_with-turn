@@ -1,0 +1,17 @@
+============================================================
+turn_rate ∂‡÷÷◊” MC …®√Ë (Python scheduler)
+Seeds: 5 [1..5]
+Candidates: [0.5, 0.7, 1.0, 1.3, 1.5, 2.0]
+Scenarios: ['right_rate_0p7', 'left_rate_0p7', 'right_rate_1p3', 'left_rate_1p3']
+Total: 120, Pending: 120, Done: 0
+============================================================
+  [1/120] seed=1 right_rate_0p7 rate=0.5deg RMSE=5.204km elapsed=129s ETA=15369s
+  [2/120] seed=1 right_rate_0p7 rate=0.7deg RMSE=5.145km elapsed=246s ETA=14500s
+  [7/120] seed=1 left_rate_0p7 rate=0.5deg RMSE=5.318km elapsed=1150s ETA=18567s
+  [10/120] seed=1 left_rate_0p7 rate=1.3deg RMSE=7.837km elapsed=1721s ETA=18931s
+  [11/120] seed=1 left_rate_0p7 rate=1.5deg RMSE=8.452km elapsed=1887s ETA=18697s
+  [26/120] seed=2 right_rate_0p7 rate=0.7deg RMSE=4.761km elapsed=2679s ETA=9685s
+  [27/120] seed=2 right_rate_0p7 rate=1.0deg RMSE=5.893km elapsed=2849s ETA=9812s
+  [28/120] seed=2 right_rate_0p7 rate=1.3deg RMSE=6.300km elapsed=3086s ETA=10141s
+  [30/120] seed=2 right_rate_0p7 rate=2.0deg RMSE=8.241km elapsed=3714s ETA=11141s
+  [32/120] seed=2 left_rate_0p7 rate=0.7deg RMSE=4.695km elapsed=4837s ETA=13302s

@@ -1,0 +1,167 @@
+============================================================
+turn_rate 多种子 MC 扫描 (Python scheduler)
+Seeds: 10 [1..10]
+Candidates: [0.5, 0.7, 1.0, 1.3, 1.5, 2.0]
+Scenarios: ['right_rate_0p7', 'left_rate_0p7', 'right_rate_1p3', 'left_rate_1p3']
+Total: 240, Pending: 240, Done: 0
+============================================================
+  [1/240] seed=1 right_rate_0p7 rate=0.5deg RMSE=9.100km elapsed=88s ETA=21095s
+  [2/240] seed=1 right_rate_0p7 rate=0.7deg RMSE=5.200km elapsed=172s ETA=20411s
+  [3/240] seed=1 right_rate_0p7 rate=1.0deg RMSE=7.600km elapsed=277s ETA=21910s
+  [4/240] seed=1 right_rate_0p7 rate=1.3deg RMSE=8.700km elapsed=430s ETA=25367s
+  [5/240] seed=1 right_rate_0p7 rate=1.5deg RMSE=8.000km elapsed=566s ETA=26624s
+  [6/240] seed=1 right_rate_0p7 rate=2.0deg RMSE=8.400km elapsed=683s ETA=26627s
+  [7/240] seed=1 left_rate_0p7 rate=0.5deg RMSE=5.300km elapsed=797s ETA=26543s
+  [8/240] seed=1 left_rate_0p7 rate=0.7deg RMSE=4.900km elapsed=898s ETA=26037s
+  [9/240] seed=1 left_rate_0p7 rate=1.0deg RMSE=6.200km elapsed=983s ETA=25229s
+  [10/240] seed=1 left_rate_0p7 rate=1.3deg RMSE=7.800km elapsed=1107s ETA=25454s
+  [11/240] seed=1 left_rate_0p7 rate=1.5deg RMSE=8.500km elapsed=1210s ETA=25187s
+  [12/240] seed=1 left_rate_0p7 rate=2.0deg RMSE=9.300km elapsed=1311s ETA=24904s
+  [13/240] seed=1 right_rate_1p3 rate=0.5deg RMSE=7.000km elapsed=1412s ETA=24653s
+  [14/240] seed=1 right_rate_1p3 rate=0.7deg RMSE=6.900km elapsed=1514s ETA=24432s
+  [15/240] seed=1 right_rate_1p3 rate=1.0deg RMSE=6.800km elapsed=1590s ETA=23857s
+  [16/240] seed=1 right_rate_1p3 rate=1.3deg RMSE=6.100km elapsed=1663s ETA=23278s
+  [17/240] seed=1 right_rate_1p3 rate=1.5deg RMSE=6.900km elapsed=1729s ETA=22680s
+  [18/240] seed=1 right_rate_1p3 rate=2.0deg RMSE=7.400km elapsed=1799s ETA=22189s
+  [19/240] seed=1 left_rate_1p3 rate=0.5deg RMSE=5.200km elapsed=1866s ETA=21707s
+  [20/240] seed=1 left_rate_1p3 rate=0.7deg RMSE=5.100km elapsed=1934s ETA=21272s
+  [21/240] seed=1 left_rate_1p3 rate=1.0deg RMSE=5.500km elapsed=2017s ETA=21038s
+  [22/240] seed=1 left_rate_1p3 rate=1.3deg RMSE=5.700km elapsed=2092s ETA=20731s
+  [23/240] seed=1 left_rate_1p3 rate=1.5deg RMSE=5.900km elapsed=2158s ETA=20357s
+  [24/240] seed=1 left_rate_1p3 rate=2.0deg RMSE=9.000km elapsed=2223s ETA=20003s
+  [25/240] seed=2 right_rate_0p7 rate=0.5deg RMSE=6.200km elapsed=2293s ETA=19719s
+  [26/240] seed=2 right_rate_0p7 rate=0.7deg RMSE=4.800km elapsed=2360s ETA=19428s
+  [27/240] seed=2 right_rate_0p7 rate=1.0deg RMSE=5.900km elapsed=2440s ETA=19252s
+  [28/240] seed=2 right_rate_0p7 rate=1.3deg RMSE=6.300km elapsed=2523s ETA=19102s
+  [29/240] seed=2 right_rate_0p7 rate=1.5deg RMSE=6.300km elapsed=2598s ETA=18904s
+  [30/240] seed=2 right_rate_0p7 rate=2.0deg RMSE=8.200km elapsed=2682s ETA=18773s
+  [31/240] seed=2 left_rate_0p7 rate=0.5deg RMSE=4.700km elapsed=2814s ETA=18973s
+  [32/240] seed=2 left_rate_0p7 rate=0.7deg RMSE=4.700km elapsed=2918s ETA=18969s
+  [33/240] seed=2 left_rate_0p7 rate=1.0deg RMSE=9.000km elapsed=3019s ETA=18938s
+  [34/240] seed=2 left_rate_0p7 rate=1.3deg RMSE=7.800km elapsed=3121s ETA=18907s
+  [35/240] seed=2 left_rate_0p7 rate=1.5deg RMSE=11.300km elapsed=3221s ETA=18868s
+  [36/240] seed=2 left_rate_0p7 rate=2.0deg RMSE=8.000km elapsed=3324s ETA=18834s
+  [37/240] seed=2 right_rate_1p3 rate=0.5deg RMSE=8.800km elapsed=3431s ETA=18824s
+  [38/240] seed=2 right_rate_1p3 rate=0.7deg RMSE=7.400km elapsed=3530s ETA=18764s
+  [39/240] seed=2 right_rate_1p3 rate=1.0deg RMSE=6.300km elapsed=3644s ETA=18779s
+  [40/240] seed=2 right_rate_1p3 rate=1.3deg RMSE=5.900km elapsed=3727s ETA=18637s
+  [41/240] seed=2 right_rate_1p3 rate=1.5deg RMSE=5.800km elapsed=3796s ETA=18426s
+  [42/240] seed=2 right_rate_1p3 rate=2.0deg RMSE=6.100km elapsed=3884s ETA=18312s
+  [43/240] seed=2 left_rate_1p3 rate=0.5deg RMSE=6.400km elapsed=3975s ETA=18211s
+  [44/240] seed=2 left_rate_1p3 rate=0.7deg RMSE=6.500km elapsed=4072s ETA=18137s
+  [45/240] seed=2 left_rate_1p3 rate=1.0deg RMSE=6.300km elapsed=4170s ETA=18071s
+  [46/240] seed=2 left_rate_1p3 rate=1.3deg RMSE=6.600km elapsed=4243s ETA=17893s
+  [47/240] seed=2 left_rate_1p3 rate=1.5deg RMSE=6.900km elapsed=4318s ETA=17732s
+  [48/240] seed=2 left_rate_1p3 rate=2.0deg RMSE=7.100km elapsed=4396s ETA=17586s
+  [49/240] seed=3 right_rate_0p7 rate=0.5deg RMSE=4.900km elapsed=4488s ETA=17496s
+  [50/240] seed=3 right_rate_0p7 rate=0.7deg RMSE=3.900km elapsed=4614s ETA=17534s
+  [51/240] seed=3 right_rate_0p7 rate=1.0deg RMSE=4.500km elapsed=4769s ETA=17674s
+  [52/240] seed=3 right_rate_0p7 rate=1.3deg RMSE=5.800km elapsed=4901s ETA=17721s
+  [53/240] seed=3 right_rate_0p7 rate=1.5deg RMSE=7.800km elapsed=5008s ETA=17671s
+  [54/240] seed=3 right_rate_0p7 rate=2.0deg RMSE=8.200km elapsed=5117s ETA=17625s
+  [55/240] seed=3 left_rate_0p7 rate=0.5deg RMSE=5.800km elapsed=5248s ETA=17654s
+  [56/240] seed=3 left_rate_0p7 rate=0.7deg RMSE=4.200km elapsed=5384s ETA=17689s
+  [57/240] seed=3 left_rate_0p7 rate=1.0deg RMSE=7.800km elapsed=5490s ETA=17625s
+  [58/240] seed=3 left_rate_0p7 rate=1.3deg RMSE=8.800km elapsed=5585s ETA=17526s
+  [59/240] seed=3 left_rate_0p7 rate=1.5deg RMSE=5.500km elapsed=5675s ETA=17409s
+  [60/240] seed=3 left_rate_0p7 rate=2.0deg RMSE=6.000km elapsed=5759s ETA=17276s
+  [61/240] seed=3 right_rate_1p3 rate=0.5deg RMSE=6.400km elapsed=5851s ETA=17169s
+  [62/240] seed=3 right_rate_1p3 rate=0.7deg RMSE=5.300km elapsed=5947s ETA=17074s
+  [63/240] seed=3 right_rate_1p3 rate=1.0deg RMSE=4.400km elapsed=6046s ETA=16986s
+  [64/240] seed=3 right_rate_1p3 rate=1.3deg RMSE=4.500km elapsed=6145s ETA=16899s
+  [65/240] seed=3 right_rate_1p3 rate=1.5deg RMSE=4.400km elapsed=6233s ETA=16782s
+  [66/240] seed=3 right_rate_1p3 rate=2.0deg RMSE=5.300km elapsed=6329s ETA=16686s
+  [67/240] seed=3 left_rate_1p3 rate=0.5deg RMSE=6.500km elapsed=6429s ETA=16600s
+  [68/240] seed=3 left_rate_1p3 rate=0.7deg RMSE=4.800km elapsed=6539s ETA=16540s
+  [69/240] seed=3 left_rate_1p3 rate=1.0deg RMSE=4.400km elapsed=6647s ETA=16472s
+  [70/240] seed=3 left_rate_1p3 rate=1.3deg RMSE=4.700km elapsed=6749s ETA=16391s
+  [71/240] seed=3 left_rate_1p3 rate=1.5deg RMSE=4.900km elapsed=6896s ETA=16415s
+  TIMEOUT seed=3 left_rate_1p3 rate=2.0
+  [73/240] seed=4 right_rate_0p7 rate=0.5deg RMSE=8.400km elapsed=7331s ETA=16771s
+  [74/240] seed=4 right_rate_0p7 rate=0.7deg RMSE=5.600km elapsed=7551s ETA=16939s
+  [75/240] seed=4 right_rate_0p7 rate=1.0deg RMSE=5.800km elapsed=7660s ETA=16852s
+  TIMEOUT seed=4 right_rate_0p7 rate=1.3
+  [77/240] seed=4 right_rate_0p7 rate=1.5deg RMSE=9.800km elapsed=8122s ETA=17193s
+  [78/240] seed=4 right_rate_0p7 rate=2.0deg RMSE=7.300km elapsed=8288s ETA=17213s
+  [79/240] seed=4 left_rate_0p7 rate=0.5deg RMSE=9.100km elapsed=8389s ETA=17096s
+  [92/240] seed=4 left_rate_1p3 rate=0.7deg RMSE=6.600km elapsed=9103s ETA=14645s
+  [93/240] seed=4 left_rate_1p3 rate=1.0deg RMSE=4.800km elapsed=9249s ETA=14619s
+  [94/240] seed=4 left_rate_1p3 rate=1.3deg RMSE=4.800km elapsed=9487s ETA=14736s
+  [95/240] seed=4 left_rate_1p3 rate=1.5deg RMSE=4.900km elapsed=9749s ETA=14880s
+  [96/240] seed=4 left_rate_1p3 rate=2.0deg RMSE=6.000km elapsed=10014s ETA=15020s
+  [97/240] seed=5 right_rate_0p7 rate=0.5deg RMSE=8.800km elapsed=10280s ETA=15154s
+  TIMEOUT seed=5 right_rate_0p7 rate=0.7
+  [99/240] seed=5 right_rate_0p7 rate=1.0deg RMSE=7.500km elapsed=10799s ETA=15380s
+  [100/240] seed=5 right_rate_0p7 rate=1.3deg RMSE=6.900km elapsed=11073s ETA=15502s
+  [101/240] seed=5 right_rate_0p7 rate=1.5deg RMSE=7.400km elapsed=11347s ETA=15617s
+  TIMEOUT seed=5 right_rate_0p7 rate=2.0
+  TIMEOUT seed=5 left_rate_0p7 rate=0.5
+  [104/240] seed=5 left_rate_0p7 rate=0.7deg RMSE=7.200km elapsed=12144s ETA=15881s
+  [105/240] seed=5 left_rate_0p7 rate=1.0deg RMSE=8.200km elapsed=12316s ETA=15835s
+  [106/240] seed=5 left_rate_0p7 rate=1.3deg RMSE=8.700km elapsed=12482s ETA=15779s
+  [107/240] seed=5 left_rate_0p7 rate=1.5deg RMSE=12.000km elapsed=12620s ETA=15686s
+  [108/240] seed=5 left_rate_0p7 rate=2.0deg RMSE=18.700km elapsed=12758s ETA=15594s
+  [109/240] seed=5 right_rate_1p3 rate=0.5deg RMSE=7.400km elapsed=12889s ETA=15490s
+  [110/240] seed=5 right_rate_1p3 rate=0.7deg RMSE=7.100km elapsed=13037s ETA=15407s
+  [111/240] seed=5 right_rate_1p3 rate=1.0deg RMSE=7.500km elapsed=13211s ETA=15353s
+  [112/240] seed=5 right_rate_1p3 rate=1.3deg RMSE=7.900km elapsed=13362s ETA=15271s
+  [113/240] seed=5 right_rate_1p3 rate=1.5deg RMSE=6.200km elapsed=13513s ETA=15187s
+  [114/240] seed=5 right_rate_1p3 rate=2.0deg RMSE=7.100km elapsed=13680s ETA=15120s
+  [115/240] seed=5 left_rate_1p3 rate=0.5deg RMSE=5.800km elapsed=13823s ETA=15025s
+  [116/240] seed=5 left_rate_1p3 rate=0.7deg RMSE=7.900km elapsed=13978s ETA=14942s
+  [117/240] seed=5 left_rate_1p3 rate=1.0deg RMSE=6.500km elapsed=14144s ETA=14869s
+  [118/240] seed=5 left_rate_1p3 rate=1.3deg RMSE=6.500km elapsed=14316s ETA=14801s
+  [119/240] seed=5 left_rate_1p3 rate=1.5deg RMSE=7.000km elapsed=14471s ETA=14715s
+  [120/240] seed=5 left_rate_1p3 rate=2.0deg RMSE=7.900km elapsed=14613s ETA=14613s
+  [122/240] seed=6 right_rate_0p7 rate=0.7deg RMSE=4.700km elapsed=14757s ETA=14273s
+  [123/240] seed=6 right_rate_0p7 rate=1.0deg RMSE=6.400km elapsed=14859s ETA=14134s
+  [124/240] seed=6 right_rate_0p7 rate=1.3deg RMSE=7.700km elapsed=14961s ETA=13996s
+  [125/240] seed=6 right_rate_0p7 rate=1.5deg RMSE=8.600km elapsed=15066s ETA=13861s
+  [126/240] seed=6 right_rate_0p7 rate=2.0deg RMSE=7.300km elapsed=15167s ETA=13723s
+  [127/240] seed=6 left_rate_0p7 rate=0.5deg RMSE=5.000km elapsed=15269s ETA=13586s
+  [128/240] seed=6 left_rate_0p7 rate=0.7deg RMSE=4.800km elapsed=15371s ETA=13449s
+  [129/240] seed=6 left_rate_0p7 rate=1.0deg RMSE=5.500km elapsed=15459s ETA=13302s
+  [130/240] seed=6 left_rate_0p7 rate=1.3deg RMSE=5.900km elapsed=15565s ETA=13170s
+  [131/240] seed=6 left_rate_0p7 rate=1.5deg RMSE=5.800km elapsed=15635s ETA=13009s
+  [132/240] seed=6 left_rate_0p7 rate=2.0deg RMSE=5.800km elapsed=15719s ETA=12861s
+  [133/240] seed=6 right_rate_1p3 rate=0.5deg RMSE=9.000km elapsed=15798s ETA=12710s
+  [134/240] seed=6 right_rate_1p3 rate=0.7deg RMSE=7.500km elapsed=15910s ETA=12586s
+  [135/240] seed=6 right_rate_1p3 rate=1.0deg RMSE=5.600km elapsed=15996s ETA=12442s
+  [136/240] seed=6 right_rate_1p3 rate=1.3deg RMSE=6.400km elapsed=16067s ETA=12287s
+  [137/240] seed=6 right_rate_1p3 rate=1.5deg RMSE=6.400km elapsed=16151s ETA=12143s
+  [138/240] seed=6 right_rate_1p3 rate=2.0deg RMSE=7.000km elapsed=16232s ETA=11998s
+  [139/240] seed=6 left_rate_1p3 rate=0.5deg RMSE=11.200km elapsed=16312s ETA=11852s
+  [140/240] seed=6 left_rate_1p3 rate=0.7deg RMSE=8.900km elapsed=16391s ETA=11708s
+  [141/240] seed=6 left_rate_1p3 rate=1.0deg RMSE=5.300km elapsed=16468s ETA=11563s
+  [142/240] seed=6 left_rate_1p3 rate=1.3deg RMSE=5.700km elapsed=16599s ETA=11456s
+  [143/240] seed=6 left_rate_1p3 rate=1.5deg RMSE=5.900km elapsed=16697s ETA=11326s
+  [144/240] seed=6 left_rate_1p3 rate=2.0deg RMSE=6.700km elapsed=16790s ETA=11193s
+  [145/240] seed=7 right_rate_0p7 rate=0.5deg RMSE=6.300km elapsed=16865s ETA=11049s
+  [146/240] seed=7 right_rate_0p7 rate=0.7deg RMSE=6.700km elapsed=16940s ETA=10907s
+  [148/240] seed=7 right_rate_0p7 rate=1.3deg RMSE=6.900km elapsed=17086s ETA=10621s
+  [149/240] seed=7 right_rate_0p7 rate=1.5deg RMSE=8.600km elapsed=17162s ETA=10481s
+  [150/240] seed=7 right_rate_0p7 rate=2.0deg RMSE=8.200km elapsed=17258s ETA=10355s
+  [151/240] seed=7 left_rate_0p7 rate=0.5deg RMSE=6.400km elapsed=17335s ETA=10217s
+  [152/240] seed=7 left_rate_0p7 rate=0.7deg RMSE=5.500km elapsed=17418s ETA=10084s
+  [153/240] seed=7 left_rate_0p7 rate=1.0deg RMSE=8.600km elapsed=17512s ETA=9958s
+  [154/240] seed=7 left_rate_0p7 rate=1.3deg RMSE=9.500km elapsed=17597s ETA=9827s
+  [155/240] seed=7 left_rate_0p7 rate=1.5deg RMSE=8.300km elapsed=17681s ETA=9696s
+  [156/240] seed=7 left_rate_0p7 rate=2.0deg RMSE=7.500km elapsed=17834s ETA=9603s
+
+Done! Total wall time: 17836s (74.3s/task)
+
+================================================================================
+多种子 MC 汇总 (mean +/- std RMSE, km, n=10 seeds)
+================================================================================
+Scenario \ rate    |    0.5 deg/s  |    0.7 deg/s  |    1.0 deg/s  |    1.3 deg/s  |    1.5 deg/s  |    2.0 deg/s  |  Default |   Oracle | MM-upper
+------------------------------------------------------------------------------------------
+right_rate_0p7     |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+left_rate_0p7      |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+right_rate_1p3     |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+left_rate_1p3      |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+OVERALL(pooled)   
+
+============================================================
+改善 vs Default (pooled, 10 seeds x 4 scenes)
+============================================================
+

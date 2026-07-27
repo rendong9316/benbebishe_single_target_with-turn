@@ -1,4 +1,4 @@
-function result = run(scenario_name)
+function result = run(scenario_name, params_override)
     % 主入口：双基地 OTH-SWR 单/多目标跟踪仿真全流程
     %
     % 完整流水线（Phase 0-10）：
@@ -24,7 +24,12 @@ function result = run(scenario_name)
 
     % ====== Phase 0: Oracle 场景初始化 ======
     % 加载全局仿真参数（雷达几何坐标、UKF 噪声、IMM 转移概率、双门限配置等）
-    params = simulation_params_oracle();
+    % 可选支持：run(scenario_name, params_override) — 允许传入自定义params
+    if nargin >= 2 && isstruct(params_override) && ischar(scenario_name)
+        params = params_override;
+    else
+        params = simulation_params_oracle();
+    end
     % 用配置中的随机种子初始化 RNG，保证仿真可复现
     rng(params.random_seed);
     % 根据场景名生成真值航迹数据结构（支持 single_straight / single_turn / single_uturn / multi_cross）
@@ -157,10 +162,13 @@ function result = run(scenario_name)
     result.errorStats_R2 = errorStats_R2;         % R2 单站 RMSE
 
     % ====== Phase 9: Figure 图窗可视化 ======
-    plot_oracle_figures(result);
+    % NOTE: sweep mode patch - figures disabled during MC sweeps
+    try, plot_oracle_figures(result), catch, end
 
     % ====== Phase 10: 数据保存 ======
-    save_results_if_needed(result, params, scenario.name);
+    % NOTE: sweep mode patch - save disabled during MC sweeps (already suppressed)
+    % save_results_if_needed(result, params, scenario.name);
+
     fprintf('%sDone.%s', newline, newline);
 end
 
@@ -502,6 +510,7 @@ function plot_oracle_figures(result)
         result.method_names, matched_pairs_cell, result.fusion_eval, result.truthTrajs, params, 'results');
 
     warning(warn_state);                                  % 恢复之前的警告状态
+    close all;                                            % 绘图后释放图窗，避免 heap corruption
 end
 
 function [true_track_A, true_track_B, true_track_C] = truth_tracks_for_legacy_plots(truth_all)

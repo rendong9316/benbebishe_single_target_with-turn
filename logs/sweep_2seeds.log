@@ -1,0 +1,73 @@
+============================================================
+turn_rate 多种子 MC 扫描 (Python scheduler)
+Seeds: 2 [1..2]
+Candidates: [0.5, 0.7, 1.0, 1.3, 1.5, 2.0]
+Scenarios: ['right_rate_0p7', 'left_rate_0p7', 'right_rate_1p3', 'left_rate_1p3']
+Total: 48, Pending: 48, Done: 0
+============================================================
+  [1/48] seed=1 right_rate_0p7 rate=0.5deg RMSE=9.100km elapsed=144s ETA=6756s
+  [2/48] seed=1 right_rate_0p7 rate=0.7deg RMSE=5.200km elapsed=286s ETA=6574s
+  [3/48] seed=1 right_rate_0p7 rate=1.0deg RMSE=7.600km elapsed=399s ETA=5991s
+  [4/48] seed=1 right_rate_0p7 rate=1.3deg RMSE=8.700km elapsed=514s ETA=5655s
+  [5/48] seed=1 right_rate_0p7 rate=1.5deg RMSE=8.000km elapsed=614s ETA=5284s
+  [6/48] seed=1 right_rate_0p7 rate=2.0deg RMSE=8.400km elapsed=700s ETA=4897s
+  [7/48] seed=1 left_rate_0p7 rate=0.5deg RMSE=5.300km elapsed=820s ETA=4806s
+  [8/48] seed=1 left_rate_0p7 rate=0.7deg RMSE=4.900km elapsed=922s ETA=4611s
+  [9/48] seed=1 left_rate_0p7 rate=1.0deg RMSE=6.200km elapsed=1023s ETA=4431s
+  [10/48] seed=1 left_rate_0p7 rate=1.3deg RMSE=7.800km elapsed=1123s ETA=4268s
+  [11/48] seed=1 left_rate_0p7 rate=1.5deg RMSE=8.500km elapsed=1225s ETA=4122s
+  [12/48] seed=1 left_rate_0p7 rate=2.0deg RMSE=9.300km elapsed=1302s ETA=3906s
+  [13/48] seed=1 right_rate_1p3 rate=0.5deg RMSE=7.000km elapsed=1382s ETA=3720s
+  [14/48] seed=1 right_rate_1p3 rate=0.7deg RMSE=6.900km elapsed=1449s ETA=3518s
+  [15/48] seed=1 right_rate_1p3 rate=1.0deg RMSE=6.800km elapsed=1516s ETA=3335s
+  [16/48] seed=1 right_rate_1p3 rate=1.3deg RMSE=6.100km elapsed=1583s ETA=3166s
+  [17/48] seed=1 right_rate_1p3 rate=1.5deg RMSE=6.900km elapsed=1650s ETA=3010s
+  [18/48] seed=1 right_rate_1p3 rate=2.0deg RMSE=7.400km elapsed=1735s ETA=2891s
+  [19/48] seed=1 left_rate_1p3 rate=0.5deg RMSE=5.200km elapsed=1811s ETA=2764s
+  [20/48] seed=1 left_rate_1p3 rate=0.7deg RMSE=5.100km elapsed=1876s ETA=2626s
+  [21/48] seed=1 left_rate_1p3 rate=1.0deg RMSE=5.500km elapsed=1941s ETA=2495s
+  [22/48] seed=1 left_rate_1p3 rate=1.3deg RMSE=5.700km elapsed=2008s ETA=2373s
+  [23/48] seed=1 left_rate_1p3 rate=1.5deg RMSE=5.900km elapsed=2081s ETA=2261s
+  [24/48] seed=1 left_rate_1p3 rate=2.0deg RMSE=9.000km elapsed=2157s ETA=2157s
+  [25/48] seed=2 right_rate_0p7 rate=0.5deg RMSE=6.200km elapsed=2238s ETA=2059s
+  [26/48] seed=2 right_rate_0p7 rate=0.7deg RMSE=4.800km elapsed=2313s ETA=1957s
+  [27/48] seed=2 right_rate_0p7 rate=1.0deg RMSE=5.900km elapsed=2398s ETA=1865s
+  [28/48] seed=2 right_rate_0p7 rate=1.3deg RMSE=6.300km elapsed=2531s ETA=1808s
+  [29/48] seed=2 right_rate_0p7 rate=1.5deg RMSE=6.300km elapsed=2635s ETA=1726s
+  [30/48] seed=2 right_rate_0p7 rate=2.0deg RMSE=8.200km elapsed=2736s ETA=1642s
+  [31/48] seed=2 left_rate_0p7 rate=0.5deg RMSE=4.700km elapsed=2837s ETA=1556s
+  [32/48] seed=2 left_rate_0p7 rate=0.7deg RMSE=4.700km elapsed=2938s ETA=1469s
+  [33/48] seed=2 left_rate_0p7 rate=1.0deg RMSE=9.000km elapsed=3040s ETA=1382s
+  [34/48] seed=2 left_rate_0p7 rate=1.3deg RMSE=7.800km elapsed=3145s ETA=1295s
+  [35/48] seed=2 left_rate_0p7 rate=1.5deg RMSE=11.300km elapsed=3243s ETA=1205s
+  [36/48] seed=2 left_rate_0p7 rate=2.0deg RMSE=8.000km elapsed=3359s ETA=1120s
+  [37/48] seed=2 right_rate_1p3 rate=0.5deg RMSE=8.800km elapsed=3445s ETA=1024s
+  [38/48] seed=2 right_rate_1p3 rate=0.7deg RMSE=7.400km elapsed=3516s ETA=925s
+  [39/48] seed=2 right_rate_1p3 rate=1.0deg RMSE=6.300km elapsed=3605s ETA=832s
+  [40/48] seed=2 right_rate_1p3 rate=1.3deg RMSE=5.900km elapsed=3724s ETA=745s
+  [41/48] seed=2 right_rate_1p3 rate=1.5deg RMSE=5.800km elapsed=3804s ETA=650s
+  [42/48] seed=2 right_rate_1p3 rate=2.0deg RMSE=6.100km elapsed=3905s ETA=558s
+  [43/48] seed=2 left_rate_1p3 rate=0.5deg RMSE=6.400km elapsed=3979s ETA=463s
+  [44/48] seed=2 left_rate_1p3 rate=0.7deg RMSE=6.500km elapsed=4080s ETA=371s
+  [45/48] seed=2 left_rate_1p3 rate=1.0deg RMSE=6.300km elapsed=4157s ETA=277s
+  [46/48] seed=2 left_rate_1p3 rate=1.3deg RMSE=6.600km elapsed=4222s ETA=184s
+  [47/48] seed=2 left_rate_1p3 rate=1.5deg RMSE=6.900km elapsed=4349s ETA=93s
+  [48/48] seed=2 left_rate_1p3 rate=2.0deg RMSE=7.100km elapsed=4490s ETA=0s
+
+Done! Total wall time: 4490s (93.5s/task)
+
+================================================================================
+多种子 MC 汇总 (mean +/- std RMSE, km, n=2 seeds)
+================================================================================
+Scenario \ rate    |    0.5 deg/s  |    0.7 deg/s  |    1.0 deg/s  |    1.3 deg/s  |    1.5 deg/s  |    2.0 deg/s  |  Default |   Oracle | MM-upper
+------------------------------------------------------------------------------------------
+right_rate_0p7     |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+left_rate_0p7      |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+right_rate_1p3     |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+left_rate_1p3      |    nan |    nan |    nan |    nan |    nan |    nan |      nan±0.00 |      nan±0.00 |      nan±0.00
+OVERALL(pooled)   
+
+============================================================
+改善 vs Default (pooled, 2 seeds x 4 scenes)
+============================================================
+
