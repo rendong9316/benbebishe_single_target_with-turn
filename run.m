@@ -118,14 +118,45 @@ function result = run(scenario_name, params_override)
     fprintf('R2 已回退对齐到 R1 时间基准: %.1fs%s', params.time_offset_radar2_sec, newline);
 
     % ====== Phase 6: 跨雷达航迹匹配 ======
-    % 根据配置的匹配方法（dualgate 或传统 matcher）对 R1/R2 航迹进行配对
-    % 匹配结果包含：共现帧数、平均距离、质量评分等
-    if isfield(params, 'track_matcher_method') && strcmp(params.track_matcher_method, 'dualgate')
-        matched_pairs_struct = track_matcher_dualgate(trackSnapshots_R1, aligned_R2, params);
-    else
-        matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
+    % 支持的匹配方法（params.track_matcher_method）：
+    %   'dualgate'    — 三判据关联（位置 + 马氏 + 速度，含 1v1 互斥），默认
+    %   'nn'          — 朴素最近邻基线（仅位置距离贪心 1v1，无门限/无时间校验）
+    %   'sequential'  — 序贯最近邻基线（马氏距离门限 + 贪心 1v1，无时间连续性/速度判据）
+    %   'legacy'      — 原 fusion/track_matcher.m（已废弃，仅向后兼容，正常不应使用）
+    matcher_method = 'dualgate';
+    if isfield(params, 'track_matcher_method') && ~isempty(params.track_matcher_method)
+        matcher_method = char(params.track_matcher_method);
+    end
+    switch lower(matcher_method)
+        case 'dualgate'
+            matched_pairs_struct = track_matcher_dualgate(trackSnapshots_R1, aligned_R2, params);
+        case 'nn'
+            matched_pairs_struct = track_matcher_nn(trackSnapshots_R1, aligned_R2, params);
+        case 'sequential'
+            matched_pairs_struct = track_matcher_sequential(trackSnapshots_R1, aligned_R2, params);
+        otherwise
+            % 未知方法回退到已废弃的 legacy matcher（不崩溃，但应修正配置）
+            matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
     end
     print_match_summary(matched_pairs_struct);
+
+    % ====== 快速模式（离线配对对比用）======
+    % params.fast_mode=true 时，跳过融合/评估/绘图（Phase 7-10），仅返回对齐快照。
+    % 默认关闭，不影响任何既有实验行为。
+    if isfield(params, 'fast_mode') && params.fast_mode
+        result = struct();
+        result.params = params;
+        result.scenario = scenario;
+        result.truth_all = truth_all;
+        result.truthTrajs = truthTrajs;
+        result.trackSnapshots_R1 = trackSnapshots_R1;
+        result.trackSnapshots_R2 = trackSnapshots_R2;
+        result.aligned_R2 = aligned_R2;
+        result.n_frames = n_frames;
+        fprintf('%s[fast_mode] 已跳过融合/绘图，仅返回对齐快照。%s', newline, newline);
+        return;
+    end
+
 
     % ====== Phase 7: 航迹融合 ======
     % 对每对匹配航迹，依次执行 SCC/BC/CI/FCI 四种融合算法
