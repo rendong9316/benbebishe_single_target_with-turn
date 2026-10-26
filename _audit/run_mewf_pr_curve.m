@@ -38,15 +38,22 @@ function run_mewf_pr_curve(out_name, s_list)
         'noCont',   1, 1, 1, 0, false };
 
     % 先把 5 个场景全部载入内存，避免每个配置重复 load（6.4s/次）
+    % 注意：不能用 struct('R1', cellArray, ...) —— struct 构造函数会把 cell
+    % 展开成 struct 数组（239 帧 → 239 个元素），导致后续 SC{f}.R1 变成
+    % 逗号分隔列表、调用时"输入参数太多"。必须逐字段赋值。
     fprintf('载入缓存 ...\n');
     SC = cell(numel(files), 1);
     for f = 1:numel(files)
         S = load(fullfile(cache_dir, files(f).name));
         [n_tb, ~, ~, ~, ~] = pairing.build_truth_pairs(S.trackSnapshots_R1, S.aligned_R2);
-        SC{f} = struct('R1', S.trackSnapshots_R1, 'R2', S.aligned_R2, ...
-                       'params', S.params, 'n_tb', n_tb, ...
-                       'tag', sprintf('%s_%d', S.scene, S.seed));
-        fprintf('  %s (n_true_both=%d)\n', SC{f}.tag, n_tb);
+        e = struct();
+        e.R1     = S.trackSnapshots_R1;
+        e.R2     = S.aligned_R2;
+        e.params = S.params;
+        e.n_tb   = n_tb;
+        e.tag    = sprintf('%s_%d', S.scene, S.seed);
+        SC{f} = e;
+        fprintf('  %s (n_true_both=%d)\n', e.tag, n_tb);
     end
 
     rows = {};
@@ -64,8 +71,12 @@ function run_mewf_pr_curve(out_name, s_list)
                 q.mewf_w_vel  = cfgs{ci, 4};
                 q.mewf_w_cont = cfgs{ci, 5};
                 if cfgs{ci, 6}, q.mewf_min_dist_evidence = 0; end
-                p = track_matcher_mewf(SC{f}.R1, SC{f}.R2, q);
-                M = pairing.eval_pairing(p, SC{f}.R1, SC{f}.R2, SC{f}.n_tb);
+                % 必须先取到局部变量：struct 字段若是 cell，直接当实参会
+                % 展开成逗号分隔列表（"输入参数太多"）
+                R1 = SC{f}.R1;
+                R2 = SC{f}.R2;
+                p = track_matcher_mewf(R1, R2, q);
+                M = pairing.eval_pairing(p, R1, R2, SC{f}.n_tb);
                 W = W + M.n_wrong; MS = MS + M.n_missed;
                 P = P + M.precision; R = R + M.recall;
             end

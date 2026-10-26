@@ -52,8 +52,13 @@ function matched_pairs = track_matcher_mewf(trackSnapshots_R1, trackSnapshots_R2
     n_min       = pairing.get_param_local(params, 'dualgate_coexist_thresh', 3);
 
     % ---- MEWF 专有参数 ----
+    % 默认值 = 密集 5 组实验的最优配置（mewf_compare.csv 的 MEWF_hungarian 行）：
+    %   指派 hungarian + 排序键 maha + S_thr=0.55
+    %   实测 误配 6.20 / 漏配 19.00 / P 0.9768 / R 0.9354
+    % 对照：排序键用 'dist' 时误配 11.20（差 81%），用 'score' 时 11.60（最差）
+    %   —— 残余误配是成对交换（swap），必须用协方差归一化的马氏距离排序才能区分。
     sigma_d = pairing.get_param_local(params, 'mewf_sigma_d_km', 15);      % 距离证据尺度
-    S_thr   = pairing.get_param_local(params, 'mewf_score_thr', 0.60);      % 综合得分门限
+    S_thr   = pairing.get_param_local(params, 'mewf_score_thr', 0.55);      % 综合得分门限
     e_d_min = pairing.get_param_local(params, 'mewf_min_dist_evidence', 0.30); % 距离证据下限
     w_d = pairing.get_param_local(params, 'mewf_w_dist', 1.0);
     w_m = pairing.get_param_local(params, 'mewf_w_maha', 1.0);
@@ -137,7 +142,9 @@ function matched_pairs = track_matcher_mewf(trackSnapshots_R1, trackSnapshots_R2
     %   'dist'  — 平均 Haversine 距离升序（默认，直击 swap 问题）
     %   'maha'  — 平均马氏 D² 升序（与 Sequential 排序键一致，便于对照）
     %   'score' — 综合得分降序（保留作消融，验证「混在一个分里」确实更差）
-    rank_key = pairing.get_param_local(params, 'mewf_rank_key', 'dist');
+    % 指派层排序键：maha（默认，协方差归一化）/ dist（欧氏）/ score（综合分）
+    % 实测密集 5 组误配：maha 6.20 / dist 11.20 / score 11.60
+    rank_key = pairing.get_param_local(params, 'mewf_rank_key', 'maha');
     n1 = numel(r1_ids);
     n2 = numel(r2_ids);
     keep_idx = [];

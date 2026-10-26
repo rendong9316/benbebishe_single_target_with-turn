@@ -24,9 +24,17 @@ Thumbs.db
 # 诊断与临时产物
 _audit/*.mat
 _audit/*.png
+_audit/*.log
+_audit/cache/
+_audit/smoke_log.txt
 .drafts/
 logs/
 temp_*
+
+# 源码备份（改源码前的 .bak，不入库）
+*.bak
+*.bak2
+*.bak3
 
 # 大批量实验结果（体积大，可由 experiments/ 脚本重跑复现）
 results/paper/

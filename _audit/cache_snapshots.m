@@ -103,6 +103,10 @@ function out = slim_snaps(snaps)
             if isfield(trk, 'truth_idx'), s.truth_idx = trk.truth_idx; else, s.truth_idx = 0; end
             if isfield(trk, 'ukf') && ~isempty(trk.ukf) && isfield(trk.ukf, 'x') && isfield(trk.ukf, 'P')
                 s.ukf = struct('x', trk.ukf.x, 'P', trk.ukf.P);
+                % Q 必须保留：融合下游 build_faded_track_segments 需要 trk.ukf.Q
+                % （缺失会报「无法识别的字段名称 "Q"」）。配对本身不用，但
+                % 缓存要同时支撑「配对质量」与「融合 RMSE」两类下游实验。
+                if isfield(trk.ukf, 'Q'), s.ukf.Q = trk.ukf.Q; end
             else
                 s.ukf = [];
             end

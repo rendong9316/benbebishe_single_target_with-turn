@@ -138,6 +138,7 @@ function result = run(scenario_name, params_override)
     % ====== Phase 6: 跨雷达航迹匹配 ======
     % 支持的匹配方法（params.track_matcher_method）：
     %   'dualgate'    — 三判据关联（位置 + 马氏 + 速度，含 1v1 互斥），默认
+    %   'mewf'        — 多证据加权融合（判定层四特征软融合 + 指派层马氏全局最优）
     %   'nn'          — 朴素最近邻基线（仅位置距离贪心 1v1，无门限/无时间校验）
     %   'sequential'  — 序贯最近邻基线（马氏距离门限 + 贪心 1v1，无时间连续性/速度判据）
     %   'legacy'      — 原 fusion/track_matcher.m（已废弃，仅向后兼容，正常不应使用）
@@ -148,6 +149,8 @@ function result = run(scenario_name, params_override)
     switch lower(matcher_method)
         case 'dualgate'
             matched_pairs_struct = track_matcher_dualgate(trackSnapshots_R1, aligned_R2, params);
+        case 'mewf'
+            matched_pairs_struct = track_matcher_mewf(trackSnapshots_R1, aligned_R2, params);
         case 'nn'
             matched_pairs_struct = track_matcher_nn(trackSnapshots_R1, aligned_R2, params);
         case 'sequential'
