@@ -14,8 +14,11 @@ function matched_pairs = track_matcher_nn(trackSnapshots_R1, trackSnapshots_R2, 
 %   输出 matched_pairs — struct 数组，含 R1_track_id / R2_track_id /
 %                        mean_dist_km / coexist_count
     n_frames = length(trackSnapshots_R1);
-    r1_ids = pairing.collect_active_ids(trackSnapshots_R1);
-    r2_ids = pairing.collect_active_ids(trackSnapshots_R2);
+    % 预建索引：一次性抽取 (帧×航迹) 状态矩阵，避免逐帧线性查找（密集场景提速约两个数量级）
+    I1 = pairing.build_track_index(trackSnapshots_R1, n_frames);
+    I2 = pairing.build_track_index(trackSnapshots_R2, n_frames);
+    r1_ids = I1.ids;
+    r2_ids = I2.ids;
     matched_pairs = struct('R1_track_id', {}, 'R2_track_id', {}, 'mean_dist_km', {}, 'coexist_count', {});
     if isempty(r1_ids) || isempty(r2_ids), return; end
 
@@ -23,8 +26,7 @@ function matched_pairs = track_matcher_nn(trackSnapshots_R1, trackSnapshots_R2, 
     cand = {};
     for i = 1:numel(r1_ids)
         for j = 1:numel(r2_ids)
-            [md, nc] = pairing.mean_dist(trackSnapshots_R1, trackSnapshots_R2, ...
-                r1_ids(i), r2_ids(j), n_frames);
+            [md, nc] = pairing.mean_dist_fast(I1, I2, r1_ids(i), r2_ids(j));
             if nc >= 1 && isfinite(md)
                 cand{end+1} = struct('r1', r1_ids(i), 'r2', r2_ids(j), 'md', md, 'nc', nc);  %#ok<AGROW>
             end

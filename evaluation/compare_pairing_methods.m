@@ -27,14 +27,14 @@ function cmp = compare_pairing_methods(S, do_fusion)
     % ---------- 四种配对方法 ----------
     p_nn  = track_matcher_nn(R1, R2, params);
     p_seq = track_matcher_sequential(R1, R2, params);
-    p_dg  = track_matcher_dualgate(R1, R2, params);                 % 默认即三判据
+    p_dg  = track_matcher_dualgate_fast(R1, R2, params);            % 默认即三判据（索引化加速版，与原版严格等价）
 
     p_dg2 = [];
     if do_fusion
         p_dg2_params = params;
         p_dg2_params.dualgate_use_maha = false;                     % 消融：关马氏判据
         p_dg2_params.dualgate_use_vel  = false;                     % 消融：关速度判据
-        p_dg2 = track_matcher_dualgate(R1, R2, p_dg2_params);
+        p_dg2 = track_matcher_dualgate_fast(R1, R2, p_dg2_params);
     end
 
     methods = {'NN', 'Sequential', 'DualGate(三判据)'};

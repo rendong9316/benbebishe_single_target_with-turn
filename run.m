@@ -117,6 +117,24 @@ function result = run(scenario_name, params_override)
     aligned_R2 = time_align_tracks(trackSnapshots_R2, params);
     fprintf('R2 已回退对齐到 R1 时间基准: %.1fs%s', params.time_offset_radar2_sec, newline);
 
+    % ====== 快速模式（离线配对对比用）======
+    % params.fast_mode=true 时，跳过跨站匹配与融合/评估/绘图，仅返回对齐快照。
+    % 必须放在 Phase 6 之前：否则密集场景（数百航迹）会在此跑一遍 O(N×M) 的
+    % dualgate 匹配（实测 203 航迹 >20 分钟），而离线对比根本不需要这次匹配。
+    if isfield(params, 'fast_mode') && params.fast_mode
+        result = struct();
+        result.params = params;
+        result.scenario = scenario;
+        result.truth_all = truth_all;
+        result.truthTrajs = truthTrajs;
+        result.trackSnapshots_R1 = trackSnapshots_R1;
+        result.trackSnapshots_R2 = trackSnapshots_R2;
+        result.aligned_R2 = aligned_R2;
+        result.n_frames = n_frames;
+        fprintf('%s[fast_mode] 已跳过匹配/融合/绘图，仅返回对齐快照。%s', newline, newline);
+        return;
+    end
+
     % ====== Phase 6: 跨雷达航迹匹配 ======
     % 支持的匹配方法（params.track_matcher_method）：
     %   'dualgate'    — 三判据关联（位置 + 马氏 + 速度，含 1v1 互斥），默认
@@ -139,23 +157,6 @@ function result = run(scenario_name, params_override)
             matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
     end
     print_match_summary(matched_pairs_struct);
-
-    % ====== 快速模式（离线配对对比用）======
-    % params.fast_mode=true 时，跳过融合/评估/绘图（Phase 7-10），仅返回对齐快照。
-    % 默认关闭，不影响任何既有实验行为。
-    if isfield(params, 'fast_mode') && params.fast_mode
-        result = struct();
-        result.params = params;
-        result.scenario = scenario;
-        result.truth_all = truth_all;
-        result.truthTrajs = truthTrajs;
-        result.trackSnapshots_R1 = trackSnapshots_R1;
-        result.trackSnapshots_R2 = trackSnapshots_R2;
-        result.aligned_R2 = aligned_R2;
-        result.n_frames = n_frames;
-        fprintf('%s[fast_mode] 已跳过融合/绘图，仅返回对齐快照。%s', newline, newline);
-        return;
-    end
 
 
     % ====== Phase 7: 航迹融合 ======

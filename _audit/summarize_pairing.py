@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""汇总 pairing_baseline_results.csv：按方法聚合配对质量与融合 RMSE（mean±std）
+"""汇总 pairing_baseline_v2.csv：按方法 / 场景 / 密度分组聚合
 用法: python summarize_pairing.py
 输出 Markdown 表格，可直接贴论文 4.4 节。
 """
@@ -9,11 +9,14 @@ import statistics as st
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSV = os.path.join(HERE, "pairing_baseline_results.csv")
+CSV = os.path.join(HERE, "pairing_baseline_v2.csv")
+
+# 场景密度分组
+DENSE = {"adsb_0608", "adsb_0911"}
+ORDER = ["NN", "Sequential", "DualGate(三判据)", "DualGate(双门限)"]
 
 
 def read_csv(path):
-    # MATLAB 在中文 Windows 默认 GBK 落盘，逐个尝试
     for enc in ("gbk", "utf-8", "utf-8-sig"):
         try:
             with open(path, "r", encoding=enc, newline="") as f:
@@ -32,66 +35,89 @@ def fnum(x):
         return float("nan")
 
 
+def ms(vals):
+    vals = [v for v in vals if v == v]
+    if not vals:
+        return "-"
+    if len(vals) == 1:
+        return "%.4f" % vals[0]
+    return "%.4f±%.4f" % (st.mean(vals), st.pstdev(vals))
+
+
 def main():
     rows = read_csv(CSV)
-    print("读入 %d 行" % len(rows))
-    cols = rows[0].keys()
-    has_fusion = "SCC" in cols
+    print("读入 %d 行\n" % len(rows))
+    has_fusion = "SCC" in rows[0].keys()
+    methods = [m for m in ORDER if any(r["method"] == m for r in rows)]
+    methods += [m for m in {r["method"] for r in rows} if m not in methods]
 
-    # 按 method 聚合
-    agg = defaultdict(lambda: defaultdict(list))
-    for r in rows:
-        m = r["method"]
-        for k in ("n_pairs", "n_correct", "n_wrong", "n_missed",
-                  "precision", "recall", "wrong_rate", "n_true_both"):
-            if k in r:
-                agg[m][k].append(fnum(r[k]))
-        if has_fusion:
-            for k in ("SCC", "BC", "CI", "FCI"):
-                agg[m][k].append(fnum(r[k]))
-
-    order = ["NN", "Sequential", "DualGate(三判据)", "DualGate(双门限)"]
-    methods = [m for m in order if m in agg] + [m for m in agg if m not in order]
-
-    def ms(vals):
-        vals = [v for v in vals if v == v]  # 去 nan
-        if not vals:
-            return "-"
-        if len(vals) == 1:
-            return "%.4f" % vals[0]
-        return "%.4f±%.4f" % (st.mean(vals), st.pstdev(vals))
-
-    print("\n## 配对质量（跨场景均值）\n")
-    print("| 方法 | 正确对 | 误配对 | 漏配 | 查准率 P | 查全率 R | 误配率 |")
-    print("|---|---|---|---|---|---|---|")
-    for m in methods:
-        a = agg[m]
-        print("| %s | %s | %s | %s | %s | %s | %s |" % (
-            m,
-            ms(a["n_correct"]), ms(a["n_wrong"]), ms(a["n_missed"]),
-            ms(a["precision"]), ms(a["recall"]), ms(a["wrong_rate"])))
-
-    if has_fusion:
-        print("\n## 融合 RMSE（km，跨场景均值）\n")
-        print("| 方法 | SCC | BC | CI | FCI |")
-        print("|---|---|---|---|---|")
+    # ---------- 1. 按密度分组：核心结论 ----------
+    for label, keep in (("稀疏场景 (adsb_0002 / adsb_span)", lambda r: r["scene"] not in DENSE),
+                        ("密集场景 (adsb_0608 / adsb_0911)", lambda r: r["scene"] in DENSE)):
+        sub = [r for r in rows if keep(r)]
+        if not sub:
+            continue
+        print("## %s\n" % label)
+        print("| 方法 | 配对数 | 正确 | 误配 | 漏配 | 查准率 P | 查全率 R | 误配率 |")
+        print("|---|---|---|---|---|---|---|---|")
         for m in methods:
-            a = agg[m]
-            print("| %s | %s | %s | %s | %s |" % (
-                m, ms(a["SCC"]), ms(a["BC"]), ms(a["CI"]), ms(a["FCI"])))
-
-        # 三判据相对 NN 的改进幅度
-        if "NN" in agg and "DualGate(三判据)" in agg:
-            print("\n## 三判据 vs NN（SCC RMSE 相对改进）\n")
-            for m in ("Sequential", "DualGate(三判据)", "DualGate(双门限)"):
-                if m not in agg:
+            rs = [r for r in sub if r["method"] == m]
+            if not rs:
+                continue
+            g = lambda k: [fnum(r[k]) for r in rs]
+            print("| %s | %s | %s | **%s** | %s | %s | %s | %s |" % (
+                m, ms(g("n_pairs")), ms(g("n_correct")), ms(g("n_wrong")),
+                ms(g("n_missed")), ms(g("precision")), ms(g("recall")),
+                ms(g("wrong_rate"))))
+        if has_fusion:
+            print("\n| 方法 | SCC | BC | CI | FCI |")
+            print("|---|---|---|---|---|")
+            for m in methods:
+                rs = [r for r in sub if r["method"] == m]
+                if not rs:
                     continue
-                nn = [v for v in agg["NN"]["SCC"] if v == v]
-                mm = [v for v in agg[m]["SCC"] if v == v]
-                if nn and mm:
-                    n_mean, m_mean = st.mean(nn), st.mean(mm)
-                    imp = (n_mean - m_mean) / n_mean * 100
-                    print("- %s: %.3f → %.3f km (%+.2f%%)" % (m, n_mean, m_mean, imp))
+                g = lambda k: [fnum(r[k]) for r in rs]
+                print("| %s | %s | %s | %s | %s |" % (
+                    m, ms(g("SCC")), ms(g("BC")), ms(g("CI")), ms(g("FCI"))))
+        print()
+
+    # ---------- 2. 逐场景误配数（最直观） ----------
+    print("## 逐场景误配数\n")
+    scenes = sorted({r["scene"] for r in rows})
+    print("| 场景 | " + " | ".join(methods) + " |")
+    print("|---" * (len(methods) + 1) + "|")
+    for sc in scenes:
+        cells = []
+        for m in methods:
+            rs = [r for r in rows if r["scene"] == sc and r["method"] == m]
+            cells.append(ms([fnum(r["n_wrong"]) for r in rs]) if rs else "-")
+        print("| %s | %s |" % (sc, " | ".join(cells)))
+    print()
+
+    # ---------- 3. 逐场景查准率 ----------
+    print("## 逐场景查准率 P\n")
+    print("| 场景 | " + " | ".join(methods) + " |")
+    print("|---" * (len(methods) + 1) + "|")
+    for sc in scenes:
+        cells = []
+        for m in methods:
+            rs = [r for r in rows if r["scene"] == sc and r["method"] == m]
+            cells.append(ms([fnum(r["precision"]) for r in rs]) if rs else "-")
+        print("| %s | %s |" % (sc, " | ".join(cells)))
+    print()
+
+    # ---------- 4. 密集场景：加门限对 NN 的误配抑制 ----------
+    dense = [r for r in rows if r["scene"] in DENSE]
+    if dense:
+        print("## 密集场景：加门限对 NN 的误配抑制\n")
+        base = [fnum(r["n_wrong"]) for r in dense if r["method"] == "NN"]
+        if base and st.mean(base) > 0:
+            for m in methods[1:]:
+                cur = [fnum(r["n_wrong"]) for r in dense if r["method"] == m]
+                if cur:
+                    red = (st.mean(base) - st.mean(cur)) / st.mean(base) * 100
+                    print("- %s：平均误配 %.2f → %.2f（降低 %.1f%%）" % (
+                        m, st.mean(base), st.mean(cur), red))
 
 
 if __name__ == "__main__":

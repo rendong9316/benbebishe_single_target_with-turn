@@ -16,8 +16,11 @@ function matched_pairs = track_matcher_sequential(trackSnapshots_R1, trackSnapsh
     maha_ratio  = pairing.get_param_local(params, 'dualgate_maha_ratio', 0.8);
     coexist_thresh = pairing.get_param_local(params, 'dualgate_coexist_thresh', 3);
 
-    r1_ids = pairing.collect_active_ids(trackSnapshots_R1);
-    r2_ids = pairing.collect_active_ids(trackSnapshots_R2);
+    % 预建索引：一次性抽取 (帧×航迹) 状态矩阵，避免逐帧线性查找
+    I1 = pairing.build_track_index(trackSnapshots_R1, n_frames);
+    I2 = pairing.build_track_index(trackSnapshots_R2, n_frames);
+    r1_ids = I1.ids;
+    r2_ids = I2.ids;
     matched_pairs = struct('R1_track_id', {}, 'R2_track_id', {}, 'mean_dist_km', {}, ...
         'coexist_count', {}, 'maha_mean', {}, 'maha_ratio', {});
     if isempty(r1_ids) || isempty(r2_ids), return; end
@@ -26,8 +29,7 @@ function matched_pairs = track_matcher_sequential(trackSnapshots_R1, trackSnapsh
     cand = {};
     for i = 1:numel(r1_ids)
         for j = 1:numel(r2_ids)
-            [md, nc, D2, valid] = pairing.pair_stats(trackSnapshots_R1, trackSnapshots_R2, ...
-                r1_ids(i), r2_ids(j), n_frames);
+            [md, nc, D2, valid] = pairing.pair_stats_fast(I1, I2, r1_ids(i), r2_ids(j));
             if nc < coexist_thresh || ~isfinite(md), continue; end
             if md >= T1, continue; end                       % 位置粗筛（与双门限一致）
             if ~any(valid), continue; end
