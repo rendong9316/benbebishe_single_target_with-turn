@@ -58,6 +58,15 @@ function ukf = create_ukf(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
     ukf.tx_lat = tx_lat;
     ukf.dt = dt;
 
+    % 电离层等效虚高（米）—— 量测模型与反演内部统一使用
+    % 【2026-10-26】由 radar_params 提供（缺省 300 km）。时空配准估计出真实
+    % 虚高后会被覆盖，使滤波器正演模型与真实传播路径一致。
+    if isfield(params, 'iono_h_m') && isfinite(double(params.iono_h_m))
+        ukf.iono_h_m = double(params.iono_h_m);
+    else
+        ukf.iono_h_m = 300000.0;
+    end
+
     % 第2部分：UKF 核心参数计算
     % n = 4：状态维度（经度、经度速度、纬度、纬度速度）
     n = 4;
@@ -505,7 +514,7 @@ function z = measurement_ukf(ukf, x)
     % 步骤2：天波群距离 Rg = r_tx + r_rx（弦长+电离层虚高模型）
     % 调用 skywave_geometry 计算发射机-目标-接收机的群距离
     rng = skywave_geometry('group_range', ukf.tx_lon, ukf.tx_lat, ...
-        ukf.radar_lon, ukf.radar_lat, lon, lat);
+        ukf.radar_lon, ukf.radar_lat, lon, lat, ukf.iono_h_m);
 
     % 步骤3：方位角（接收站→目标，球面方位角，与仿真端共用）
     az = skywave_geometry('azimuth', ukf.radar_lon, ukf.radar_lat, lon, lat);
@@ -741,7 +750,7 @@ function [lon, lat] = meas_to_latlon_ukf(ukf, rng, az)
         [tgt_lon, tgt_lat] = sphere_utils_destination_point(ukf.radar_lon, ukf.radar_lat, r1, az);
         % 用天波模型计算该位置的预测群距离
         Rg_pred = skywave_geometry('group_range', ukf.tx_lon, ukf.tx_lat, ...
-            ukf.radar_lon, ukf.radar_lat, tgt_lon, tgt_lat);
+            ukf.radar_lon, ukf.radar_lat, tgt_lon, tgt_lat, ukf.iono_h_m);
         err = rng - Rg_pred;  % 残差
         if abs(err) < 1.0
             break;  % 收敛（残差 < 1m）

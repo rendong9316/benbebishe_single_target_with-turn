@@ -45,7 +45,14 @@
 %   物理意义：如果预测群距离偏小，说明 r1 估计过小，按比例放大
 %
 % =========================================================================
-function [r1, lat, lon] = bistatic_inverse_solver(Rg, az, tx_lon, tx_lat, rx_lon, rx_lat)
+function [r1, lat, lon] = bistatic_inverse_solver(Rg, az, tx_lon, tx_lat, rx_lon, rx_lat, h_m)
+    % 【2026-10-26 新增第7参数】h_m — 电离层等效虚高（米）
+    %   缺省 300 km，与旧版硬编码行为完全一致（向后兼容）。
+    %   时空配准估计出真实虚高后，由调用方传入估计值，使反演的正演模型
+    %   与真实传播路径一致，从而消除随距离变化的群距离偏差。
+    if nargin < 7 || isempty(h_m) || ~isfinite(h_m)
+        h_m = 300000.0;
+    end
     % ---------------------------------------------------------------
     % 第1步：经典双基地反解初值（假设 Rg = r0 + r1 为大圆距离和）
     % 这是 OTH-SWR 文献中的经典反解公式，忽略天波效应，将群距离
@@ -89,7 +96,7 @@ function [r1, lat, lon] = bistatic_inverse_solver(Rg, az, tx_lon, tx_lat, rx_lon
         % 用天波几何模型计算当前目标位置的预测群距离
         % skywave_geometry('group_range', ...) 根据电离层反射模型
         % 计算真实的群距离 Rg_pred = r_tx + r_rx（考虑电离层高度 H）
-        Rg_pred = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat);
+        Rg_pred = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat, h_m);
 
         % 计算当前预测群距离与实测群距离的误差
         err = Rg - Rg_pred;

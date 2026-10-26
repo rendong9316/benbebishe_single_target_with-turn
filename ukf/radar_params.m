@@ -60,4 +60,9 @@ function params_r = radar_params(params, radar_id)
     params_r.gate_sigma          = params.([prefix 'gate_sigma']);
     params_r.gate_vr_ms          = params.([prefix 'gate_vr_ms']);
     params_r.tracker_K_loss      = params.([prefix 'tracker_K_loss']);
+
+    % 电离层等效虚高（米）—— 供 UKF 量测模型使用
+    % 【2026-10-26】配准后本字段会被估计值覆盖，使滤波器的正演模型与真实传播一致。
+    % 缺省取全局标称值 300 km，与旧版硬编码行为一致。
+    params_r.iono_h_m = iono_h(params, 'assumed', radar_id);
 end

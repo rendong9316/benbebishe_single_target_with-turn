@@ -24,8 +24,16 @@
 %   D       = skywave_geometry('chord_length', lon1, lat1, lon2, lat2)
 %   r       = skywave_geometry('slant_range', D)
 %   Rg      = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat)
+%   Rg      = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat, h)
 %   vd      = skywave_geometry('doppler', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat, lon_rate, lat_rate)
 %   az      = skywave_geometry('azimuth', lon_from, lat_from, lon_to, lat_to)
+%   az      = skywave_geometry('azimuth', lon_from, lat_from, lon_to, lat_to, h)
+%
+% 可选虚高参数 h（单位：米）：
+%   group_range / azimuth 支持末尾追加一个可选参数 h，用于把电离层等效虚高
+%   从硬编码的 300 km 改为调用方指定值（时空配准模块需要把 h 作为待估参数）。
+%   - 不传 h 或传空 [] 时，行为与旧版完全一致（h = 300 km）；
+%   - azimuth 的几何定义与 h 无关，该参数仅为接口对称而接受，被忽略。
 %   [r_tx, r_rx, D_tx, D_rx, sigma_tx, sigma_rx, az_tx, az_rx] = skywave_geometry('full', tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat)
 % =========================================================================
 
@@ -53,13 +61,20 @@ function varargout = skywave_geometry(action, varargin)
             varargout{1} = sqrt(D^2 + (2.0 * H)^2);
 
         case 'group_range'
-            [tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat] = deal(varargin{:});
+            [tx_lon, tx_lat, rx_lon, rx_lat, tgt_lon, tgt_lat] = ...
+                deal(varargin{1}, varargin{2}, varargin{3}, varargin{4}, varargin{5}, varargin{6});
+            % 可选第 7 参数：电离层等效虚高（米），缺省沿用常量 H = 300 km
+            if numel(varargin) >= 7 && ~isempty(varargin{7})
+                h_use = varargin{7};
+            else
+                h_use = H;
+            end
             sigma_tx = geocentric_angle_impl(tx_lon, tx_lat, tgt_lon, tgt_lat);
             sigma_rx = geocentric_angle_impl(rx_lon, rx_lat, tgt_lon, tgt_lat);
             D_tx = 2.0 * R_e * sin(sigma_tx / 2.0);
             D_rx = 2.0 * R_e * sin(sigma_rx / 2.0);
-            r_tx = sqrt(D_tx^2 + (2.0 * H)^2);
-            r_rx = sqrt(D_rx^2 + (2.0 * H)^2);
+            r_tx = sqrt(D_tx.^2 + (2.0 * h_use).^2);
+            r_rx = sqrt(D_rx.^2 + (2.0 * h_use).^2);
             varargout{1} = r_tx + r_rx;
 
         case 'doppler'
@@ -68,7 +83,9 @@ function varargout = skywave_geometry(action, varargin)
                 tgt_lon, tgt_lat, lon_rate, lat_rate, R_e, H);
 
         case 'azimuth'
-            [lon_from, lat_from, lon_to, lat_to] = deal(varargin{:});
+            [lon_from, lat_from, lon_to, lat_to] = ...
+                deal(varargin{1}, varargin{2}, varargin{3}, varargin{4});
+            % 可选第 5 参数 h 仅用于接口对称（方位角与电离层虚高无关），被忽略
             varargout{1} = azimuth_impl(lon_from, lat_from, lon_to, lat_to);
 
         case 'full'
@@ -98,13 +115,16 @@ end
 
 % =========================================================================
 % geocentric_angle_impl — Haversine 公式计算两点间地心角 σ（弧度）
+%
+% 逐元素运算（.^ / 标量-数组运算），支持 lon2/lat2 为数组，便于时空配准
+% 模块一次性正演整条航迹；输入为标量时结果与旧版完全一致。
 % =========================================================================
 function sigma = geocentric_angle_impl(lon1, lat1, lon2, lat2)
     dlon = deg2rad(lon2 - lon1);
     dlat = deg2rad(lat2 - lat1);
     lat1_rad = deg2rad(lat1);
     lat2_rad = deg2rad(lat2);
-    a = sin(dlat / 2.0)^2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2.0)^2;
+    a = sin(dlat / 2.0).^2 + cos(lat1_rad) .* cos(lat2_rad) .* sin(dlon / 2.0).^2;
     a = max(0.0, min(1.0, a));
     sigma = 2.0 * atan2(sqrt(a), sqrt(1.0 - a));
 end
@@ -112,14 +132,16 @@ end
 
 % =========================================================================
 % azimuth_impl — 球面方位角（大圆初始方位角）
+%
+% 逐元素运算（.*），支持 lon_to/lat_to 为数组；标量输入时与旧版完全一致。
 % =========================================================================
 function az = azimuth_impl(lon_from, lat_from, lon_to, lat_to)
     dlon = deg2rad(lon_to - lon_from);
     lat_from_rad = deg2rad(lat_from);
     lat_to_rad = deg2rad(lat_to);
-    y = sin(dlon) * cos(lat_to_rad);
-    x = cos(lat_from_rad) * sin(lat_to_rad) ...
-      - sin(lat_from_rad) * cos(lat_to_rad) * cos(dlon);
+    y = sin(dlon) .* cos(lat_to_rad);
+    x = cos(lat_from_rad) .* sin(lat_to_rad) ...
+      - sin(lat_from_rad) .* cos(lat_to_rad) .* cos(dlon);
     az = mod(rad2deg(atan2(y, x)), 360.0);
 end
 

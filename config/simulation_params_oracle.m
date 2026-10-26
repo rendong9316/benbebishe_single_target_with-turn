@@ -44,22 +44,23 @@ function params = simulation_params_oracle()
 
     % ==================== 雷达站几何坐标（WGS84 经纬度）====================
     % R1 接收站位置（经度 113.0E, 纬度 33.5N，位于湖北境内）
-    params.radar1_lon     = 113.0;  params.radar1_lat     = 33.5;
+    params.coordinate_lon_offset_deg = -9.0;
+    params.radar1_lon     = 104.0;  params.radar1_lat     = 30.7;
     % R2 接收站位置（经度 115.0E, 纬度 33.0N，位于河南境内，与 R1 相距约 200km）
-    params.radar2_lon     = 115.0;  params.radar2_lat     = 33.0;
+    params.radar2_lon     = 106.5;  params.radar2_lat     = 29.6;
     % R1 发射站位置（与 R1 接收站构成双基地几何，经度差 4° 即约 370km 基线）
     % R1 Tx-Rx 基线约 370 km（经度差 4° ≈ 370 km）
-    params.radar1_tx_lon  = 109.0;  params.radar1_tx_lat  = 33.5;
+    params.radar1_tx_lon  = 100.0;  params.radar1_tx_lat  = 30.7;
     % R2 发射站位置（与 R2 接收站同纬度，经度 111.0E，基线约 220km）
-    params.radar2_tx_lon  = 111.0;  params.radar2_tx_lat  = 33.0;
+    params.radar2_tx_lon  = 102.5;  params.radar2_tx_lat  = 29.6;
 
     % ==================== 雷达波束覆盖参数 ====================
     % R1 波束指向：正东略偏南（92°，从正北顺时针度量）
-    params.radar1_beam_center_deg = 92.0;
+    params.radar1_beam_center_deg = 93.0;
     % R2 波束指向：91°，与 R1 基本平行，覆盖区域有重叠
-    params.radar2_beam_center_deg = 91.0;
+    params.radar2_beam_center_deg = 93.0;
     % 3dB 波束宽度：15°（波束半功率点宽度）
-    params.beam_width_deg         = 15.0;
+    params.beam_width_deg         = 45.0;
     % OTH-SWR 单跳的最小/最大地面距离（km）
     % 小于 1000km 的信号被地物杂波淹没，大于 2000km 信号衰减过大
     params.range_min_km = 1000.0;
@@ -72,7 +73,7 @@ function params = simulation_params_oracle()
     % 航路由起点和终点两个航路点定义（直线段飞行，转弯场景由 build_truth_scenario 覆盖）
     % 格式：[经度, 纬度, 高度(km)]，高度 0 表示地面/海平面
     % 起点 (127.5, 31.0) 位于南海北部，终点 (130.5, 33.0) 位于东海海域
-    params.aircraft_waypoints = [127.5, 31.0, 0.0; 130.5, 33.0, 0.0];
+    params.aircraft_waypoints = [118.5, 31.0, 0.0; 121.5, 33.0, 0.0];
     % 民航巡航速度约 Ma0.78 ≈ 230 m/s（高空标准大气条件下）
     params.aircraft_speed_ms  = 230.0;
     params.truth_turn_rate_deg_per_sec = 1.0;
@@ -160,9 +161,42 @@ function params = simulation_params_oracle()
     % Single-station IMM uses CV, fixed-rate left CT, and fixed-rate right CT.
     % Only the positive magnitude is configured; the right-turn model uses -omega.
     params.imm_turn_rate_rad_per_sec = 1.0 * pi / 180;
+    % 【2026-10-26】CT 模型转弯率（deg/s），可配置。
+    % 实测真实 ADS-B 航迹转弯率中位 0.012 °/s、p90 0.23、p99 0.66，
+    % 原默认 0.7/1.5 对应 p99 与极端机动，90% 时间两模型都不匹配。
+    % 消融实验 E7 对比 {0.7,1.5} / {0.2,0.7} / {0.05,0.2} 三档。
+    params.imm_ct_omega_slow_deg = 0.7;
+    params.imm_ct_omega_fast_deg = 1.5;
+
+    % ==================== 电离层虚高与时空配准（2026-10-26 新增）====================
+    % 【为什么需要分开设】本课题的时空配准要解决的核心误差源是"电离层虚高失配"：
+    %   真实传播的等效虚高约 320 km，而系统假定 300 km。二者失配会使群距离偏差
+    %   随目标距离变化（近距约 20 km、远距约 11 km），无法用常数偏差补偿。
+    %   若仿真里真值与标称值相同，则该误差源根本不存在，三参数配准退化为
+    %   平凡估计（h 恒等于 300），配准模块的价值无法体现。
+    %
+    %   ionosphere_true_h_km    : 量测生成用的真值（仅 generate_frame_detections_* 使用）
+    %   ionosphere_assumed_h_km : 反演/滤波/标定用的标称值（配准后会被估计值覆盖）
+    params.ionosphere_true_h_km    = 320.0;
+    params.ionosphere_assumed_h_km = 300.0;
+
+    % 配准模式：
+    %   'none'  — 不做任何偏差校正（下界基线）
+    %   'mean'  — 两参数均值标定（原实现：ΔR/Δθ 取均值，h 固定 300）
+    %   'mle3'  — 三参数联合最大似然（h, ΔR, Δθ），接入 dsv41 专利方法
+    params.registration_mode = 'mean';
+
+    % mle3 模式下，是否把估计出的 h 反馈给反演/滤波（真正消除距离相关偏差）
+    params.registration_apply_h = true;
+
+    % 标校数据的时间窗（与评估集必须零重叠，避免"用真值标定再用真值评估"）
+    % 留空表示不做时间限制（沿用原实现的区域筛选）
+    params.calib_utc_window = [];
+
     % 自适应模式选择：'3in1' = CV 瞬态增益 + CT 固定高机动 + IMM 慢概率融合
-    % 三种机制协同：瞬态增益应对突发机动，CT 模型跟踪持续转弯，IMM 平滑过渡
-    params.imm_adapt_mode  = '3in1';
+    % 【2026-10-25 决策】默认改为 'none'：3in1 与三段式 Q 调度功能重叠，
+    % 两者同时修改 Q 会互相抵消。保留 '3in1' 选项供消融实验对比。
+    params.imm_adapt_mode  = 'none';
     % 3in1 模式的慢变转移概率（比快速模式 0.001 更激进，0.03 意味着平均 33 帧切换）
     % 慢变模式在检测到机动趋势时更快响应，但又不至于频繁震荡
     params.imm_slow_Pi_CV_to_CT = 0.03;
@@ -187,7 +221,38 @@ function params = simulation_params_oracle()
 
     % ==================== 自适应 Q / 模糊控制参数 ====================
     % 启用模糊自适应 Q 估计（根据 NIS 动态调整过程噪声）
-    params.use_fuzzy_adaptive = true;
+    % 【2026-10-25 决策】默认关闭：与三段式 Q 调度冲突，只保留 Q 调度
+    params.use_fuzzy_adaptive = false;
+
+    % ==================== 三段式过程噪声调度（2026-10-25 新增）====================
+    % 【为什么需要】
+    %   实测：速度误差 80 m/s → 需 40 帧才收敛到 15 m/s。根因是 PSD=0.02 折算
+    %   Q_vel = 0.77 m/s/帧，滤波器认为速度几乎不变，几乎不修正初始速度误差。
+    %   同时 Pd=0.6 导致 37.6% 的帧是纯预测，速度未收敛时预测误差被放大。
+    %   结果：稳态段 RMSE 2.20 km（已达噪声下界），但整体被前 40 帧拖到 6.91 km。
+    %
+    % 【机制】起始段状态不确定度大 → 应信任量测（大 Q → 大增益 → 快速收敛）
+    %        稳态段不确定度小 → 应信任模型（小 Q → 平滑）
+    %   两阶段严格优于单一 Q（各取所需，不牺牲稳态精度）。
+    %
+    % 【取值】30 / 6 / 1 为基于实测推算的初值（收敛时间 ∝ 1/sqrt(Q)，
+    %   40 帧 → 约 7~12 帧），需 E-A1 消融实验标定。
+    % 【实测结论 2026-10-25】三段 Q 调度对 RMSE **单调有害**，默认关闭：
+    %   A0 无调度 6.882 km  →  A1 ×30  7.092 km (−3.1%)  →  ×1000  8.248 km (−19.8%)
+    % 原因：量测含多普勒（σ_vd=0.5 m/s），径向速度已由量测直接约束，
+    %   速度收敛不依赖 Q；而放大 Q 同时放大位置预测协方差，使位置更跟随
+    %   10 km 量级的量测噪声，抖动增加。横向速度误差受限于 σ_pos/(dt·√N)
+    %   ≈ 10 km/(30 s·√20) ≈ 74 m/s，与实测 80 m/s 吻合，属理论下界，滤波无法突破。
+    % 保留代码与参数供消融实验（论文中作为负结果）。
+    params.imm_q_schedule_enable = false;
+    params.imm_q_stage1_frames   = 5;    % life ≤ 5 帧：快速建立速度
+    params.imm_q_stage1_scale    = 30;   % PSD × 30 = 0.60
+    params.imm_q_stage2_frames   = 15;   % 6 ~ 15 帧：过渡
+    params.imm_q_stage2_scale    = 6;    % PSD × 6 = 0.12
+    params.imm_q_stage3_scale    = 1;    % > 15 帧：稳态平滑（原始 PSD=0.02）
+    % 漏检帧（无观测更新）额外膨胀：目标可能机动，且需避免协方差塌陷
+    % 置 1.0 可关闭该机制（用于消融 A1 vs A2）
+    params.imm_q_miss_scale      = 3;
     % NIS 滑动窗口大小（Fun_UpdateTrackByAsscResult_Oracle 中使用）
     % 用最近 3 帧的 NIS 值做模糊推理，窗口越大越平滑但响应越慢
     params.fuzzy_window_size  = 3;
@@ -282,6 +347,24 @@ function params = simulation_params_oracle()
     % mutual_exclusion=true 表示一旦某 R1 航迹匹配成功，就不再与其他 R2 匹配
     params.dualgate_mutual_exclusion = true;
 
+    % ---- 判据②：马氏距离平稳性检验（替代原"距离方差"）----
+    % 原方差判据无法区分"平行同向飞行的不同目标"（间距恒定 → 方差≈0）。
+    % 马氏距离把滤波器不确定度纳入判据：D² = Δx'·inv(P1+P2)·Δx ~ χ²(2)。
+    % use_maha=false 时退化为原距离方差判据（向后兼容）
+    params.dualgate_use_maha     = true;
+    % 马氏距离平方门限：χ²(2, 0.95) = 5.99
+    params.dualgate_maha_thresh  = 5.99;
+    % 窗口内 D² < 门限的帧占比下限（0.8 → 连续 8 帧至少 7 帧通过）
+    params.dualgate_maha_ratio   = 0.8;
+
+    % ---- 判据③：速度一致性（新增）----
+    % 平行航迹位置距离恒定，但不同航班速度不同，该判据可唯一区分。
+    % 判据：|v1-v2| < kappa·sqrt(trace(Pv1)+trace(Pv2))，速度单位 km/s
+    % use_vel=false 时不启用（向后兼容）
+    params.dualgate_use_vel      = true;
+    % 速度一致性倍数（3σ 门限）
+    params.dualgate_vel_kappa    = 3.0;
+
     % ==================== 动态航迹片段凝聚参数 ====================
     % 跨站候选至少需要的 effective 重叠帧数（5 帧）
     % 内部漏检保留（允许少量帧缺失），末端 tail 排除（防止拼接不连续片段）
@@ -351,9 +434,34 @@ function params = simulation_params_oracle()
     params.bridge.confidence_mahal_gate = 13.2767;
 
     % ==================== 数据源与随机种子 ====================
-    % ADS-B 原始数据 CSV 文件路径（用于生成真值轨迹）
-    % 文件名含日期时间戳，便于追溯数据来源
-    params.adsb_csv_path = '2026-04-27 09-30-00.csv';
+    % ADS-B 标校数据 CSV 文件路径
+    %
+    % 【2026-10-26 更换】原先用 '2026-04-27 09-30-00.csv'（旧数据，需 -9° 平移）。
+    % 现改为从 fr24_adsb_20261024.csv 提取的专用标校集 calib_utc12_18.csv：
+    %   - 时间窗 UTC 12-18，与评估集（00-02 / 06-08 / 09-11）零重叠，
+    %     避免"用真值标定、再用真值评估"的循环论证
+    %   - 空间窗 [105,125]E x [20,40]N，到两站距离跨度达 1441 / 1363 km（p5~p95）
+    %   - 距离跨度是分离电离层虚高 h 与群距离偏差 dR 的必要条件：
+    %     ∂Rg/∂h 随距离衰减，跨度小则 corr(h,dR) → -1，两者不可辨识
+    % 生成脚本：_analysis/build_calib_set.py
+    params.adsb_csv_path = 'data/adsb/calib_utc12_18.csv';
+    params.adsb_lon_offset_deg = 0.0;   % 新数据已是真实经纬度，不再平移
+    params.adsb_region_lon = [105.0, 125.0];
+    params.adsb_region_lat = [20.0, 40.0];
+    % ==================== 协方差校准与融合门控（2026-10-26 新增）====================
+    % 【依据】实测 NEES 显示真实场景 R1 报告的协方差低估约 2.4 倍
+    %   （NEES 均值 4.76，一致时应为 2；报告 36.7 km² vs 实际 72.4 km²），
+    %   导致 SCC 的信息融合权重错配，把过大权重给了实际更差的 R1。
+    %   kappa 由离线 NIS/NEES 统计标定，作为固定校准因子。
+    params.ccf_enable   = false;    % 默认关闭，供消融实验开启
+    params.ccf_kappa_1  = 2.40;     % R1 校准因子（NEES/2 ≈ 2.4）
+    params.ccf_kappa_2  = 1.00;     % R2 校准因子（NEES 1.80，基本一致）
+
+    % 【依据】分段实测：融合在近距段增益 +11~21%，远距段 −2~−22%。
+    %   若某站距目标超过 dmax 而另一站在范围内，直接用近站，避免融合反而变差。
+    params.fusion_gate_enable  = false;
+    params.fusion_gate_dmax_km = 1450;
+
     % 随机种子：42（确保仿真结果可复现）
     % MATLAB 中调用 rng(42) 设置随机数生成器状态
     params.random_seed   = 42;

@@ -104,8 +104,11 @@ function [detList, has_target_dets] = generate_frame_detections_multi(rx_lon, rx
 
             % ---- 计算目标的真实天波双基地量测值（无噪声、无偏差）----
             % 群距离 Rg = r_tx + r_rx，考虑电离层反射的真实传播路径
+            % 【2026-10-26】显式传入真实虚高 iono_h(params,'true')。
+            % 这是本课题"时空配准"的误差源：真值 320 km 与系统标称 300 km 失配，
+            % 使群距离偏差随距离变化，常数标定无法补偿。
             Rg_true = skywave_geometry('group_range', tx_lon, tx_lat, ...
-                rx_lon, rx_lat, tgt_lon, tgt_lat);
+                rx_lon, rx_lat, tgt_lon, tgt_lat, iono_h(params, 'true'));
 
             % 方位角 az：从接收站指向目标的球面方位角
             az_true = skywave_geometry('azimuth', rx_lon, rx_lat, tgt_lon, tgt_lat);
@@ -187,9 +190,9 @@ function [detList, has_target_dets] = generate_frame_detections_multi(rx_lon, rx
         [clut_lon, clut_lat] = sphere_utils_destination_point(rx_lon, rx_lat, fake_r1, fake_az);
 
         % ---- 计算杂波点的天波双基地群距离 ----
-        % 杂波点复用与目标完全一致的天波几何模型
+        % 杂波点复用与目标完全一致的天波几何模型（同样用真实虚高）
         fake_Rg = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, ...
-            clut_lon, clut_lat);
+            clut_lon, clut_lat, iono_h(params, 'true'));
 
         % ---- 杂波多普勒：在 [-200, +200] m/s 内均匀随机 ----
         % OTH-SWR 中电离层杂波的多普勒谱通常展宽在 ±200 m/s 范围内，
