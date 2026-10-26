@@ -3,3 +3,16 @@
 
 
 ===== mode = none =====
+  R1 = 88.453 km   R2 = 83.492 km   SCC = 87.189 km
+  rho = +0.378   NEES_R1 = 455.55   coverage = 82.7%
+  match = 0.0%   pairs = 1
+
+===== mode = mean =====
+  R1 = 6.754 km   R2 = 12.995 km   SCC = 7.466 km
+  rho = -0.091   NEES_R1 = 1.74   coverage = 92.9%
+  match = 100.0%   pairs = 3
+
+===== mode = mle3 =====
+  R1 = 6.694 km   R2 = 12.967 km   SCC = 7.371 km
+  rho = -0.109   NEES_R1 = 1.14   coverage = 92.9%
+  match = 100.0%   pairs = 3

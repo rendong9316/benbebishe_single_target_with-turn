@@ -233,6 +233,31 @@ function [scenes, cfgs, names] = define_exp(exp_id, base)
             cfgs  = {a, b};
             names = {'w07_15', 'w005_02'};
 
+        case 'E14_reg'
+            % 配准三模式对比：none（不校正）/ mean（两参数均值）/ mle3（三参数 MLE）
+            % 用于量化"电离层虚高失配"这一误差源，以及三参数配准能收回多少
+            scenes = {'adsb_0002', 'adsb_0608'};
+            cfgs = {}; names = {};
+            for md = {'none','mean','mle3'}
+                q = base; q.registration_mode = md{1};
+                cfgs{end+1} = q; names{end+1} = ['reg_' md{1}]; %#ok<AGROW>
+            end
+
+        case 'E15_hsens'
+            % 虚高失配敏感性：真值 h 从 310 到 380 km，看三参数配准的相对收益如何随失配增大
+            % 预期：失配越大，mean 的残余距离相关偏差越大，mle3 的优势越明显
+            scenes = {'adsb_0002'};
+            cfgs = {}; names = {};
+            for hh = [310 320 340 380]
+                for md = {'mean','mle3'}
+                    q = base;
+                    q.ionosphere_true_h_km = hh;
+                    q.registration_mode   = md{1};
+                    cfgs{end+1} = q;
+                    names{end+1} = sprintf('h%d_%s', hh, md{1}); %#ok<AGROW>
+                end
+            end
+
         otherwise
             error('run_experiments:unknownExp', '未知实验: %s', exp_id);
     end
