@@ -1,50 +1,17 @@
 % =========================================================================
-% ukf_imm.m — IMM（交互多模型）UKF 滤波器
+% ukf_imm.m -- IMM (Interacting Multiple Model) UKF Filter (5 models version)
 % =========================================================================
-% 【功能概述】
-%   封装 CV、固定左转 CT 和固定右转 CT 三模型 IMM 滤波的纯数学逻辑。
-%   对外暴露与 ukf_jichu / ukf_zishiying 完全一致的 action 接口：
-%     create → init → prepare → update
-%   内部维护三个独立 UKF 实例 + 模型概率 + Markov 转移矩阵。
+% Function: varargout = ukf_imm(action, varargin)
+% Dispatches to create_imm, init_imm, prepare_imm, update_imm
 %
-% 【IMM 循环（每帧）】
-%   prepare:
-%     1. 模型混合（Mixing）  — 各模型用混合初始状态
-%        利用 Markov 转移概率和当前模型概率，计算混合初始状态
-%        x_mix_j = Σ_i μ(i|j) * x_i，其中 μ(i|j) = P_ij * μ_i / c_bar_j
-%     2. 三模型独立预测       — CV/CT-left/CT-right 各自 UKF prepare
-%        混合后的状态分别输入 CV 和 CT 两个 UKF 实例做预测
-%     3. 组合输出             — 返回 mu 加权组合给 tracker 做关联
-%        状态和量测统计都按当前模型概率 mu 加权组合
-%   update:
-%     1. 重构加权量测         — z_weighted = innov_w + z_pred_comb
-%        将 PDA 加权新息还原为绝对量测值
-%     2. 各模型新息分解       — innov_cv, innov_ct
-%        计算每个模型相对于自身预测的新息
-%     3. 各模型独立更新       — 委托 ukf_jichu('update', ...)
-%     4. Pd-IPDA 似然度      — 文献: Musicki 2008, IEEE T-AES
-%        考虑检测概率 Pd 和门内概率 Pg 的似然度计算
-%     5. 贝叶斯概率更新       — mu_new ∝ L ⊙ (Pi' × mu)
-%        用似然度更新模型概率
-%     6. 概率钳位 [0.02,0.95]
-%        防止概率坍缩到 0 或 1
-%     7. 状态组合             — x_comb = Σ mu_i * x_i
-%     8. 自适应 Q            — 各模型 NIS 模糊 Q
-%
-% 【数学模型】
-%   CV: F_CV = [1 Δt 0 0; 0 1 0 0; 0 0 1 Δt; 0 0 0 1]
-%   CT: F_CT(ω) = [1, sin(ωΔt)/ω, 0, -(1-cos(ωΔt))/ω; ...]
-%   Markov Pi: 3x3 row-stochastic matrix in CV/CT-left/CT-right order.
-%
-% 【统一接口】
-%   ukf = ukf_imm('create',  params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
-%   ukf = ukf_imm('init',    ukf, meas1, meas2)
-%   [x_pred, z_pred, P_zz, ukf] = ukf_imm('prepare', ukf)
-%   [lon, lat, ukf] = ukf_imm('update',  ukf, innov_w)  % innov_w=[]→纯预测
-% =========================================================================
+% This implements a 5-model IMM with:
+%   Model 1: CV (constant velocity) - turn rate = 0
+%   Model 2: CTL-slow (left turn) - turn rate = +0.7 deg/s
+%   Model 3: CTL-fast (left turn) - turn rate = +1.5 deg/s
+%   Model 4: CTR-fast (right turn) - turn rate = -1.5 deg/s
+%   Model 5: CTR-slow (right turn) - turn rate = -0.7 deg/s
 
 function varargout = ukf_imm(action, varargin)
-    % 动作分发：将外部 action 请求转发到对应的内部函数
     switch action
         case 'create'
             varargout{1} = create_imm(varargin{:});
@@ -56,24 +23,14 @@ function varargout = ukf_imm(action, varargin)
         case 'update'
             [varargout{1}, varargout{2}, varargout{3}] = update_imm(varargin{:});
         otherwise
-            error('ukf_imm: unknown action ''%s''', action);
+            error('ukf_imm: unknown action %s', action);
     end
 end
 
-
 % =========================================================================
-% create_imm — 创建 IMM UKF 模板
-% params 需含: imm_turn_rate_rad_per_sec（CT 转弯率幅值 rad/s）
+% create_imm -- Create IMM UKF template (5 models)
 % =========================================================================
-% 此函数创建一个完整的 IMM 滤波器结构体，包含：
-%   - 三个独立 UKF 实例（CV、CT-left 和 CT-right）
-%   - Markov 转移概率矩阵 Pi
-%   - 初始模型概率 mu
-%   - IMM-IPDA 检测参数
-%   - 概率钳位边界
 function imm = create_imm(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
-    % ---- 第1部分：保存基础参数 ----
-    % 将雷达位置、发射机位置、时间间隔等存储到结构体中
     imm.params = params;
     imm.radar_lon = radar_lon;
     imm.radar_lat = radar_lat;
@@ -81,499 +38,491 @@ function imm = create_imm(params, radar_lon, radar_lat, tx_lon, tx_lat, dt)
     imm.tx_lat = tx_lat;
     imm.dt = dt;
 
-    % ---- 第2部分：创建 CV 模型 UKF ----
-    % CV（Constant Velocity）模型假设目标匀速直线运动
-    ukf_cv = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
+    % Turn rates in rad/s for 5 models
+    % 【2026-10-26】改为可配置：实测真实 ADS-B 航迹转弯率中位 0.012 °/s、
+    % p90 0.23、p99 0.66，而原默认 0.7/1.5 明显偏快（对应 p99 与极端机动）。
+    % 通过 params.imm_ct_omega_*_deg 可配置，默认保持 0.7/1.5 向后兼容。
+    omega_slow_deg = get_param_imm(params, 'imm_ct_omega_slow_deg', 0.7);
+    omega_fast_deg = get_param_imm(params, 'imm_ct_omega_fast_deg', 1.5);
+    omega_slow_rad = deg2rad(omega_slow_deg);
+    omega_fast_rad = deg2rad(omega_fast_deg);
 
-    % ---- 第3部分：创建 CT 模型 UKF ----
-    % CT（Constant Turn）模型假设目标以恒定转弯率运动
-    ukf_ct = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
-    ukf_ct_right = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
-    ukf_ct.model_type = 'CT';
-    ukf_ct_right.model_type = 'CT';
-    omega = abs(get_param_imm(params, 'imm_turn_rate_rad_per_sec', pi / 180));
-    if ~isfinite(omega) || omega <= 0
-        error('ukf_imm:invalidTurnRate', ...
-            'imm_turn_rate_rad_per_sec must be a finite positive magnitude.');
-    end
-    % Positive omega is left turn and negative omega is right turn in ENU.
-    ukf_ct.turn_rate_rad_per_sec = omega;
-    ukf_ct_right.turn_rate_rad_per_sec = -omega;
+    % Create 5 UKF instances
+    % Model 1: CV
+    ukf_cv = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
+    ukf_cv.model_type = 'CV';
+    ukf_cv.turn_rate_rad_per_sec = 0.0;
+
+    % Model 2: CTL slow (left turn, +0.7 deg/s)
+    ukf_ct_slow = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
+    ukf_ct_slow.model_type = 'CT';
+    ukf_ct_slow.turn_rate_rad_per_sec = omega_slow_rad;
+
+    % Model 3: CTL fast (left turn, +1.5 deg/s)
+    ukf_ct_fast = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
+    ukf_ct_fast.model_type = 'CT';
+    ukf_ct_fast.turn_rate_rad_per_sec = omega_fast_rad;
+
+    % Model 4: CTR fast (right turn, -1.5 deg/s)
+    ukf_ctr_fast = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
+    ukf_ctr_fast.model_type = 'CT';
+    ukf_ctr_fast.turn_rate_rad_per_sec = -omega_fast_rad;
+
+    % Model 5: CTR slow (right turn, -0.7 deg/s)
+    ukf_ctr_slow = ukf_jichu('create', params, radar_lon, radar_lat, tx_lon, tx_lat, dt);
+    ukf_ctr_slow.model_type = 'CT';
+    ukf_ctr_slow.turn_rate_rad_per_sec = -omega_slow_rad;
 
     imm.ukf_cv = ukf_cv;
-    imm.ukf_ct = ukf_ct;  % Backward-compatible field: positive/left CT.
-    imm.ukf_ct_right = ukf_ct_right;
+    imm.ukf_ct_slow = ukf_ct_slow;
+    imm.ukf_ct_fast = ukf_ct_fast;
+    imm.ukf_ctr_fast = ukf_ctr_fast;
+    imm.ukf_ctr_slow = ukf_ctr_slow;
+    imm.model_fields = {'ukf_cv', 'ukf_ct_slow', 'ukf_ct_fast', ...
+        'ukf_ctr_fast', 'ukf_ctr_slow'};
 
-    % ---- 第4部分：Markov 转移概率矩阵 ----
-    % Pi uses model order CV, CT-left, CT-right. The configured CV-to-CT
-    % probability is split equally between the two fixed turn directions.
-    if isfield(params, 'imm_Pi_CV_to_CT') && isfield(params, 'imm_Pi_CT_to_CV')
-        p_cv_ct = params.imm_Pi_CV_to_CT;
-        p_ct_cv = params.imm_Pi_CT_to_CV;
-        adapt_mode_local = '3in1';
-        if isfield(params, 'imm_adapt_mode'), adapt_mode_local = params.imm_adapt_mode; end
-        % 3in1 模式使用慢速转移概率（减少模型切换频率）
-        if strcmp(adapt_mode_local, '3in1')
-            if isfield(params, 'imm_slow_Pi_CV_to_CT'), p_cv_ct = params.imm_slow_Pi_CV_to_CT; end
-            if isfield(params, 'imm_slow_Pi_CT_to_CV'), p_ct_cv = params.imm_slow_Pi_CT_to_CV; end
-        end
-        if isfield(params, 'imm_cv_dwell_time_sec')
-            p_cv_ct = 1 - exp(-dt / params.imm_cv_dwell_time_sec);
-        end
-        % ---- 自适应转移概率方案一: mu_feedback动态调整 ----
-        % 保存base值到imm模板，供prepare_imm使用
-        if isfield(params, 'k_turnrate') && params.k_turnrate > 0
-            imm.adaptive_k = params.k_turnrate;
-            p_ct_cv_base = 1 - exp(-dt / params.imm_ct_dwell_time_sec);
-            imm.base_p_ct_cv = p_ct_cv_base;
-            % 左/右CT可分别配置（默认相同，非对称支持用不同值即可）
-            if isfield(params, 'k_turnrate_right')
-                % 右CT用不同的k值
-                p_ct_right_base = 1 - exp(-dt / (params.imm_ct_dwell_time_sec * params.right_ct_factor));
-                imm.base_p_ct_right = p_ct_right_base;
-            else
-                imm.base_p_ct_right = p_ct_cv_base;
-            end
-            p_ct_cv = p_ct_cv_base;
-        elseif isfield(params, 'imm_ct_dwell_time_sec')
-            p_ct_cv = 1 - exp(-dt / params.imm_ct_dwell_time_sec);
-        end
-        validate_transition_probability(p_cv_ct, 'CV_to_CT');
-        validate_transition_probability(p_ct_cv, 'CT_to_CV');
-        % p_cv_ct remains the total probability of entering either CT mode.
-        imm.Pi = [1-p_cv_ct, p_cv_ct/2, p_cv_ct/2;
-                  p_ct_cv, 1-p_ct_cv, 0;
-                  p_ct_cv, 0, 1-p_ct_cv];
-    else
-        % 默认转移矩阵：90% 概率保持当前模型，10% 概率切换到另一模型
-        imm.Pi = [0.90, 0.05, 0.05;
-                  0.10, 0.90, 0.00;
-                  0.10, 0.00, 0.90];
+    % Markov transition matrix (5x5)
+    p_cv_ct = get_param_imm(params, 'imm_Pi_CV_to_CT', 0.001);
+    p_ct_cv = get_param_imm(params, 'imm_Pi_CT_to_CV', 0.001);
+    adapt_mode_local = get_param_imm(params, 'imm_adapt_mode', '3in1');
+    if strcmp(adapt_mode_local, '3in1')
+        p_cv_ct = get_param_imm(params, 'imm_slow_Pi_CV_to_CT', p_cv_ct);
+        p_ct_cv = get_param_imm(params, 'imm_slow_Pi_CT_to_CV', p_ct_cv);
+    end
+    if isfield(params, 'imm_cv_dwell_time_sec')
+        p_cv_ct = 1 - exp(-dt / params.imm_cv_dwell_time_sec);
+    end
+    if isfield(params, 'imm_ct_dwell_time_sec')
+        p_ct_cv = 1 - exp(-dt / params.imm_ct_dwell_time_sec);
+    end
+    validate_transition_probability(p_cv_ct, 'CV_to_CT');
+    validate_transition_probability(p_ct_cv, 'CT_to_CV');
+
+    % Keep the configured CV-to-CT value as the total entry probability.
+    % CT rows split the non-CV probability between staying in the same model
+    % and moving to one of the other CT candidates.
+    ct_switch_total = get_param_imm(params, 'imm_Pi_CT_to_CT', 0.003);
+    validate_transition_probability(ct_switch_total, 'CT_to_CT');
+    if p_ct_cv + ct_switch_total > 1
+        error('ukf_imm:invalidTransitionRow', ...
+            'imm_Pi_CT_to_CV + imm_Pi_CT_to_CT must not exceed 1.');
     end
 
-    % ---- 第5部分：初始模型概率 ----
-    % mu 是每个模型的先验概率，初始化为均匀分布或从参数读取
+    P = zeros(5, 5);
+    P(1, 1) = 1 - p_cv_ct;
+    P(1, 2:5) = p_cv_ct / 4;
+    for m = 2:5
+        P(m, 1) = p_ct_cv;
+        other_ct = setdiff(2:5, m);
+        P(m, other_ct) = ct_switch_total / numel(other_ct);
+        P(m, m) = 1 - p_ct_cv - ct_switch_total;
+    end
+    imm.Pi = P;
+
+    % Optional adaptive CT-to-CV feedback uses the same base for all CT models.
+    if isfield(params, 'k_turnrate') && params.k_turnrate > 0
+        imm.adaptive_k = params.k_turnrate;
+        imm.base_p_ct_cv = p_ct_cv;
+    end
+
+    % Initial model probabilities
     if isfield(params, 'imm_mu_init_CV')
         mu_cv = params.imm_mu_init_CV;
-        validate_transition_probability(mu_cv, 'mu_init_CV');
-        imm.mu = [mu_cv; (1 - mu_cv)/2; (1 - mu_cv)/2];
+        mu_rest = (1 - mu_cv) / 4;
+        imm.mu = [mu_cv; mu_rest; mu_rest; mu_rest; mu_rest];
     else
-        % 默认：CV 和 CT 各占 50% 先验概率
-        imm.mu = [0.5; 0.25; 0.25];
+        imm.mu = ones(5, 1) / 5;
     end
 
-    % ---- 第6部分：IMM-IPDA 检测参数（Musicki 2008） ----
-    % IPDA（Integrated Probabilistic Data Association）将检测概率
-    % 和门内概率纳入似然度计算，比传统 IMM 更精确
-    imm.Pd = params.detection_probability;      % 目标检测概率（通常 0.6-0.99）
-    imm.Pg = params.pda_pd_gate;                % 门内概率（通常 0.95-0.99）
-    imm.Pd_Pg = imm.Pd * imm.Pg;                % 联合检测概率
-    imm.L_no_det = 1.0 - imm.Pd_Pg;             % 未检测时的似然度基线
+    % IMM-IPDA parameters
+    imm.Pd = params.detection_probability;
+    imm.Pg = params.pda_pd_gate;
+    imm.Pd_Pg = imm.Pd * imm.Pg;
+    imm.L_no_det = 1.0 - imm.Pd_Pg;
 
-    % ---- 第7部分：概率钳位 ----
-    % 防止模型概率坍缩到 0 或 1（一旦某模型概率为 0，就永远无法恢复）
-    imm.mu_min = 0.02;   % 最小概率 2%，保证每个模型都有生存机会
-    imm.mu_max = 0.95;   % 最大概率 95%，保留一定的模型探索空间
+    % Probability bounds
+    imm.mu_min = 0.02;
+    imm.mu_max = 0.95;
 
-    % ---- 第8部分：模型数量 ----
-    imm.M = 3;
+    % Model count
+    imm.M = 5;
 
-    % ---- 第9部分：滤波器能力标记 ----
-    % 记录滤波器支持的自适应模式和模型信息
+    % Capability flags
     imm.filter_type = 'imm';
     imm.imm_adapt_mode = get_imm_adapt_mode(imm);
     imm.capability = struct('adaptive_q', strcmp(imm.imm_adapt_mode, '3in1'), ...
                             'imm', true, ...
-                            'models', {{'CV', 'CT-left', 'CT-right'}});
+                            'models', {{'CV', 'CTL-slow', 'CTL-fast', 'CTR-fast', 'CTR-slow'}});
 
-    % ---- 第10部分：初始化标志 ----
     imm.initialized = false;
-    imm.cache = [];  % 缓存 prepare 阶段的中间结果，供 update 使用
+    imm.cache = [];
+    % 航迹年龄计数器：每次 prepare 自增，供三段式 Q 调度使用。
+    % 不依赖 tracker 层的 life 字段（该字段在 IMM 内从未被赋值）。
+    imm.age = 0;
+    % 上一帧是否获得了观测更新（true/false），供漏检帧 Q 膨胀使用
+    imm.last_updated = true;
 end
 
-
 % =========================================================================
-% init_imm — 两点差分初始化三个 UKF
+% init_imm -- Initialize all 5 UKFs
 % =========================================================================
-% 使用两次量测初始化 CV、CT-left 和 CT-right 三个 UKF 模型
-% 同时设置自适应 Q 相关的初始状态
 function imm = init_imm(imm, meas1, meas2, varargin)
     history_args = varargin;
-    % 初始化 CV 模型 UKF
+
     imm.ukf_cv = ukf_jichu('init', imm.ukf_cv, meas1, meas2, history_args{:});
     imm.ukf_cv.dt = imm.dt;
     imm.ukf_cv.initialized = true;
-    imm.ukf_cv.Q_base = imm.ukf_cv.Q;  % 保存基线 Q 用于自适应缩放
-    imm.ukf_cv.Q_ema = 1.0;            % EMA 初始值为 1.0（无缩放）
-    imm.ukf_cv.transient_nis_ewma = 0.0;  % 瞬态 NIS 的 EWMA 初始值
-    imm.ukf_cv.nis_history = [];  % 重起始时清空 NIS 历史
+    imm.ukf_cv.Q_base = imm.ukf_cv.Q;
+    imm.ukf_cv.Q_ema = 1.0;
+    imm.ukf_cv.transient_nis_ewma = 0.0;
+    imm.ukf_cv.nis_history = [];
 
-    % 初始化 CT 模型 UKF
-    imm.ukf_ct = ukf_jichu('init', imm.ukf_ct, meas1, meas2, history_args{:});
-    imm.ukf_ct.dt = imm.dt;
-    imm.ukf_ct.initialized = true;
-    imm.ukf_ct.Q_base = imm.ukf_ct.Q;
-    % 3in1 模式下 CT 模型使用固定 Q 缩放（CT 模型本身已考虑机动）
-    if strcmp(get_imm_adapt_mode(imm), '3in1')
-        imm.ukf_ct.Q = imm.ukf_ct.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-    end
-    imm.ukf_ct.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-    imm.ukf_ct.nis_history = [];  % 重起始时清空 NIS 历史
+    imm.ukf_ct_slow = ukf_jichu('init', imm.ukf_ct_slow, meas1, meas2, history_args{:});
+    imm.ukf_ct_slow.dt = imm.dt;
+    imm.ukf_ct_slow.initialized = true;
+    imm.ukf_ct_slow.Q_base = imm.ukf_ct_slow.Q;
+    imm.ukf_ct_slow.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+    imm.ukf_ct_slow.nis_history = [];
 
-    imm.ukf_ct_right = ukf_jichu( ...
-        'init', imm.ukf_ct_right, meas1, meas2, history_args{:});
-    imm.ukf_ct_right.dt = imm.dt;
-    imm.ukf_ct_right.initialized = true;
-    imm.ukf_ct_right.Q_base = imm.ukf_ct_right.Q;
-    if strcmp(get_imm_adapt_mode(imm), '3in1')
-        imm.ukf_ct_right.Q = imm.ukf_ct_right.Q_base * ...
-            get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-    end
-    imm.ukf_ct_right.Q_ema = get_param_imm( ...
-        imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-    imm.ukf_ct_right.nis_history = [];
+    imm.ukf_ct_fast = ukf_jichu('init', imm.ukf_ct_fast, meas1, meas2, history_args{:});
+    imm.ukf_ct_fast.dt = imm.dt;
+    imm.ukf_ct_fast.initialized = true;
+    imm.ukf_ct_fast.Q_base = imm.ukf_ct_fast.Q;
+    imm.ukf_ct_fast.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+    imm.ukf_ct_fast.nis_history = [];
 
-    % 重置模型概率为均匀分布
+    imm.ukf_ctr_fast = ukf_jichu('init', imm.ukf_ctr_fast, meas1, meas2, history_args{:});
+    imm.ukf_ctr_fast.dt = imm.dt;
+    imm.ukf_ctr_fast.initialized = true;
+    imm.ukf_ctr_fast.Q_base = imm.ukf_ctr_fast.Q;
+    imm.ukf_ctr_fast.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+    imm.ukf_ctr_fast.nis_history = [];
+
+    imm.ukf_ctr_slow = ukf_jichu('init', imm.ukf_ctr_slow, meas1, meas2, history_args{:});
+    imm.ukf_ctr_slow.dt = imm.dt;
+    imm.ukf_ctr_slow.initialized = true;
+    imm.ukf_ctr_slow.Q_base = imm.ukf_ctr_slow.Q;
+    imm.ukf_ctr_slow.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+    imm.ukf_ctr_slow.nis_history = [];
+
     imm.mu = initial_mode_probabilities(imm.params);
     imm.imm_adapt_mode = get_imm_adapt_mode(imm);
     imm.capability.adaptive_q = strcmp(imm.imm_adapt_mode, '3in1');
     imm.initialized = true;
-    imm.nis_history = [];     % 镜像 CV 的 NIS，供诊断代码读取
-    imm.mu_history = zeros(0, 3);
-    imm.log_likelihood_history = zeros(0, 3);
-    % 顶层状态初始化为 CV 模型的状态（初始化后 CV 和 CT 状态相同）
-    imm.x = imm.ukf_cv.x;     % 顶层组合状态（供时间对齐/融合）
-    imm.P = imm.ukf_cv.P;     % 顶层组合协方差
-    imm.Q = imm.ukf_cv.Q;     % 代表性过程噪声（供时间对齐）
+    imm.nis_history = [];
+    imm.mu_history = zeros(0, 5);
+    imm.log_likelihood_history = zeros(0, 5);
+    imm.x = imm.ukf_cv.x;
+    imm.P = imm.ukf_cv.P;
+    imm.Q = imm.ukf_cv.Q;
 end
 
-
 % =========================================================================
-% prepare_imm — IMM 预测步：混合 → 三模型预测 → 组合
-% 返回 7 个输出（与 ukf_jichu.prepare 接口兼容）
-% tracker 取用: x_pred(输出1), z_pred(输出4), P_zz(输出6), imm(输出7)
+% prepare_imm -- IMM prediction step
 % =========================================================================
-% IMM 预测的核心三步曲：
-%   1. 模型混合：用 Markov 转移概率计算混合初始状态
-%   2. 三模型独立预测：CV、CT-left 和 CT-right 各自做 UKF 预测
-%   3. 组合输出：按模型概率加权组合
 function [x_pred, P_pred, X_pred, z_pred, Z_pred, P_zz, imm] = prepare_imm(imm)
-    M = imm.M;           % 模型数量 = 3
-    Pi = imm.Pi;         % Markov 转移矩阵
-    mu = imm.mu;         % 当前模型概率
-    ukf_cv = imm.ukf_cv;  % CV 模型 UKF 实例
-    ukf_ct = imm.ukf_ct;  % Positive/left CT model.
-    ukf_ct_right = imm.ukf_ct_right;
+    M = imm.M;
+    Pi = imm.Pi;
+    mu = imm.mu;
+    ukf_models = {imm.ukf_cv, imm.ukf_ct_slow, imm.ukf_ct_fast, imm.ukf_ctr_fast, imm.ukf_ctr_slow};
 
-    % ---- Step 1: 模型混合（Mixing） ----
-    % ---- 自适应转移概率: 用local_Pi副本替代imm.Pi ----
-    % 多维反馈:
-    %   1. ct_mu: mu(CT-left)+mu(CT-right)/2 — 当前转弯置信度
-    %   2. ct_trend: mu_history最近N帧的平均CT占比 — 转弯持续性
-    %   3. mu_asymmetric: 左/右CT各自独立反馈（可选）
-    %
-    % 核心函数: adjusted_p = base_p * exp(-k_eff * (ct_mu + w_trend*ct_trend))
-    %   指数衰减比线性倒数响应更强，尤其在ct_mu>0.5时效果显著
+    % ---- 航迹年龄自增（供 Q 调度使用）----
+    if ~isfield(imm, 'age') || ~isfinite(imm.age)
+        imm.age = 0;
+    end
+    imm.age = imm.age + 1;
+
+    % 注意：Q 调度必须放在 IMM 混合之后（否则 Q_ema 会被混合结果覆盖），
+    % 见下方 "Apply adaptive Q before prediction" 处。
+
+    % Step 1: Mixing
     local_Pi = Pi;
     if isfield(imm, 'adaptive_k') && imm.adaptive_k > 0
-        ct_mu = (imm.mu(2) + imm.mu(3)) / 2;
+        ct_mu = sum(mu(2:end));
         base_p = imm.base_p_ct_cv;
-
-        % --- 方式A: 指数衰减函数（比1/(1+kx)更陡峭）---
-        mode_local = 'exp_decay';  % 可切换为'linear', 'exp_decay', 'sigmoid'
+        mode_local = 'exp_decay';
         if isfield(imm.params, 'imm_adaptive_mode')
             mode_local = imm.params.imm_adaptive_mode;
         end
 
         if strcmp(mode_local, 'exp_decay')
-            % 指数衰减: p = base_p * exp(-k * ct_mu^power)
-            power = get_param_imm(imm.params, 'power', 1.5);  % 曲率参数（已参数化），增大→拐点更靠后
+            power = get_param_imm(imm.params, 'power', 1.5);
             kp = imm.adaptive_k;
             adj_lev = base_p * exp(-kp * ct_mu^power);
-            if isfield(imm, 'base_p_ct_left')
-                adj_right = imm.base_p_ct_right * exp(-kp * imm.mu(3)^power);
-            else
-                adj_right = adj_lev;
-            end
-
         elseif strcmp(mode_local, 'sigmoid')
-            % S型曲线: p = base_p / (1 + exp(k*((ct_mu^power) - threshold)))
-            % 方向：ct_mu 高（转弯）→ exp 大 → p 小（压低 CT→CV，让CT模型留住）
-            %       ct_mu 低（直线）→ exp 小 → p ≈ base_p（正常切换）
-            threshold = get_param_imm(imm.params, 'threshold', 0.4);  % 拐点（已参数化）
-            power = get_param_imm(imm.params, 'power', 1.0);          % ct_mu 幂指数（已参数化）
-            kp = imm.adaptive_k * 3;  % S型斜率，乘3放大
-            slev = base_p / (1 + exp(kp * ((ct_mu^power) - threshold)));  % 符号已修复：去负号
-            adj_lev = slev;
-            adj_right = slev;
-
-        else  % linear (原始)
+            threshold = get_param_imm(imm.params, 'threshold', 0.4);
+            power = get_param_imm(imm.params, 'power', 1.0);
+            kp = imm.adaptive_k * 3;
+            adj_lev = base_p / (1 + exp(kp * ((ct_mu^power) - threshold)));
+        else
             adj_lev = base_p / (1 + imm.adaptive_k * ct_mu);
-            adj_right = adj_lev;
         end
 
-        % 统一钳位
         adj_lev = max(adj_lev, 0.05 * base_p);
         adj_lev = min(adj_lev, base_p);
-        adj_right = max(adj_right, 0.05 * base_p);
-        adj_right = min(adj_right, base_p);
 
-        local_Pi(2,1) = adj_lev;   % CT-left -> CV
-        local_Pi(3,1) = adj_right; % CT-right -> CV
-        local_Pi(2,2) = 1 - adj_lev;
-        local_Pi(3,3) = 1 - adj_right;
+        % 【2026-10-25 修复】原实现只改写第 1 列与对角元，CT 行残留的
+        % CT→CT 非对角元未清零，导致转移矩阵行和 = 1 + ct_switch_total ≈ 1.003，
+        % 破坏马尔可夫性。此处按行重排并保持行和严格为 1。
+        ct_switch = get_param_imm(imm.params, 'imm_Pi_CT_to_CT', 0.003);
+        for m = 2:M
+            other = setdiff(2:M, m);
+            local_Pi(m,1) = adj_lev;
+            local_Pi(m,other) = ct_switch / numel(other);
+            local_Pi(m,m) = 1 - adj_lev - ct_switch;
+        end
     end
 
-    c_bar = local_Pi' * mu;  % 归一化常数：c_bar(j) = Σ_i Pi(i,j) * mu(i)
+    c_bar = local_Pi' * mu;
     mu_mix = zeros(M, M);
     for i = 1:M
         for j = 1:M
-            % mu_mix(i,j) = P(model_i 来自 model_j)
-            % 注意：分母用 max(c_bar(j), 1e-12) 防止除零
             mu_mix(i, j) = local_Pi(i, j) * mu(i) / max(c_bar(j), 1e-12);
         end
     end
 
-    % 计算混合初始状态 x_mix 和 P_mix
-    % x_mix_j = Σ_i mu_mix(i,j) * x_i
-    % P_mix_j = Σ_i mu_mix(i,j) * (P_i + dx_i * dx_i')
-    % 第二个公式包含了模型间的离散项，确保混合协方差不会低估不确定性
-    ukf_models = {ukf_cv, ukf_ct, ukf_ct_right};
     x_mix = repmat({zeros(4,1)}, 1, M);
     P_mix = repmat({zeros(4,4)}, 1, M);
     for j = 1:M
-        % 计算混合状态（加权平均）
         for i = 1:M
             x_mix{j} = x_mix{j} + mu_mix(i, j) * ukf_models{i}.x;
         end
-        % 计算混合协方差（包含离散项）
         for i = 1:M
             dx = ukf_models{i}.x - x_mix{j};
             P_mix{j} = P_mix{j} + mu_mix(i, j) * (ukf_models{i}.P + dx * dx');
         end
     end
-    % 将混合状态赋回各模型 UKF 实例
-    imm.ukf_cv.x = x_mix{1};  imm.ukf_cv.P = regularize_cov_imm(P_mix{1});
-    imm.ukf_ct.x = x_mix{2};  imm.ukf_ct.P = regularize_cov_imm(P_mix{2});
-    imm.ukf_ct_right.x = x_mix{3};
-    imm.ukf_ct_right.P = regularize_cov_imm(P_mix{3});
 
-    % ---- Step 1.5: 自适应 Q 在预测前施加，使 Q 变化影响当前帧的似然度 ----
-    % 在预测之前调整 Q，可以让预测阶段的过程噪声也反映自适应结果
-    if isfield(imm, 'life_count')
-        imm.ukf_cv.life_count = imm.life_count;
-        imm.ukf_ct.life_count = imm.life_count;
-        imm.ukf_ct_right.life_count = imm.life_count;
+    for m = 1:M
+        ukf_models{m}.x = x_mix{m};
+        ukf_models{m}.P = regularize_imm(P_mix{m});
     end
-    if isfield(imm.params, 'use_fuzzy_adaptive') && imm.params.use_fuzzy_adaptive
-        adapt_mode = get_imm_adapt_mode(imm);
 
-        if strcmp(adapt_mode, '3in1')
-            % 3in1 模式：CV 模型使用瞬态增益自适应，CT 模型使用固定 Q 缩放
-            imm.ukf_cv = apply_transient_q_imm(imm.ukf_cv, imm.params);
-            imm.ukf_ct.Q = imm.ukf_ct.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-            imm.ukf_ct.Q_ema = get_param_imm( ...
-                imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-            imm.ukf_ct_right.Q = imm.ukf_ct_right.Q_base * ...
-                get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-            imm.ukf_ct_right.Q_ema = get_param_imm( ...
-                imm.params, 'imm_ct_fixed_Q_scale', 1.8);
-        elseif strcmp(adapt_mode, 'fuzzy_only')
-            % fuzzy_only 模式：两个模型都使用模糊自适应
-            imm.ukf_cv = adapt_q(imm.ukf_cv, imm.params, 'fuzzy_only');
-            imm.ukf_ct = adapt_q(imm.ukf_ct, imm.params, 'fuzzy_only');
-            imm.ukf_ct_right = adapt_q(imm.ukf_ct_right, imm.params, 'fuzzy_only');
+    imm.ukf_cv = ukf_models{1};
+    imm.ukf_ct_slow = ukf_models{2};
+    imm.ukf_ct_fast = ukf_models{3};
+    imm.ukf_ctr_fast = ukf_models{4};
+    imm.ukf_ctr_slow = ukf_models{5};
+
+    % Apply adaptive Q before prediction
+    if isfield(imm, 'life_count')
+        for m = 1:M
+            ukf_models{m}.life_count = imm.life_count;
         end
     end
 
-    % ---- Step 2: 各模型独立预测 ----
-    % 将混合后的状态分别输入 CV 和 CT 的 UKF 预测
-    [x_pred_cv, P_pred_cv, X_pred_cv, z_pred_cv, Z_pred_cv, P_zz_cv, imm.ukf_cv] = ...
-        ukf_jichu('prepare', imm.ukf_cv);
-    [x_pred_ct, P_pred_ct, X_pred_ct, z_pred_ct, Z_pred_ct, P_zz_ct, imm.ukf_ct] = ...
-        ukf_jichu('prepare', imm.ukf_ct);
-    [x_pred_ct_right, P_pred_ct_right, X_pred_ct_right, z_pred_ct_right, ...
-        Z_pred_ct_right, P_zz_ct_right, imm.ukf_ct_right] = ...
-        ukf_jichu('prepare', imm.ukf_ct_right);
+    % ---- 三段式过程噪声调度（必须位于混合之后，否则 Q_ema 被覆盖）----
+    % 起始段用大 Q 快速建立速度估计，稳态段用小 Q 保持平滑。
+    % 依据：实测速度误差 80 m/s 需 40 帧才收敛（Q_vel 仅 0.77 m/s/帧）。
+    if get_param_imm(imm.params, 'imm_q_schedule_enable', 0)
+        q_sched = get_param_imm(imm.params, 'imm_q_stage3_scale', 1);
+        if imm.age <= get_param_imm(imm.params, 'imm_q_stage1_frames', 5)
+            q_sched = get_param_imm(imm.params, 'imm_q_stage1_scale', 30);
+        elseif imm.age <= get_param_imm(imm.params, 'imm_q_stage2_frames', 15)
+            q_sched = get_param_imm(imm.params, 'imm_q_stage2_scale', 6);
+        end
+        % 漏检帧膨胀：上一帧无观测更新，说明目标可能机动或量测断续
+        if isfield(imm, 'last_updated') && ~imm.last_updated
+            q_sched = q_sched * get_param_imm(imm.params, 'imm_q_miss_scale', 3);
+        end
+        ct_q = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 4.5);
+        imm.ukf_cv.Q_ema        = q_sched;
+        imm.ukf_ct_slow.Q_ema   = q_sched * ct_q;
+        imm.ukf_ct_fast.Q_ema   = q_sched * ct_q;
+        imm.ukf_ctr_fast.Q_ema  = q_sched * ct_q;
+        imm.ukf_ctr_slow.Q_ema  = q_sched * ct_q;
+        imm.q_schedule_current  = q_sched;   % 记录，供诊断与论文绘图
+    end
+    if isfield(imm.params, 'use_fuzzy_adaptive') && imm.params.use_fuzzy_adaptive
+        adapt_mode = get_imm_adapt_mode(imm);
+        if strcmp(adapt_mode, '3in1')
+            imm.ukf_cv = apply_transient_q_imm(imm.ukf_cv, imm.params);
+            imm.ukf_ct_slow.Q = imm.ukf_ct_slow.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ct_slow.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ct_fast.Q = imm.ukf_ct_fast.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ct_fast.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ctr_fast.Q = imm.ukf_ctr_fast.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ctr_fast.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ctr_slow.Q = imm.ukf_ctr_slow.Q_base * get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+            imm.ukf_ctr_slow.Q_ema = get_param_imm(imm.params, 'imm_ct_fixed_Q_scale', 1.8);
+        elseif strcmp(adapt_mode, 'fuzzy_only')
+            for m = 1:M
+                ukf_models{m} = adapt_q(ukf_models{m}, imm.params, 'fuzzy_only');
+            end
+        end
+    end
 
-    % ---- Step 3: 计算组合预测（内部使用） ----
-    % 本帧预测必须使用 Markov 传播后的模型先验概率 c_bar，
-    % 而不是上一帧后验概率 mu。
-    x_pred_comb = c_bar(1) * x_pred_cv + c_bar(2) * x_pred_ct + ...
-        c_bar(3) * x_pred_ct_right;
-    % 协方差组合：包含模型间离散项，确保不低估不确定性
-    P_pred_comb = combine_cov_imm( ...
-        {x_pred_cv, x_pred_ct, x_pred_ct_right}, ...
-        {P_pred_cv, P_pred_ct, P_pred_ct_right}, c_bar, x_pred_comb);
-    % 量测预测组合
-    z_pred_comb = c_bar(1) * z_pred_cv + c_bar(2) * z_pred_ct + ...
-        c_bar(3) * z_pred_ct_right;
-    z_pred_comb(2) = circular_mean_imm( ...
-        [z_pred_cv(2), z_pred_ct(2), z_pred_ct_right(2)], c_bar);
-    % 量测协方差组合
-    P_zz_comb = combine_meas_cov_imm( ...
-        {z_pred_cv, z_pred_ct, z_pred_ct_right}, ...
-        {P_zz_cv, P_zz_ct, P_zz_ct_right}, c_bar, z_pred_comb);
+    % Step 2: Independent prediction for each model
+    [x_pred_cv, P_pred_cv, X_pred_cv, z_pred_cv, Z_pred_cv, P_zz_cv, imm.ukf_cv] = ukf_jichu('prepare', imm.ukf_cv);
+    [x_pred_ct_slow, P_pred_ct_slow, X_pred_ct_slow, z_pred_ct_slow, Z_pred_ct_slow, P_zz_ct_slow, imm.ukf_ct_slow] = ukf_jichu('prepare', imm.ukf_ct_slow);
+    [x_pred_ct_fast, P_pred_ct_fast, X_pred_ct_fast, z_pred_ct_fast, Z_pred_ct_fast, P_zz_ct_fast, imm.ukf_ct_fast] = ukf_jichu('prepare', imm.ukf_ct_fast);
+    [x_pred_ctr_fast, P_pred_ctr_fast, X_pred_ctr_fast, z_pred_ctr_fast, Z_pred_ctr_fast, P_zz_ctr_fast, imm.ukf_ctr_fast] = ukf_jichu('prepare', imm.ukf_ctr_fast);
+    [x_pred_ctr_slow, P_pred_ctr_slow, X_pred_ctr_slow, z_pred_ctr_slow, Z_pred_ctr_slow, P_zz_ctr_slow, imm.ukf_ctr_slow] = ukf_jichu('prepare', imm.ukf_ctr_slow);
 
-    % ---- Step 4: 返回组合预测给 tracker，关联中心与 IMM 后验一致 ----
+    preds = {x_pred_cv, x_pred_ct_slow, x_pred_ct_fast, x_pred_ctr_fast, x_pred_ctr_slow};
+    P_preds = {P_pred_cv, P_pred_ct_slow, P_pred_ct_fast, P_pred_ctr_fast, P_pred_ctr_slow};
+    X_preds = {X_pred_cv, X_pred_ct_slow, X_pred_ct_fast, X_pred_ctr_fast, X_pred_ctr_slow};
+    z_preds = {z_pred_cv, z_pred_ct_slow, z_pred_ct_fast, z_pred_ctr_fast, z_pred_ctr_slow};
+    Z_preds = {Z_pred_cv, Z_pred_ct_slow, Z_pred_ct_fast, Z_pred_ctr_fast, Z_pred_ctr_slow};
+    P_zz_vals = {P_zz_cv, P_zz_ct_slow, P_zz_ct_fast, P_zz_ctr_fast, P_zz_ctr_slow};
+
+    % Step 3: Combined prediction
+    x_pred_comb = c_bar(1)*preds{1} + c_bar(2)*preds{2} + c_bar(3)*preds{3} + ...
+                  c_bar(4)*preds{4} + c_bar(5)*preds{5};
+    P_pred_comb = combine_cov_imm(preds, P_preds, c_bar, x_pred_comb);
+
+    z_pred_comb = c_bar(1)*z_preds{1} + c_bar(2)*z_preds{2} + c_bar(3)*z_preds{3} + ...
+                  c_bar(4)*z_preds{4} + c_bar(5)*z_preds{5};
+    z_pred_comb(2) = circular_mean_imm([z_preds{1}(2), z_preds{2}(2), z_preds{3}(2), z_preds{4}(2), z_preds{5}(2)], c_bar);
+
+    P_zz_comb = combine_meas_cov_imm(z_preds, P_zz_vals, c_bar, z_pred_comb);
+
     x_pred = x_pred_comb;
     z_pred = z_pred_comb;
     P_zz = P_zz_comb;
-
-    % ---- Step 5: 占位输出（接口兼容，tracker 不使用） ----
     P_pred = P_pred_comb;
-    X_pred = X_pred_cv;
-    Z_pred = Z_pred_cv;
+    X_pred = X_preds{1};
+    Z_pred = Z_preds{1};
 
-    % ---- Step 6: 缓存所有中间结果 ----
-    % 缓存用于 update 阶段，避免重复计算
     imm.cache = struct(...
-        'x_pred_cv', x_pred_cv, 'x_pred_ct', x_pred_ct, ...
-        'x_pred_ct_right', x_pred_ct_right, ...
-        'P_pred_cv', P_pred_cv, 'P_pred_ct', P_pred_ct, ...
-        'P_pred_ct_right', P_pred_ct_right, ...
-        'X_pred_cv', X_pred_cv, 'X_pred_ct', X_pred_ct, ...
-        'X_pred_ct_right', X_pred_ct_right, ...
-        'z_pred_cv', z_pred_cv, 'z_pred_ct', z_pred_ct, ...
-        'z_pred_ct_right', z_pred_ct_right, ...
-        'Z_pred_cv', Z_pred_cv, 'Z_pred_ct', Z_pred_ct, ...
-        'Z_pred_ct_right', Z_pred_ct_right, ...
-        'P_zz_cv', P_zz_cv, 'P_zz_ct', P_zz_ct, ...
-        'P_zz_ct_right', P_zz_ct_right, ...
+        'x_pred_cv', x_pred_cv, 'x_pred_ct_slow', x_pred_ct_slow, 'x_pred_ct_fast', x_pred_ct_fast, ...
+        'x_pred_ctr_fast', x_pred_ctr_fast, 'x_pred_ctr_slow', x_pred_ctr_slow, ...
+        'P_pred_cv', P_pred_cv, 'P_pred_ct_slow', P_pred_ct_slow, 'P_pred_ct_fast', P_pred_ct_fast, ...
+        'P_pred_ctr_fast', P_pred_ctr_fast, 'P_pred_ctr_slow', P_pred_ctr_slow, ...
+        'X_pred_cv', X_pred_cv, 'X_pred_ct_slow', X_pred_ct_slow, 'X_pred_ct_fast', X_pred_ct_fast, ...
+        'X_pred_ctr_fast', X_pred_ctr_fast, 'X_pred_ctr_slow', X_pred_ctr_slow, ...
+        'z_pred_cv', z_pred_cv, 'z_pred_ct_slow', z_pred_ct_slow, 'z_pred_ct_fast', z_pred_ct_fast, ...
+        'z_pred_ctr_fast', z_pred_ctr_fast, 'z_pred_ctr_slow', z_pred_ctr_slow, ...
+        'Z_pred_cv', Z_pred_cv, 'Z_pred_ct_slow', Z_pred_ct_slow, 'Z_pred_ct_fast', Z_pred_ct_fast, ...
+        'Z_pred_ctr_fast', Z_pred_ctr_fast, 'Z_pred_ctr_slow', Z_pred_ctr_slow, ...
+        'P_zz_cv', P_zz_cv, 'P_zz_ct_slow', P_zz_ct_slow, 'P_zz_ct_fast', P_zz_ct_fast, ...
+        'P_zz_ctr_fast', P_zz_ctr_fast, 'P_zz_ctr_slow', P_zz_ctr_slow, ...
         'x_pred_comb', x_pred_comb, 'z_pred_comb', z_pred_comb, 'P_zz_comb', P_zz_comb, ...
         'c_bar', c_bar);
 end
 
-
 % =========================================================================
-% update_imm — IMM 更新步：三模型更新 → 似然 → 概率 → 组合
-% innov_w = PDA 加权新息（相对于组合 z_pred），[] = 纯预测
+% update_imm -- IMM update step
 % =========================================================================
-% IMM 更新的核心流程：
-%   1. 对各模型分别计算新息并执行 Kalman 更新
-%   2. 计算各模型的似然度（Pd-IPDA）
-%   3. 贝叶斯更新模型概率
-%   4. 组合输出最终状态
 function [lon, lat, imm] = update_imm(imm, innov_w)
     cache = imm.cache;
-    nz = imm.ukf_cv.m;  % 量测维度
+    nz = imm.ukf_cv.m;
 
-    % ---- 纯预测帧 ----
-    % 没有新息（innov_w 为空），说明本帧没有检测到目标
+    % 记录本帧是否获得观测更新，供下一帧 prepare 的漏检 Q 膨胀使用
+    imm.last_updated = ~isempty(innov_w);
+
     if isempty(innov_w)
-        % 两个模型均保留预测状态，不做 Kalman 更新
         imm.ukf_cv = keep_prediction(imm.ukf_cv, cache, 'cv');
-        imm.ukf_ct = keep_prediction(imm.ukf_ct, cache, 'ct');
-        imm.ukf_ct_right = keep_prediction(imm.ukf_ct_right, cache, 'ct_right');
-        % 未检测不提供模型区分信息，仅保留 Markov 先验传播。
-        log_likelihood = zeros(3, 1);
+        imm.ukf_ct_slow = keep_prediction(imm.ukf_ct_slow, cache, 'ct_slow');
+        imm.ukf_ct_fast = keep_prediction(imm.ukf_ct_fast, cache, 'ct_fast');
+        imm.ukf_ctr_fast = keep_prediction(imm.ukf_ctr_fast, cache, 'ctr_fast');
+        imm.ukf_ctr_slow = keep_prediction(imm.ukf_ctr_slow, cache, 'ctr_slow');
+        log_likelihood = zeros(5, 1);
     else
-        % ---- 重建加权量测（innov_w 相对于 tracker 使用的组合 z_pred） ----
-        % 将相对新息还原为绝对量测值
         z_weighted = innov_w + cache.z_pred_comb;
 
-        % ---- 各模型新息 ----
-        % 新息 = 实际量测 - 模型预测量测
         innov_cv = z_weighted - cache.z_pred_cv;
-        innov_ct = z_weighted - cache.z_pred_ct;
-        innov_ct_right = z_weighted - cache.z_pred_ct_right;
-        % 方位角处理：跨越 180/-180 边界时需要修正（角度环绕问题）
+        innov_ct_slow = z_weighted - cache.z_pred_ct_slow;
+        innov_ct_fast = z_weighted - cache.z_pred_ct_fast;
+        innov_ctr_fast = z_weighted - cache.z_pred_ctr_fast;
+        innov_ctr_slow = z_weighted - cache.z_pred_ctr_slow;
+
         if abs(innov_cv(2)) > 180
             innov_cv(2) = innov_cv(2) - 360 * round(innov_cv(2) / 360);
         end
-        if abs(innov_ct(2)) > 180
-            innov_ct(2) = innov_ct(2) - 360 * round(innov_ct(2) / 360);
+        if abs(innov_ct_slow(2)) > 180
+            innov_ct_slow(2) = innov_ct_slow(2) - 360 * round(innov_ct_slow(2) / 360);
         end
-        if abs(innov_ct_right(2)) > 180
-            innov_ct_right(2) = innov_ct_right(2) - ...
-                360 * round(innov_ct_right(2) / 360);
+        if abs(innov_ct_fast(2)) > 180
+            innov_ct_fast(2) = innov_ct_fast(2) - 360 * round(innov_ct_fast(2) / 360);
+        end
+        if abs(innov_ctr_fast(2)) > 180
+            innov_ctr_fast(2) = innov_ctr_fast(2) - 360 * round(innov_ctr_fast(2) / 360);
+        end
+        if abs(innov_ctr_slow(2)) > 180
+            innov_ctr_slow(2) = innov_ctr_slow(2) - 360 * round(innov_ctr_slow(2) / 360);
         end
 
-        % ---- 各模型独立更新 ----
-        % 委托 ukf_jichu 的 update 函数执行纯 Kalman 数学
         [~, ~, imm.ukf_cv] = ukf_jichu('update', imm.ukf_cv, innov_cv);
-        [~, ~, imm.ukf_ct] = ukf_jichu('update', imm.ukf_ct, innov_ct);
-        [~, ~, imm.ukf_ct_right] = ukf_jichu( ...
-            'update', imm.ukf_ct_right, innov_ct_right);
+        [~, ~, imm.ukf_ct_slow] = ukf_jichu('update', imm.ukf_ct_slow, innov_ct_slow);
+        [~, ~, imm.ukf_ct_fast] = ukf_jichu('update', imm.ukf_ct_fast, innov_ct_fast);
+        [~, ~, imm.ukf_ctr_fast] = ukf_jichu('update', imm.ukf_ctr_fast, innov_ctr_fast);
+        [~, ~, imm.ukf_ctr_slow] = ukf_jichu('update', imm.ukf_ctr_slow, innov_ctr_slow);
 
-        % ---- 记录各模型 NIS ----
-        % NIS = 新息' * P_zz_inv * 新息，服从 chi^2 分布
         nis_cv_val = innov_cv' * (cache.P_zz_cv \ innov_cv);
-        nis_ct_val = innov_ct' * (cache.P_zz_ct \ innov_ct);
-        nis_ct_right_val = innov_ct_right' * ...
-            (cache.P_zz_ct_right \ innov_ct_right);
+        nis_ct_slow_val = innov_ct_slow' * (cache.P_zz_ct_slow \ innov_ct_slow);
+        nis_ct_fast_val = innov_ct_fast' * (cache.P_zz_ct_fast \ innov_ct_fast);
+        nis_ctr_fast_val = innov_ctr_fast' * (cache.P_zz_ctr_fast \ innov_ctr_fast);
+        nis_ctr_slow_val = innov_ctr_slow' * (cache.P_zz_ctr_slow \ innov_ctr_slow);
+
         if ~isnan(nis_cv_val)
             imm.ukf_cv.nis_history(end+1) = nis_cv_val;
         end
-        if ~isnan(nis_ct_val)
-            imm.ukf_ct.nis_history(end+1) = nis_ct_val;
+        if ~isnan(nis_ct_slow_val)
+            imm.ukf_ct_slow.nis_history(end+1) = nis_ct_slow_val;
         end
-        if ~isnan(nis_ct_right_val)
-            imm.ukf_ct_right.nis_history(end+1) = nis_ct_right_val;
+        if ~isnan(nis_ct_fast_val)
+            imm.ukf_ct_fast.nis_history(end+1) = nis_ct_fast_val;
         end
-        imm.nis_history = imm.ukf_cv.nis_history;  % 镜像供诊断
+        if ~isnan(nis_ctr_fast_val)
+            imm.ukf_ctr_fast.nis_history(end+1) = nis_ctr_fast_val;
+        end
+        if ~isnan(nis_ctr_slow_val)
+            imm.ukf_ctr_slow.nis_history(end+1) = nis_ctr_slow_val;
+        end
+        imm.nis_history = imm.ukf_cv.nis_history;
 
-        % Oracle 已给出唯一关联量测，使用条件高斯模型似然。
-        % Cholesky 对数形式避免 det/exp 在混合量纲下上下溢。
-        log_likelihood = [gaussian_log_likelihood_imm( ...
-            cache.P_zz_cv, innov_cv, nz); ...
-            gaussian_log_likelihood_imm(cache.P_zz_ct, innov_ct, nz); ...
-            gaussian_log_likelihood_imm( ...
-            cache.P_zz_ct_right, innov_ct_right, nz)];
-
-        % 3in1 模式保持 IMM 原生似然更新，不用自适应 Q 反向改写模型概率。
+        log_likelihood = [gaussian_log_likelihood_imm(cache.P_zz_cv, innov_cv, nz); ...
+                          gaussian_log_likelihood_imm(cache.P_zz_ct_slow, innov_ct_slow, nz); ...
+                          gaussian_log_likelihood_imm(cache.P_zz_ct_fast, innov_ct_fast, nz); ...
+                          gaussian_log_likelihood_imm(cache.P_zz_ctr_fast, innov_ctr_fast, nz); ...
+                          gaussian_log_likelihood_imm(cache.P_zz_ctr_slow, innov_ctr_slow, nz)];
     end
 
-    % ---- 贝叶斯模型概率更新 ----
-    % mu_new(j) ∝ L_j * Σ_i Pi(i,j) * mu_i
-    % 即：新概率 = 似然度 × 混合概率，再归一化
+    % Bayesian model probability update
     log_weight = log_likelihood + log(max(cache.c_bar, realmin));
     log_weight = log_weight - max(log_weight);
     weighted_likelihood = exp(log_weight);
     mu_new = weighted_likelihood / sum(weighted_likelihood);
     imm.mu = project_bounded_probability_imm(mu_new, imm.mu_min, imm.mu_max);
 
-    % ---- 组合状态 ----
-    % 按更新后的模型概率加权组合
-    x_comb = imm.mu(1) * imm.ukf_cv.x + imm.mu(2) * imm.ukf_ct.x + ...
-        imm.mu(3) * imm.ukf_ct_right.x;
+    % State combination
+    x_comb = imm.mu(1)*imm.ukf_cv.x + imm.mu(2)*imm.ukf_ct_slow.x + imm.mu(3)*imm.ukf_ct_fast.x + ...
+             imm.mu(4)*imm.ukf_ctr_fast.x + imm.mu(5)*imm.ukf_ctr_slow.x;
     lon = x_comb(1);
     lat = x_comb(3);
 
-    % ---- 更新顶层状态（供时间对齐/融合/诊断使用） ----
     imm.x = x_comb;
-    % 组合协方差（包含模型间离散项）
-    imm.P = combine_cov_imm( ...
-        {imm.ukf_cv.x, imm.ukf_ct.x, imm.ukf_ct_right.x}, ...
-        {imm.ukf_cv.P, imm.ukf_ct.P, imm.ukf_ct_right.P}, imm.mu, x_comb);
-    % 组合过程噪声
-    imm.Q = imm.mu(1) * imm.ukf_cv.Q + imm.mu(2) * imm.ukf_ct.Q + ...
-        imm.mu(3) * imm.ukf_ct_right.Q;
-    imm.Q_ema = imm.mu(1) * imm.ukf_cv.Q_ema + ...
-        imm.mu(2) * imm.ukf_ct.Q_ema + imm.mu(3) * imm.ukf_ct_right.Q_ema;
-    imm.mu_history(end+1, :) = imm.mu';  % 记录模型概率历史
+    imm.P = combine_cov_imm({imm.ukf_cv.x, imm.ukf_ct_slow.x, imm.ukf_ct_fast.x, imm.ukf_ctr_fast.x, imm.ukf_ctr_slow.x}, ...
+                            {imm.ukf_cv.P, imm.ukf_ct_slow.P, imm.ukf_ct_fast.P, imm.ukf_ctr_fast.P, imm.ukf_ctr_slow.P}, ...
+                            imm.mu, x_comb);
+    imm.Q = imm.mu(1)*imm.ukf_cv.Q + imm.mu(2)*imm.ukf_ct_slow.Q + imm.mu(3)*imm.ukf_ct_fast.Q + ...
+            imm.mu(4)*imm.ukf_ctr_fast.Q + imm.mu(5)*imm.ukf_ctr_slow.Q;
+    imm.Q_ema = imm.mu(1)*imm.ukf_cv.Q_ema + imm.mu(2)*imm.ukf_ct_slow.Q_ema + imm.mu(3)*imm.ukf_ct_fast.Q_ema + ...
+                imm.mu(4)*imm.ukf_ctr_fast.Q_ema + imm.mu(5)*imm.ukf_ctr_slow.Q_ema;
+    imm.mu_history(end+1, :) = imm.mu';
     imm.log_likelihood_history(end+1, :) = log_likelihood';
 end
 
-
 function mean_deg = circular_mean_imm(angles_deg, weights)
-    weights = weights(:) / sum(weights);
+    % Compute circular mean of angles_deg weighted by weights
+    weights = weights(:) / sum(weights(:));  % Column vector
+    angles_deg = angles_deg(:);             % Column vector
     reference = angles_deg(1);
-    delta = arrayfun(@(a) wrap_angle_imm(a - reference), angles_deg(:));
-    mean_deg = mod(reference + weights' * delta, 360.0);
+    delta = angles_deg - reference;         % Column vector
+    delta = mod(delta + 180.0, 360.0) - 180.0;  % Vectorized wrap
+    mean_deg = mod(reference + weights' * delta, 360.0);  % Dot product: (1xN)*(Nx1) = scalar
 end
-
 
 function angle = wrap_angle_imm(angle)
     angle = mod(angle + 180.0, 360.0) - 180.0;
 end
 
-
 function value = gaussian_log_likelihood_imm(P, innov, dimension)
     P = (P + P') / 2;
     [L, flag] = chol(P, 'lower');
     if flag ~= 0
-        P = regularize_cov_imm(P);
+        P = regularize_imm(P);
         [L, flag] = chol(P, 'lower');
     end
     if flag ~= 0
@@ -584,7 +533,6 @@ function value = gaussian_log_likelihood_imm(P, innov, dimension)
     log_det = 2 * sum(log(diag(L)));
     value = -0.5 * (dimension * log(2*pi) + log_det + whitened' * whitened);
 end
-
 
 function probability = project_bounded_probability_imm(probability, lower, upper)
     probability = max(0, probability(:));
@@ -613,60 +561,33 @@ function probability = project_bounded_probability_imm(probability, lower, upper
     probability = probability / sum(probability);
 end
 
-
-% =========================================================================
-% combine_cov_imm — 组合协方差矩阵
-% =========================================================================
-% P_comb = Σ mu_i * (P_i + dx_i * dx_i')
-% 包含模型间离散项 dx_i * dx_i'，保证组合协方差不会低估不确定性
-% 这是 IMM 算法的关键：如果不加离散项，组合协方差会小于任一模型协方差，
-% 导致滤波器过度自信而发散
 function P_comb = combine_cov_imm(x_models, P_models, mu, x_comb)
     P_comb = zeros(size(P_models{1}));
     for i = 1:length(mu)
         dx = x_models{i} - x_comb;
         P_comb = P_comb + mu(i) * (P_models{i} + dx * dx');
     end
-    P_comb = regularize_cov_imm(P_comb);
+    P_comb = regularize_imm(P_comb);
 end
 
-
-% =========================================================================
-% regularize_cov_imm — IMM 专用协方差正则化
-% =========================================================================
-% 确保协方差矩阵满足：
-%   1. 对称性（浮点误差可能导致轻微不对称）
-%   2. 正定性（所有特征值 > min_eig）
-%   3. 无 NaN/Inf
-function P_reg = regularize_cov_imm(P)
-    % 强制对称化
+function P_reg = regularize_imm(P)
     P_reg = (P + P') / 2;
-    % NaN/Inf 守卫：如果出现异常值，直接返回单位矩阵的小倍数
     if any(isnan(P_reg(:))) || any(isinf(P_reg(:)))
         P_reg = eye(size(P_reg)) * 1e-6;
         return;
     end
     min_eig = 1e-12;
-    % 特征值分解，检查并修正负特征值
     [V, D] = eig(P_reg);
     d = diag(D);
     d(d < min_eig) = min_eig;
     P_reg = V * diag(d) * V';
-    % 再次对称化（特征值重构后可能轻微不对称）
     P_reg = (P_reg + P_reg') / 2;
 end
 
-
-% =========================================================================
-% combine_meas_cov_imm — 组合量测协方差矩阵
-% =========================================================================
-% 与 combine_cov_imm 类似，但是针对量测空间（而非状态空间）
-% 特殊处理方位角的环绕问题
 function P_zz_comb = combine_meas_cov_imm(z_models, P_zz_models, mu, z_comb)
     P_zz_comb = zeros(size(P_zz_models{1}));
     for i = 1:length(mu)
         dz = z_models{i} - z_comb;
-        % 方位角（第二个分量）的环绕修正
         if length(dz) >= 2 && abs(dz(2)) > 180
             dz(2) = dz(2) - 360 * round(dz(2) / 360);
         end
@@ -675,16 +596,8 @@ function P_zz_comb = combine_meas_cov_imm(z_models, P_zz_models, mu, z_comb)
     P_zz_comb = (P_zz_comb + P_zz_comb') / 2;
 end
 
-
-% =========================================================================
-% get_imm_adapt_mode — 获取 IMM 自适应模式
-% =========================================================================
-% 自适应模式决定 IMM 内部的 Q 调整策略：
-%   '3in1'     - 3in1 模式：CV 用瞬态增益，CT 用固定缩放
-%   'fuzzy_only' - 纯模糊自适应模式
-%   'none'     - 无自适应
 function adapt_mode = get_imm_adapt_mode(imm)
-    adapt_mode = '3in1';  % 默认模式
+    adapt_mode = '3in1';
     if isfield(imm, 'imm_adapt_mode')
         adapt_mode = imm.imm_adapt_mode;
     elseif isfield(imm, 'params') && isfield(imm.params, 'imm_adapt_mode')
@@ -692,61 +605,40 @@ function adapt_mode = get_imm_adapt_mode(imm)
     end
 end
 
-
-% =========================================================================
-% apply_transient_q_imm — CV 模型瞬态增益自适应 Q
-% =========================================================================
-% 基于 NIS 的 EWMA 平滑值，在 NIS 超过阈值时渐进提升 Q。
-% 这是 3in1 模式的核心创新：CV 模型在机动瞬态时自动提升过程噪声。
-% 与 adapt_q 不同，此函数不依赖生命周期检查，专门在 prepare 阶段调用。
 function ukf = apply_transient_q_imm(ukf, params)
-    % 确保 Q_base 存在
     if ~isfield(ukf, 'Q_base') || isempty(ukf.Q_base)
         ukf.Q_base = ukf.Q;
     end
-    % 重置 Q 为基线
     ukf.Q = ukf.Q_base;
     ukf.Q_ema = 1.0;
 
-    % 没有 NIS 历史则无法自适应
     if ~isfield(ukf, 'nis_history') || isempty(ukf.nis_history)
         return;
     end
 
     nis_now = ukf.nis_history(end);
-    % 读取瞬态自适应参数
-    nis_start = get_param_imm(params, 'imm_transient_nis_start', 3.0);   % 触发阈值下限
-    nis_full = get_param_imm(params, 'imm_transient_nis_full', 12.0);   % 触发阈值上限
-    gain_max = get_param_imm(params, 'imm_transient_gain_max', 5.0);    % 最大增益倍数
-    ewma_alpha = get_param_imm(params, 'imm_transient_ewma_alpha', 0.65); % EWMA 系数
+    nis_start = get_param_imm(params, 'imm_transient_nis_start', 3.0);
+    nis_full = get_param_imm(params, 'imm_transient_nis_full', 12.0);
+    gain_max = get_param_imm(params, 'imm_transient_gain_max', 5.0);
+    ewma_alpha = get_param_imm(params, 'imm_transient_ewma_alpha', 0.65);
 
-    % 初始化 EWMA 状态
     if ~isfield(ukf, 'transient_nis_ewma') || isempty(ukf.transient_nis_ewma)
         ukf.transient_nis_ewma = 0.0;
     end
 
-    % 计算超出的 NIS 量（低于 nis_start 的部分不计入）
     nis_excess = max(0.0, nis_now - nis_start);
-    % EWMA 平滑：平滑后的超出量
     ukf.transient_nis_ewma = ewma_alpha * nis_excess + (1.0 - ewma_alpha) * ukf.transient_nis_ewma;
     if ukf.transient_nis_ewma <= 0
         return;
     end
 
-    % 计算增益比例：0~1 之间线性插值
     nis_span = max(nis_full - nis_start, 1e-6);
     gain_ratio = min(1.0, ukf.transient_nis_ewma / nis_span);
-    % 计算最终增益：1.0（基线）到 gain_max（最大值）
     q_gain = 1.0 + (gain_max - 1.0) * gain_ratio;
     ukf.Q = ukf.Q_base * q_gain;
     ukf.Q_ema = q_gain;
 end
 
-
-% =========================================================================
-% get_param_imm — 安全参数读取
-% =========================================================================
-% 安全地从结构体中读取字段，如果字段不存在则返回默认值
 function value = get_param_imm(params, field_name, default_value)
     value = default_value;
     if isfield(params, field_name)
@@ -756,33 +648,33 @@ end
 
 function mu = initial_mode_probabilities(params)
     mu_cv = get_param_imm(params, 'imm_mu_init_CV', 0.5);
-    validate_transition_probability(mu_cv, 'mu_init_CV');
-    mu = [mu_cv; (1 - mu_cv)/2; (1 - mu_cv)/2];
+    mu_rest = (1 - mu_cv) / 4;
+    mu = [mu_cv; mu_rest; mu_rest; mu_rest; mu_rest];
 end
 
 function validate_transition_probability(value, name)
     if ~isnumeric(value) || ~isscalar(value) || ~isfinite(value) || ...
             value < 0 || value > 1
-        error('ukf_imm:invalidProbability', ...
-            '%s must be a finite scalar in [0, 1].', name);
+        error('ukf_imm:invalidProbability', '%s must be a finite scalar in [0, 1].', name);
     end
 end
 
-
-% =========================================================================
-% keep_prediction — 纯预测：保留模型预测状态
-% =========================================================================
-% 当没有新息时（纯预测帧），各模型保留 prepare 阶段计算的预测状态
 function ukf = keep_prediction(ukf, cache, model)
     switch model
         case 'cv'
             ukf.x = cache.x_pred_cv;
             ukf.P = cache.P_pred_cv;
-        case 'ct'
-            ukf.x = cache.x_pred_ct;
-            ukf.P = cache.P_pred_ct;
-        case 'ct_right'
-            ukf.x = cache.x_pred_ct_right;
-            ukf.P = cache.P_pred_ct_right;
+        case 'ct_slow'
+            ukf.x = cache.x_pred_ct_slow;
+            ukf.P = cache.P_pred_ct_slow;
+        case 'ct_fast'
+            ukf.x = cache.x_pred_ct_fast;
+            ukf.P = cache.P_pred_ct_fast;
+        case 'ctr_fast'
+            ukf.x = cache.x_pred_ctr_fast;
+            ukf.P = cache.P_pred_ctr_fast;
+        case 'ctr_slow'
+            ukf.x = cache.x_pred_ctr_slow;
+            ukf.P = cache.P_pred_ctr_slow;
     end
 end

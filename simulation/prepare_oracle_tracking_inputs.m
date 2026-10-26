@@ -102,6 +102,21 @@ function [dr1_est, da1_est, dr2_est, da2_est] = calibrate_bias(params)
 
     % 提取 ADS-B 的纬度和经度列
     adsb_lat = T_adsb.Var2; adsb_lon = T_adsb.Var3;
+    if isfield(params, 'adsb_lon_offset_deg')
+        adsb_lon = adsb_lon + params.adsb_lon_offset_deg;
+    end
+    % 仅使用东南沿海探测区域内的 ADS-B 航迹（向量化预筛选）。
+    adsb_track_id = string(T_adsb.Var1);
+    lon_lim = [117.0, 124.0]; lat_lim = [24.0, 34.0];
+    if isfield(params, 'adsb_region_lon'), lon_lim = params.adsb_region_lon; end
+    if isfield(params, 'adsb_region_lat'), lat_lim = params.adsb_region_lat; end
+    region_mask = isfinite(adsb_lon) & isfinite(adsb_lat) & adsb_lon >= lon_lim(1) & adsb_lon <= lon_lim(2) & ...
+        adsb_lat >= lat_lim(1) & adsb_lat <= lat_lim(2) & strlength(adsb_track_id) > 0;
+    selected_ids = unique(adsb_track_id(region_mask));
+    if isempty(selected_ids)
+        error('prepare_oracle_tracking_inputs:adsbNoInCoverageTrack', ...
+            'ADS-B 数据中没有找到同时满足两部雷达覆盖和最小点数要求的航迹');
+    end
 
     % 初始化偏差收集数组
     dr1 = []; da1 = []; dr2 = []; da2 = [];
@@ -114,6 +129,7 @@ function [dr1_est, da1_est, dr2_est, da2_est] = calibrate_bias(params)
     % 遍历降采样后的 ADS-B 点
     for idx = 1:cal_step:height(T_adsb)
         t_lon = adsb_lon(idx); t_lat = adsb_lat(idx);
+        if ~ismember(adsb_track_id(idx), selected_ids), continue; end
         % 跳过经纬度为 NaN 的无效点
         if isnan(t_lon) || isnan(t_lat), continue; end
 

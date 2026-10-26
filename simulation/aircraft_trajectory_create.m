@@ -325,7 +325,11 @@ function [traj, waypoints] = create_uturn_trajectory(params)
     bearing_out = mod(bearing_in + 180.0 * turn_dir, 360);  % 出向：正西(270°)
 
     % 圆心（固定）
-    center_lon = 131.44;
+    lon_offset = 0.0;
+    if isfield(params, 'coordinate_lon_offset_deg')
+        lon_offset = params.coordinate_lon_offset_deg;
+    end
+    center_lon = 131.44 + lon_offset;
     center_lat = 31.75;
 
     % 左转圆心在入向左侧：entry→center = bearing_in - 90° = 0° (正北)
@@ -339,8 +343,8 @@ function [traj, waypoints] = create_uturn_trajectory(params)
         center_bearing, R_turn_m);
 
     % 起终点经度（沿用户指定），纬度 = 入弯/出弯纬度（在各自直线上）
-    W1_lon = 127.0284;  W1_lat = entry_lat;   % 起点：正东直飞到入弯点
-    W3_lon = 127.2735;  W3_lat = exit_lat;    % 终点：正西从出弯点飞来
+    W1_lon = 127.0284 + lon_offset;  W1_lat = entry_lat;   % 起点：正东直飞到入弯点
+    W3_lon = 127.2735 + lon_offset;  W3_lat = exit_lat;    % 终点：正西从出弯点飞来
 
     % 直线段长度（从起点到入弯点，从出弯点到终点）
     straight_approach_m = sphere_utils_haversine_distance(W1_lon, W1_lat, entry_lon, entry_lat);
@@ -455,9 +459,13 @@ end
 function [traj, waypoints] = create_gradual_turn_trajectory(params)
     % ---- 航路点定义 ----
     % W1: 起点, W2: 拐弯顶点, W3: 终点
-    W1 = [126.6685, 32.2184];  % 起点
-    W2 = [128.2501, 31.0887];  % 拐弯顶点
-    W3 = [132.0502, 31.4379];  % 终点
+    lon_offset = 0.0;
+    if isfield(params, 'coordinate_lon_offset_deg')
+        lon_offset = params.coordinate_lon_offset_deg;
+    end
+    W1 = [126.6685 + lon_offset, 32.2184];  % 起点
+    W2 = [128.2501 + lon_offset, 31.0887];  % 拐弯顶点
+    W3 = [132.0502 + lon_offset, 31.4379];  % 终点
     waypoints = [W1(1), W1(2), 0;
                  W2(1), W2(2), 0;
                  W3(1), W3(2), 0];

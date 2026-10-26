@@ -318,9 +318,14 @@ function snap = make_snap(activeTrackList, frame_id)
     for i = 1:length(activeTrackList)
         trk = activeTrackList{i};
         % 提取 UKF 核心状态
+        if isfield(trk.ukf, 'M')
+            model_count = trk.ukf.M;
+        else
+            model_count = 1;
+        end
         slim_ukf = struct('x', trk.ukf.x, 'P', trk.ukf.P, 'Q', trk.ukf.Q, ...
             'Q_ema', diagnostic_field(trk.ukf, 'Q_ema', NaN), ...
-            'mu', diagnostic_field(trk.ukf, 'mu', nan(3, 1)), ...
+            'mu', diagnostic_field(trk.ukf, 'mu', nan(model_count, 1)), ...
             'model_nis', latest_model_nis(trk.ukf), ...
             'log_likelihood', latest_log_likelihood(trk.ukf));
         % 优先使用预测协方差，不存在则回退到当前协方差
@@ -349,9 +354,13 @@ end
 
 
 function values = latest_model_nis(ukf)
-    values = nan(1, 3);
-    names = {'ukf_cv', 'ukf_ct', 'ukf_ct_right'};
-    for i = 1:3
+    if isfield(ukf, 'model_fields')
+        names = ukf.model_fields;
+    else
+        names = {'ukf_cv', 'ukf_ct', 'ukf_ct_right'};
+    end
+    values = nan(1, numel(names));
+    for i = 1:numel(names)
         if isfield(ukf, names{i}) && isfield(ukf.(names{i}), 'nis_history') && ...
                 ~isempty(ukf.(names{i}).nis_history)
             values(i) = ukf.(names{i}).nis_history(end);
@@ -361,7 +370,11 @@ end
 
 
 function values = latest_log_likelihood(ukf)
-    values = nan(1, 3);
+    if isfield(ukf, 'M')
+        values = nan(1, ukf.M);
+    else
+        values = nan(1, 1);
+    end
     if isfield(ukf, 'log_likelihood_history') && ...
             ~isempty(ukf.log_likelihood_history)
         values = ukf.log_likelihood_history(end, :);

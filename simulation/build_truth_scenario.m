@@ -36,6 +36,16 @@ function scenario = build_truth_scenario(scenario_name, params)
         scenario_name = 'multi_cross';
     end
 
+    % ==================== ADS-B 数据驱动场景 ====================
+    % 场景名以 'adsb_' 开头时，从 data/adsb/<scene_id>.csv 加载真实民航航迹
+    % （2026-10-24 全天 FR24 数据派生），输出结构与合成场景完全一致。
+    % 详见 simulation/load_adsb_scenario.m 与
+    % 文稿撰写/ADS-B数据驱动场景构建方案_20261025.md
+    if startsWith(char(scenario_name), 'adsb_')
+        scenario = load_adsb_scenario(char(scenario_name), params);
+        return;
+    end
+
     % 根据场景名生成不同的航迹
     switch char(scenario_name)
         case 'multi_cross'
@@ -45,9 +55,9 @@ function scenario = build_truth_scenario(scenario_name, params)
             % 目标C: 西→东北   (128.8E,31.5N → 132.0E,33.2N)
             % 保持与A/B相近的覆盖时长，支持严格多次生命周期碎片实验。
             waypoints = {
-                [128.8, 30.5, 0; 132.0, 32.5, 0], ...
-                [128.8, 32.5, 0; 132.0, 30.5, 0], ...
-                [128.8, 31.5, 0; 132.0, 33.2, 0]};
+                [119.8, 30.5, 0; 123.0, 32.5, 0], ...
+                [119.8, 32.5, 0; 123.0, 30.5, 0], ...
+                [119.8, 31.5, 0; 123.0, 33.2, 0]};
             labels = {'A', 'B', 'C'};
             trajs = cell(3, 1);
             for i = 1:3

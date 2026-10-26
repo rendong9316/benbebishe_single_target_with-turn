@@ -18,17 +18,21 @@ function ukf = post_init_multi(ukf, params)
     ukf.dt = params.dt_sec;
     ukf.initialized = true;
 
-    % IMM 模式下，同步更新两个子 UKF 的 dt 和 initialized
-    % IMM（Interactive Multi-Model）包含恒速(CV)和恒转弯(CT)两种运动模型，
-    % 每个子滤波器都需要独立的时间步长和初始化标志
+    % IMM 模式下，同步更新所有子 UKF 的 dt 和 initialized。
+    % 子模型列表由 IMM 模板提供，避免 tracker 硬编码模型数量和名称。
     if isfield(ukf, 'ukf_cv')
-        ukf.ukf_cv.dt = params.dt_sec;
-        ukf.ukf_cv.initialized = true;
-        ukf.ukf_ct.dt = params.dt_sec;
-        ukf.ukf_ct.initialized = true;
-        if isfield(ukf, 'ukf_ct_right')
-            ukf.ukf_ct_right.dt = params.dt_sec;
-            ukf.ukf_ct_right.initialized = true;
+        if isfield(ukf, 'model_fields')
+            model_fields = ukf.model_fields;
+        else
+            % 兼容旧三模型 IMM。
+            model_fields = {'ukf_cv', 'ukf_ct', 'ukf_ct_right'};
+        end
+        for i = 1:numel(model_fields)
+            name = model_fields{i};
+            if isfield(ukf, name)
+                ukf.(name).dt = params.dt_sec;
+                ukf.(name).initialized = true;
+            end
         end
     end
 

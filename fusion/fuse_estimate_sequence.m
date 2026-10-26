@@ -139,6 +139,39 @@ function snapshots = fuse_method(group, segments, params, method)
         if numel(estimates) >= 2
             % 情况A：两源及以上有数据，执行融合
 
+            % ===== 可选：协方差校准（CCF）=====
+            % 依据：实测 NEES 显示 R1 报告的协方差可能低估约 2 倍，
+            % 导致信息融合权重错配（见 第5章技术方案_融合失效机理与修复）。
+            % kappa 由离线标定（NIS 统计）得到，按雷达编号分别配置。
+            if get_param_fs(params, 'ccf_enable', false)
+                for ei = 1:numel(estimates)
+                    kf = 1.0;
+                    if estimates(ei).radar_id == 1
+                        kf = get_param_fs(params, 'ccf_kappa_1', 1.0);
+                    else
+                        kf = get_param_fs(params, 'ccf_kappa_2', 1.0);
+                    end
+                    if isfinite(kf) && kf > 0
+                        estimates(ei).P = kf * estimates(ei).P;
+                    end
+                end
+            end
+
+            % ===== 可选：距离门控 =====
+            % 依据：实测融合在近距段增益 +11~21%，远距段 −2~−22%。
+            % 若某站距目标过远（几何差），直接采用另一站，避免融合反而变差。
+            if get_param_fs(params, 'fusion_gate_enable', false)
+                d1 = gate_dist(params, 1, estimates(1).x([1 3]));
+                d2 = gate_dist(params, 2, estimates(2).x([1 3]));
+                dmax = get_param_fs(params, 'fusion_gate_dmax_km', Inf);
+                if d1 > dmax && d2 <= dmax
+                    estimates = estimates(2);      % 只用 R2
+                elseif d2 > dmax && d1 <= dmax
+                    estimates = estimates(1);      % 只用 R1
+                end
+            end
+
+            if numel(estimates) >= 2
             if strcmp(method, 'BC')
                 % --- BC 方法：维护互协方差 P12 ---
 
@@ -172,6 +205,14 @@ function snapshots = fuse_method(group, segments, params, method)
             end
 
             source = 'both';  % 标记为双源融合
+
+            else
+                % 门控后仅剩单站：直接透传，不做融合
+                x = estimates(1).x;
+                P = estimates(1).P;
+                source = sprintf('R%d_only', estimates(1).radar_id);
+                if strcmp(method, 'BC'), has_bc = false; end
+            end
 
         elseif numel(estimates) == 1
             % 情况B：仅单源有数据，直接透传该源估计
@@ -376,4 +417,33 @@ end
 
 function value = first_or_nan(values)
 if isempty(values), value = NaN; else, value = values(1); end
+end
+
+% =========================================================================
+% 以下为 2026-10-26 新增：CCF 校准与距离门控的辅助函数
+% =========================================================================
+function v = get_param_fs(params, name, default)
+    if isfield(params, name) && ~isempty(params.(name))
+        v = params.(name);
+    else
+        v = default;
+    end
+end
+
+function d = gate_dist(params, radar_id, xpos)
+    % 计算目标到指定接收站的大圆距离（km）
+    if radar_id == 1
+        lon0 = params.radar1_lon; lat0 = params.radar1_lat;
+    else
+        lon0 = params.radar2_lon; lat0 = params.radar2_lat;
+    end
+    d = hav_km_fs(lon0, lat0, xpos(1), xpos(2));
+end
+
+function d = hav_km_fs(lon1, lat1, lon2, lat2)
+    R = 6371;
+    p1 = deg2rad(lat1); p2 = deg2rad(lat2);
+    dp = deg2rad(lat2-lat1); dl = deg2rad(lon2-lon1);
+    a = sin(dp/2).^2 + cos(p1).*cos(p2).*sin(dl/2).^2;
+    d = 2*R*asin(sqrt(a));
 end

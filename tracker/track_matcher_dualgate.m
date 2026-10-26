@@ -1,38 +1,58 @@
 % =========================================================================
-% track_matcher_dualgate.m — 双门限航迹关联算法
+% track_matcher_dualgate.m — 三判据航迹关联算法（兼容原双门限）
 % =========================================================================
-% 算法来源：开题报告《双门限航迹关联算法》
+% 算法来源：开题报告《双门限航迹关联算法》 → 升级为三判据关联
 %
 % 【核心思想】
 %   分布式融合中，两个传感器各自输出独立航迹，融合中心需要判断两条航迹
 %   是否来自同一真实目标。单次距离判断易受噪声/杂波/偏差干扰，故采用
-%   两层分级判定 + 质量自适应修正。
+%   多判据分级判定 + 质量自适应修正。
 %
-% 【第一门限 T1：距离粗筛】
+% 【判据 ①：位置距离粗筛 T1（保留）】
 %   对每个时刻 i，计算 R1 航迹 r 与 R2 航迹 s 的位置距离 d_i。
-%     - d_i < T1  → 通过，连续计数 k_count++
-%     - d_i >= T1 → 不通过，k_count 立即归零
+%     - d_i < T1·α(life)  → 通过，连续计数 k_count++
+%     - d_i >= T1·α(life) → 不通过，k_count 立即归零
+%   α(life) 为短航迹质量修正因子（见 compute_quality_adjusted_T1）。
 %
-% 【第二门限 M：连续次数 + 方差校验】
-%   当 k_count >= M（连续 M 个时刻通过距离门限），取最近 M 个匹配时刻
-%   的位置差值序列，计算方差。
-%     - var < var_thresh  → 长期稳定，判定关联
-%     - var >= var_thresh → 短期巧合，判定不关联（计数器不清零，继续等）
+% 【判据 ②：马氏距离平稳性检验（升级，替换原"距离方差"）】
+%   原判据用距离方差 var(d) < var_thresh 判断"距离是否恒定"，存在致命
+%   缺陷：两条平行同向飞行的不同目标，间距恒定 → 方差≈0 → 被误判为匹配。
 %
-% 【关联质量修正】
-%   短航迹、低 SNR 航迹位置噪声大，T1 自适应放大：
-%     life < 10  → T1 × 1.5
-%     life 10-30 → T1 × 1.25
-%     life > 30  → T1 × 1.0
+%   新判据用马氏距离平方：
+%     D²(k) = Δx' · inv(P1_pos + P2_pos) · Δx
+%   其中 Δx 为两航迹位置的平面坐标差（km），P_pos 为位置协方差的 2×2
+%   子矩阵（同样换算到 km²）。D² 服从 χ²(2)，门限取 χ²(2,0.95)=5.99。
+%
+%   语义：连续 M 帧中，D² < 门限的帧占比 ≥ maha_ratio（默认 0.8）则通过。
+%   与"方差"相比，马氏距离把滤波器给出的不确定度纳入判据——不确定度大
+%   （P 大）时门限自动放宽，不确定度小时自动收紧，统计意义明确。
+%
+% 【判据 ③：速度一致性（新增）】
+%     |v1 - v2| < kappa · sqrt(trace(Pv1) + trace(Pv2))
+%   速度从 UKF 状态 x = [lon, v_lon, lat, v_lat] 取（度/秒），换算到 km/s：
+%     v_km = [v_lon·111.32·cos(lat); v_lat·110.57]
+%   Pv 为速度协方差的 2×2 子矩阵（P 的 [2,2] [2,4] [4,2] [4,4]），同样按
+%   上述尺度换算到 (km/s)²。kappa 默认 3。
+%
+%   为什么有效：平行航迹的位置距离恒定（判据①②都拦不住），但两条航迹
+%   对应的是不同航班，速度大小/方向不同，判据③可唯一区分。该判据同时把
+%   滤波器与关联串起来——速度估计精度直接决定关联可靠性。
+%
+% 【开关与向后兼容】
+%   params.dualgate_use_maha / dualgate_use_vel 均为 false 时，判据②退化
+%   为原来的"距离方差"检验，判据③不启用，行为与升级前完全一致。
 %
 % 【输入】
 %   trackSnapshots_R1, trackSnapshots_R2 — [n_frames x 1] cell，每帧快照
-%   params — 含双门限参数
+%   params — 含三判据参数
 %
 % 【输出】
 %   matched_pairs — struct 数组，每元素含 R1_track_id, R2_track_id,
-%                   match_count, coexist_count, mean_dist_km, var_dist,
-%                   match_frames, quality
+%                   match_count, coexist_count, match_ratio, mean_dist_km,
+%                   mean_speed_diff, mean_heading_diff, var_dist,
+%                   match_frames, quality,
+%                   maha_ratio（新增）, vel_diff_kmps（新增）,
+%                   vel_tol_kmps（新增）
 % =========================================================================
 
 function matched_pairs = track_matcher_dualgate(trackSnapshots_R1, trackSnapshots_R2, params)
@@ -47,6 +67,19 @@ function matched_pairs = track_matcher_dualgate(trackSnapshots_R1, trackSnapshot
     var_thresh = get_param_local(params, 'dualgate_var_km2', 100);
     % coexist_thresh: 最少共现帧数，关联结果需满足此最小持续时间
     coexist_thresh = get_param_local(params, 'dualgate_coexist_thresh', 3);
+
+    % ---- 判据②③的开关与参数（缺省关闭 → 向后兼容原双门限行为）----
+    gates = struct();
+    % 是否启用马氏距离判据（替换距离方差）
+    gates.use_maha    = logical(get_param_local(params, 'dualgate_use_maha', false));
+    % 马氏距离平方门限，chi2(2, 0.95) = 5.99
+    gates.maha_thresh = get_param_local(params, 'dualgate_maha_thresh', 5.99);
+    % 窗口内通过马氏门限的帧占比下限
+    gates.maha_ratio  = get_param_local(params, 'dualgate_maha_ratio', 0.8);
+    % 是否启用速度一致性判据
+    gates.use_vel     = logical(get_param_local(params, 'dualgate_use_vel', false));
+    % 速度一致性倍数（sigma 倍数）
+    gates.vel_kappa   = get_param_local(params, 'dualgate_vel_kappa', 3.0);
 
     % 收集 R1/R2 所有曾经活跃的航迹 ID
     % collect_all_active_ids 遍历所有帧快照，提取非 HISTORY 航迹的 ID
@@ -64,7 +97,7 @@ function matched_pairs = track_matcher_dualgate(trackSnapshots_R1, trackSnapshot
     r1_max_life = compute_max_life(trackSnapshots_R1, r1_ids);
     r2_max_life = compute_max_life(trackSnapshots_R2, r2_ids);
 
-    % 对每对 (r1_id, r2_id) 跑双门限判定
+    % 对每对 (r1_id, r2_id) 跑三判据判定
     % 这是一个 O(N*M) 的笛卡尔积遍历，N 为 R1 航迹数，M 为 R2 航迹数
     for i = 1:length(r1_ids)
         r1_id = r1_ids(i);
@@ -76,18 +109,28 @@ function matched_pairs = track_matcher_dualgate(trackSnapshots_R1, trackSnapshot
             min_life = min(r1_max_life(i), r2_max_life(j));
             T1_adj = compute_quality_adjusted_T1(T1_base, min_life);
 
-            % 逐帧距离序列：计算两条航迹在每一帧的位置距离
+            % 判据①的逐帧距离序列：计算两条航迹在每一帧的位置距离
             % 如果某帧某条航迹不存在，对应位置为 NaN
             dist_series = compute_per_frame_distance(...
                 trackSnapshots_R1, trackSnapshots_R2, r1_id, r2_id, n_frames);
 
-            % 双门限判定核心：第一门限连续计数 + 第二门限方差校验
-            % 返回 matched（是否关联）和 match_info（关联详情）
+            % 判据②③的逐帧序列（仅在开关打开时计算，避免无谓开销）
+            if gates.use_maha || gates.use_vel
+                [maha_series, vel_series, vel_tol_series] = compute_state_series(...
+                    trackSnapshots_R1, trackSnapshots_R2, r1_id, r2_id, n_frames);
+            else
+                maha_series = [];
+                vel_series = [];
+                vel_tol_series = [];
+            end
+
+            % 三判据判定核心：①连续计数 + ②马氏/方差校验 + ③速度一致性
             [matched, match_info] = dual_threshold_decide(...
-                dist_series, T1_adj, M, var_thresh, coexist_thresh);
+                dist_series, T1_adj, M, var_thresh, coexist_thresh, ...
+                gates, maha_series, vel_series, vel_tol_series);
 
             if matched
-                % 构造匹配结果结构体
+                % 构造匹配结果结构体（原字段保持不变，新增三判据诊断字段）
                 mp = struct(...
                     'R1_track_id', r1_id, ...          % R1 侧航迹 ID
                     'R2_track_id', r2_id, ...          % R2 侧航迹 ID
@@ -95,12 +138,15 @@ function matched_pairs = track_matcher_dualgate(trackSnapshots_R1, trackSnapshot
                     'coexist_count', match_info.n_match_frames, ... % 共存帧数
                     'match_ratio', match_info.n_match_frames / n_frames, ... % 匹配比例
                     'mean_dist_km', match_info.mean_dist, ...  % 平均距离（km）
-                    'mean_speed_diff', 0, ...  % 速度差（暂未实现）
-                    'mean_heading_diff', 0, ...  % 航向差（暂未实现）
+                    'mean_speed_diff', 0, ...  % 速度差（保留字段，未参与评分）
+                    'mean_heading_diff', 0, ...  % 航向差（保留字段，未参与评分）
                     'var_dist', match_info.var_dist, ...  % 距离方差（km^2）
                     'match_frames', match_info.match_frames, ...  % 匹配帧号列表
                     'quality', compute_quality_score(match_info.mean_dist, ...  % 综合质量评分
-                        match_info.n_match_frames, n_frames));
+                        match_info.n_match_frames, n_frames), ...
+                    'maha_ratio', match_info.maha_ratio, ...    % 匹配区间内 D² 通过率
+                    'vel_diff_kmps', match_info.vel_diff, ...   % 平均速度差（km/s）
+                    'vel_tol_kmps', match_info.vel_tol);        % 速度一致性门限（km/s）
                 % 追加到结果列表
                 matched_pairs{end+1} = mp;
             end
@@ -123,9 +169,11 @@ function matched_pairs = track_matcher_dualgate(trackSnapshots_R1, trackSnapshot
         matched_pairs = apply_mutual_exclusion(matched_pairs);
     end
 
-    % 打印匹配统计信息
-    fprintf('[双门限匹配] T1=%.1fkm M=%d var_thresh=%.1fkm² → 匹配 %d 对\n', ...
-        T1_base, M, var_thresh, length(matched_pairs));
+    % 打印匹配统计信息（含三判据开关状态）
+    fprintf(['[三判据匹配] T1=%.1fkm M=%d var_thresh=%.1fkm^2 | ' ...
+        'maha=%d(thr=%.2f,ratio=%.2f) vel=%d(kappa=%.1f) → 匹配 %d 对\n'], ...
+        T1_base, M, var_thresh, gates.use_maha, gates.maha_thresh, ...
+        gates.maha_ratio, gates.use_vel, gates.vel_kappa, length(matched_pairs));
 end
 
 
@@ -258,31 +306,139 @@ end
 
 
 % =========================================================================
-% dual_threshold_decide — 双门限判定核心逻辑
+% compute_state_series — 逐帧马氏距离平方 D² 与速度差序列
 % =========================================================================
-function [matched, info] = dual_threshold_decide(dist_series, T1, M, var_thresh, coexist_thresh)
-    % 双门限判定核心逻辑
+% 输出（均为 1×n_frames，无数据帧为 NaN）：
+%   maha_series    — D²(k) = Δx' inv(P1+P2) Δx，Δx 与 P 均在 km 局部平面
+%   vel_series     — |v1 - v2|（km/s）
+%   vel_tol_series — sqrt(trace(Pv1)+trace(Pv2))（km/s），未乘 kappa
+% =========================================================================
+function [maha_series, vel_series, vel_tol_series] = compute_state_series(...
+    snaps_R1, snaps_R2, r1_id, r2_id, n_frames)
+
+    maha_series    = nan(1, n_frames);
+    vel_series     = nan(1, n_frames);
+    vel_tol_series = nan(1, n_frames);
+
+    for k = 1:n_frames
+        r1_trk = find_track_by_id(snaps_R1{k}, r1_id);
+        r2_trk = find_track_by_id(snaps_R2{k}, r2_id);
+        if isempty(r1_trk) || isempty(r2_trk)
+            continue;
+        end
+        if r1_trk.type == 7 || r2_trk.type == 7
+            continue;
+        end
+
+        % 提取两条航迹的 UKF 状态与位置/速度协方差子块
+        [s1, ok1] = extract_state_local(r1_trk);
+        [s2, ok2] = extract_state_local(r2_trk);
+        if ~ok1 || ~ok2
+            continue;
+        end
+
+        % 度 → km 的局部线性化尺度（以两条航迹的平均纬度为准）
+        lat_mid = 0.5 * (s1.lat + s2.lat);
+        scale = diag([111.32 * cosd(lat_mid), 110.57]);
+
+        % ---- 判据②：马氏距离平方 ----
+        % 位置差与位置协方差都换算到 km / km²
+        dx_km = scale * [s1.lon - s2.lon; s1.lat - s2.lat];
+        P_pos = scale * (s1.Ppos + s2.Ppos) * scale';
+        P_pos = 0.5 * (P_pos + P_pos');   % 强制对称，消除浮点误差
+        % 数值保护：协方差退化时加极小对角项，避免奇异
+        if rcond(P_pos) < 1e-12
+            P_pos = P_pos + 1e-6 * eye(2);
+        end
+        maha_series(k) = dx_km' * (P_pos \ dx_km);
+
+        % ---- 判据③：速度一致性 ----
+        v1_km = scale * s1.vel;           % km/s
+        v2_km = scale * s2.vel;           % km/s
+        vel_series(k) = norm(v1_km - v2_km);
+        % 速度协方差换算到 (km/s)²，取迹作为总不确定度
+        tr1 = trace(scale * s1.Pvel * scale');
+        tr2 = trace(scale * s2.Pvel * scale');
+        vel_tol_series(k) = sqrt(max(tr1, 0) + max(tr2, 0));
+    end
+end
+
+
+% =========================================================================
+% extract_state_local — 从航迹中提取位置/速度及其协方差子块
+% =========================================================================
+% UKF 状态 x = [lon, v_lon, lat, v_lat]（度、度/秒）
+% 位置协方差：P([1 3],[1 3])；速度协方差：P([2 4],[2 4])
+% =========================================================================
+function [s, ok] = extract_state_local(trk)
+    s = struct('lon', NaN, 'lat', NaN, 'vel', [NaN; NaN], ...
+               'Ppos', zeros(2, 2), 'Pvel', zeros(2, 2));
+    ok = false;
+
+    % 字段与维度检查
+    if ~isfield(trk, 'ukf') || isempty(trk.ukf)
+        return;
+    end
+    if ~isfield(trk.ukf, 'x') || numel(trk.ukf.x) < 4
+        return;
+    end
+    if ~isfield(trk.ukf, 'P') || isempty(trk.ukf.P)
+        return;
+    end
+    if size(trk.ukf.P, 1) < 4 || size(trk.ukf.P, 2) < 4
+        return;
+    end
+
+    x = trk.ukf.x(:);
+    P = trk.ukf.P;
+    % 数值有效性检查
+    if any(~isfinite(x(1:4))) || any(~isfinite(P(1:4, 1:4)), 'all')
+        return;
+    end
+
+    s.lon  = x(1);
+    s.lat  = x(3);
+    s.vel  = [x(2); x(4)];
+    s.Ppos = P([1 3], [1 3]);
+    s.Pvel = P([2 4], [2 4]);
+    ok = true;
+end
+
+
+% =========================================================================
+% dual_threshold_decide — 三判据判定核心逻辑
+% =========================================================================
+function [matched, info] = dual_threshold_decide(dist_series, T1, M, ...
+    var_thresh, coexist_thresh, gates, maha_series, vel_series, vel_tol_series)
+    % 判定核心逻辑
     %
-    % 第一门限（T1）：逐帧距离粗筛
+    % 判据①（T1）：逐帧距离粗筛
     %   - d_i < T1 → 通过，连续计数 k_count++
     %   - d_i >= T1 → 不通过，k_count 归零
     %
-    % 第二门限（M + 方差校验）：
-    %   - 连续 M 帧通过 → 取最近 M 帧计算方差
-    %   - var < var_thresh → 关联成功（长期稳定）
-    %   - var >= var_thresh → 短期巧合，继续等待（k_count 不清零）
+    % 判据②（M + 平稳性）：
+    %   - 连续 M 帧通过判据① 后进入校验
+    %   - use_maha=true  → 窗口内 D² < maha_thresh 的帧占比 ≥ maha_ratio
+    %   - use_maha=false → 退化为原逻辑：窗口内距离方差 < var_thresh
+    %   - 校验失败 → k_count 不清零，继续等待（视为短期巧合）
+    %
+    % 判据③（速度一致性）：
+    %   - use_vel=true → 窗口内 |v1-v2| < kappa·sqrt(trace(Pv1)+trace(Pv2))
+    %                    的帧占比 ≥ maha_ratio
+    %   - use_vel=false → 跳过
     %
     % 关联区间扩展：确认关联后，向前扩展到首次通过帧，向后扩展到
     %   连续通过帧的末端，得到完整的共现区间
 
     matched = false;  % 初始化判定结果为不匹配
-    % 初始化返回信息结构体
+    % 初始化返回信息结构体（新增字段默认 NaN，表示未启用/未计算）
     info = struct('n_match_frames', 0, 'mean_dist', NaN, ...
-                  'var_dist', NaN, 'match_frames', []);
+                  'var_dist', NaN, 'match_frames', [], ...
+                  'maha_ratio', NaN, 'vel_diff', NaN, 'vel_tol', NaN);
 
     n = length(dist_series);
-    k_count = 0;           % 连续通过第一门限的帧数
-    first_pass_idx = 0;    % 第一次通过第一门限的帧索引
+    k_count = 0;           % 连续通过判据①的帧数
+    first_pass_idx = 0;    % 第一次通过判据①的帧索引
 
     for i = 1:n
         if isnan(dist_series(i))
@@ -293,20 +449,34 @@ function [matched, info] = dual_threshold_decide(dist_series, T1, M, var_thresh,
         end
 
         if dist_series(i) < T1
-            % 通过第一门限
+            % 通过判据①
             if k_count == 0
                 first_pass_idx = i;  % 记录首次通过的帧
             end
             k_count = k_count + 1;
 
             if k_count >= M
-                % 进入第二门限：取最近 M 个通过时刻的距离计算方差
-                start_idx = i - M + 1;
-                recent_M = dist_series(start_idx:i);
-                var_D = var(recent_M);
+                % 取最近 M 帧作为平稳性/速度检验窗口
+                win = (i - M + 1):i;
+                pass_ok = true;
 
-                if var_D < var_thresh
-                    % 通过方差校验 → 关联成功
+                % ---- 判据②：马氏距离（或退化为方差）----
+                if gates.use_maha
+                    pass_ok = maha_pass_ratio(maha_series(win), gates.maha_thresh) ...
+                              >= gates.maha_ratio;
+                else
+                    var_D = var(dist_series(win));
+                    pass_ok = (var_D < var_thresh);
+                end
+
+                % ---- 判据③：速度一致性 ----
+                if pass_ok && gates.use_vel
+                    pass_ok = vel_pass_ratio(vel_series(win), ...
+                        vel_tol_series(win), gates.vel_kappa) >= gates.maha_ratio;
+                end
+
+                if pass_ok
+                    % 全部判据通过 → 关联成功
                     % 扩展匹配区间：从 first_pass_idx 延伸到连续通过的末端
                     ext_start = first_pass_idx;
                     ext_end = i;
@@ -322,6 +492,22 @@ function [matched, info] = dual_threshold_decide(dist_series, T1, M, var_thresh,
                     info.mean_dist = mean(match_dists);
                     info.var_dist = var(match_dists);
                     info.match_frames = match_frames;
+
+                    % 在整个匹配区间上统计判据②③的平均表现（供诊断/评估）
+                    if gates.use_maha
+                        seg = maha_series(ext_start:ext_end);
+                        info.maha_ratio = maha_pass_ratio(seg, gates.maha_thresh);
+                    end
+                    if gates.use_vel
+                        v_seg = vel_series(ext_start:ext_end);
+                        t_seg = vel_tol_series(ext_start:ext_end);
+                        valid = ~isnan(v_seg) & ~isnan(t_seg);
+                        if any(valid)
+                            info.vel_diff = mean(v_seg(valid));
+                            info.vel_tol  = mean(gates.vel_kappa * t_seg(valid));
+                        end
+                    end
+
                     matched = true;
 
                     % 最少共现帧数校验：关联区间必须至少持续 coexist_thresh 帧
@@ -330,15 +516,39 @@ function [matched, info] = dual_threshold_decide(dist_series, T1, M, var_thresh,
                     end
                     return;
                 end
-                % 方差未通过 → k_count 不清零，继续等待后续时刻
+                % 校验未通过 → k_count 不清零，继续等待后续时刻
                 % 这意味着可能是短期巧合（两条不同航迹在某几帧偶然靠近）
             end
         else
-            % 不通过第一门限 → k_count 立即归零
+            % 不通过判据① → k_count 立即归零
             k_count = 0;
             first_pass_idx = 0;
         end
     end
+end
+
+
+% =========================================================================
+% maha_pass_ratio — 序列中 D² < 门限 的帧占比（NaN 视为不通过）
+% =========================================================================
+function r = maha_pass_ratio(series, thresh)
+    if isempty(series)
+        r = 0;
+        return;
+    end
+    r = sum(~isnan(series) & series < thresh) / numel(series);
+end
+
+
+% =========================================================================
+% vel_pass_ratio — 序列中 |v1-v2| < kappa·tol 的帧占比（NaN 视为不通过）
+% =========================================================================
+function r = vel_pass_ratio(v, tol, kappa)
+    if isempty(v)
+        r = 0;
+        return;
+    end
+    r = sum(~isnan(v) & ~isnan(tol) & v < kappa * tol) / numel(v);
 end
 
 
