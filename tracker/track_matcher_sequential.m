@@ -35,24 +35,53 @@ function matched_pairs = track_matcher_sequential(trackSnapshots_R1, trackSnapsh
             if ~any(valid), continue; end
             pass = sum(valid & D2 < maha_thresh) / sum(valid);
             if pass < maha_ratio, continue; end              % 马氏门限未通过
-            cand{end+1} = struct('r1', r1_ids(i), 'r2', r2_ids(j), 'md', md, ...
-                'nc', nc, 'maha', mean(D2(valid)));  %#ok<AGROW>
+            cand{end+1} = struct('r1', r1_ids(i), 'r2', r2_ids(j), 'i1', i, 'i2', j, ...
+                'md', md, 'nc', nc, 'maha', mean(D2(valid)));  %#ok<AGROW>
         end
     end
     if isempty(cand), return; end
 
-    % 按马氏距离均值升序贪心 1v1 指派（显式循环，避免 R2023a 对 struct-cell 的 arrayfun 限制）
-    mah_vec = zeros(1, numel(cand));
-    for ci = 1:numel(cand)
-        mah_vec(ci) = cand{ci}.maha;
+    % 指派方式：greedy（默认，与原基线一致）| hungarian（全局最优，用于对照实验）
+    assign_mode = pairing.get_param_local(params, 'seq_assign', 'greedy');
+    keep_idx = [];
+
+    if strcmpi(assign_mode, 'hungarian') && exist('matchpairs', 'file') == 2
+        % 全局最小化总马氏距离；costUnmatched = maha_thresh/2 使匹配条件化为
+        % 「马氏均值 < maha_thresh」，与候选门限口径一致
+        n1 = numel(r1_ids); n2 = numel(r2_ids);
+        BIG = 1e6;
+        cost = BIG * ones(n1, n2);
+        for ci = 1:numel(cand)
+            cost(cand{ci}.i1, cand{ci}.i2) = cand{ci}.maha;
+        end
+        [Mp, ~, ~] = matchpairs(cost, maha_thresh / 2);
+        if ~isempty(Mp)
+            key = zeros(n1, n2);
+            for ci = 1:numel(cand), key(cand{ci}.i1, cand{ci}.i2) = ci; end
+            for r = 1:size(Mp, 1)
+                ci = key(Mp(r, 1), Mp(r, 2));
+                if ci > 0, keep_idx(end+1) = ci; end %#ok<AGROW>
+            end
+        end
+    else
+        % 按马氏距离均值升序贪心 1v1 指派（显式循环，避免 R2023a 对 struct-cell 的 arrayfun 限制）
+        mah_vec = zeros(1, numel(cand));
+        for ci = 1:numel(cand)
+            mah_vec(ci) = cand{ci}.maha;
+        end
+        [~, ord] = sort(mah_vec);
+        used_r1 = []; used_r2 = [];
+        for idx = ord
+            c = cand{idx};
+            if ismember(c.r1, used_r1) || ismember(c.r2, used_r2), continue; end
+            used_r1(end+1) = c.r1;  %#ok<AGROW>
+            used_r2(end+1) = c.r2;  %#ok<AGROW>
+            keep_idx(end+1) = idx;  %#ok<AGROW>
+        end
     end
-    [~, ord] = sort(mah_vec);
-    used_r1 = []; used_r2 = [];
-    for idx = ord
+
+    for idx = keep_idx
         c = cand{idx};
-        if ismember(c.r1, used_r1) || ismember(c.r2, used_r2), continue; end
-        used_r1(end+1) = c.r1;  %#ok<AGROW>
-        used_r2(end+1) = c.r2;  %#ok<AGROW>
         matched_pairs(end+1) = struct('R1_track_id', c.r1, 'R2_track_id', c.r2, ...
             'mean_dist_km', c.md, 'coexist_count', c.nc, ...
             'maha_mean', c.maha, 'maha_ratio', maha_ratio);  %#ok<AGROW>
@@ -62,5 +91,6 @@ function matched_pairs = track_matcher_sequential(trackSnapshots_R1, trackSnapsh
             'coexist_count', {}, 'maha_mean', {}, 'maha_ratio', {});
     end
 
-    fprintf('[Sequential 基线] 候选 %d 对（门限后）-> 匹配 %d 对\n', numel(cand), numel(matched_pairs));
+    fprintf('[Sequential 基线] 候选 %d 对（门限后）-> 匹配 %d 对（%s）\n', ...
+        numel(cand), numel(matched_pairs), assign_mode);
 end
