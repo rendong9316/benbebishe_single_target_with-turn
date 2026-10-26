@@ -1,0 +1,228 @@
+{
+  "scene_id": "adsb_span_d",
+  "source": "fr24_adsb_20261024.csv",
+  "region": [
+    116.0,
+    122.2,
+    26.5,
+    34.0
+  ],
+  "alt_min_ft": 0,
+  "utc_window": [
+    "02:00",
+    "04:00"
+  ],
+  "dt_sec": 30.0,
+  "n_frames": 240,
+  "n_targets": 20,
+  "n_rows": 1399,
+  "active_mean": 5.83,
+  "active_max": 11,
+  "design": "distance-stratified",
+  "d2_band_km": [
+    1085.0,
+    1429.0
+  ],
+  "targets": [
+    {
+      "id": "T03542",
+      "frames": 28,
+      "f0": 212,
+      "f1": 239,
+      "spd_kt": 534.8,
+      "callsign": "CES224",
+      "d2_mean_km": 1086.4,
+      "d2_span_km": 194.9
+    },
+    {
+      "id": "T01999",
+      "frames": 39,
+      "f0": 1,
+      "f1": 39,
+      "spd_kt": 487.1,
+      "callsign": "SIA605",
+      "d2_mean_km": 1085.4,
+      "d2_span_km": 175.7
+    },
+    {
+      "id": "T02630",
+      "frames": 47,
+      "f0": 1,
+      "f1": 47,
+      "spd_kt": 445.5,
+      "callsign": "CSS6840",
+      "d2_mean_km": 1088.0,
+      "d2_span_km": 175.7
+    },
+    {
+      "id": "T02500",
+      "frames": 47,
+      "f0": 119,
+      "f1": 165,
+      "spd_kt": 256.5,
+      "callsign": "JDL2681",
+      "d2_mean_km": 1095.7,
+      "d2_span_km": 172.8
+    },
+    {
+      "id": "T03100",
+      "frames": 90,
+      "f0": 150,
+      "f1": 239,
+      "spd_kt": 480.1,
+      "callsign": "ABL382",
+      "d2_mean_km": 1188.5,
+      "d2_span_km": 410.7
+    },
+    {
+      "id": "T01917",
+      "frames": 90,
+      "f0": 1,
+      "f1": 90,
+      "spd_kt": 439.6,
+      "callsign": "GTI732",
+      "d2_mean_km": 1186.5,
+      "d2_span_km": 406.1
+    },
+    {
+      "id": "T03174",
+      "frames": 86,
+      "f0": 154,
+      "f1": 239,
+      "spd_kt": 482.4,
+      "callsign": "EOK558",
+      "d2_mean_km": 1184.9,
+      "d2_span_km": 400.2
+    },
+    {
+      "id": "T02074",
+      "frames": 89,
+      "f0": 1,
+      "f1": 89,
+      "spd_kt": 447.5,
+      "callsign": "AIH3871",
+      "d2_mean_km": 1186.8,
+      "d2_span_km": 380.3
+    },
+    {
+      "id": "T02482",
+      "frames": 104,
+      "f0": 16,
+      "f1": 119,
+      "spd_kt": 536.0,
+      "callsign": "KAL644",
+      "d2_mean_km": 1245.7,
+      "d2_span_km": 520.7
+    },
+    {
+      "id": "T02827",
+      "frames": 113,
+      "f0": 122,
+      "f1": 234,
+      "spd_kt": 490.6,
+      "callsign": "AAR746",
+      "d2_mean_km": 1254.4,
+      "d2_span_km": 520.6
+    },
+    {
+      "id": "T02732",
+      "frames": 62,
+      "f0": 176,
+      "f1": 237,
+      "spd_kt": 545.2,
+      "callsign": "HVN416",
+      "d2_mean_km": 1260.3,
+      "d2_span_km": 516.5
+    },
+    {
+      "id": "T02682",
+      "frames": 65,
+      "f0": 172,
+      "f1": 236,
+      "spd_kt": 523.1,
+      "callsign": "PTA272",
+      "d2_mean_km": 1259.1,
+      "d2_span_km": 514.8
+    },
+    {
+      "id": "T00489",
+      "frames": 104,
+      "f0": 23,
+      "f1": 126,
+      "spd_kt": 353.3,
+      "callsign": "CSH9224",
+      "d2_mean_km": 1306.6,
+      "d2_span_km": 475.8
+    },
+    {
+      "id": "T01165",
+      "frames": 85,
+      "f0": 1,
+      "f1": 85,
+      "spd_kt": 500.0,
+      "callsign": "KAL658",
+      "d2_mean_km": 1308.0,
+      "d2_span_km": 427.6
+    },
+    {
+      "id": "T02796",
+      "frames": 81,
+      "f0": 12,
+      "f1": 92,
+      "spd_kt": 378.1,
+      "callsign": "CES223",
+      "d2_mean_km": 1311.6,
+      "d2_span_km": 387.2
+    },
+    {
+      "id": "T02360",
+      "frames": 61,
+      "f0": 1,
+      "f1": 61,
+      "spd_kt": 540.9,
+      "callsign": "CSN329",
+      "d2_mean_km": 1311.0,
+      "d2_span_km": 368.9
+    },
+    {
+      "id": "T00849",
+      "frames": 68,
+      "f0": 1,
+      "f1": 68,
+      "spd_kt": 337.0,
+      "callsign": "AXM1516",
+      "d2_mean_km": 1418.3,
+      "d2_span_km": 222.3
+    },
+    {
+      "id": "T00460",
+      "frames": 29,
+      "f0": 1,
+      "f1": 29,
+      "spd_kt": 522.9,
+      "callsign": "AIC358",
+      "d2_mean_km": 1400.9,
+      "d2_span_km": 221.5
+    },
+    {
+      "id": "T02759_s2",
+      "frames": 47,
+      "f0": 61,
+      "f1": 107,
+      "spd_kt": 486.0,
+      "callsign": "CAO1087",
+      "d2_mean_km": 1428.4,
+      "d2_span_km": 201.2
+    },
+    {
+      "id": "T02822_s2",
+      "frames": 64,
+      "f0": 58,
+      "f1": 121,
+      "spd_kt": 459.5,
+      "callsign": "CEB679",
+      "d2_mean_km": 1429.4,
+      "d2_span_km": 192.8
+    }
+  ]
+}

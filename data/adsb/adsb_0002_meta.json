@@ -1,0 +1,359 @@
+{
+  "scene_id": "adsb_0002",
+  "source": "fr24_adsb_20261024.csv",
+  "region": [
+    117.0,
+    120.5,
+    29.0,
+    32.5
+  ],
+  "alt_min_ft": 20000,
+  "utc_window": [
+    "00:00",
+    "02:00"
+  ],
+  "dt_sec": 30.0,
+  "n_frames": 240,
+  "n_targets": 42,
+  "n_rows": 1486,
+  "active_mean": 6.19,
+  "active_max": 13,
+  "targets": [
+    {
+      "id": "T01586",
+      "frames": 10,
+      "f0": 0,
+      "f1": 9,
+      "spd_kt": 382.8,
+      "callsign": "CES6278"
+    },
+    {
+      "id": "T01605",
+      "frames": 41,
+      "f0": 77,
+      "f1": 117,
+      "spd_kt": 437.8,
+      "callsign": "KAL647"
+    },
+    {
+      "id": "T01694",
+      "frames": 45,
+      "f0": 64,
+      "f1": 108,
+      "spd_kt": 421.0,
+      "callsign": "CSN8212"
+    },
+    {
+      "id": "T01714",
+      "frames": 29,
+      "f0": 102,
+      "f1": 130,
+      "spd_kt": 401.9,
+      "callsign": "CSS7017"
+    },
+    {
+      "id": "T01759",
+      "frames": 50,
+      "f0": 182,
+      "f1": 231,
+      "spd_kt": 454.6,
+      "callsign": "ETH673"
+    },
+    {
+      "id": "T01775",
+      "frames": 50,
+      "f0": 77,
+      "f1": 126,
+      "spd_kt": 450.3,
+      "callsign": "UAE311"
+    },
+    {
+      "id": "T01776",
+      "frames": 35,
+      "f0": 65,
+      "f1": 99,
+      "spd_kt": 435.7,
+      "callsign": "CES7707"
+    },
+    {
+      "id": "T01813",
+      "frames": 23,
+      "f0": 86,
+      "f1": 108,
+      "spd_kt": 405.1,
+      "callsign": "SIA839"
+    },
+    {
+      "id": "T01817",
+      "frames": 50,
+      "f0": 182,
+      "f1": 231,
+      "spd_kt": 432.9,
+      "callsign": "CKS524"
+    },
+    {
+      "id": "T01831",
+      "frames": 35,
+      "f0": 14,
+      "f1": 48,
+      "spd_kt": 439.5,
+      "callsign": "CBJ5710"
+    },
+    {
+      "id": "T01861",
+      "frames": 47,
+      "f0": 153,
+      "f1": 199,
+      "spd_kt": 496.0,
+      "callsign": "CXA825"
+    },
+    {
+      "id": "T01878",
+      "frames": 36,
+      "f0": 174,
+      "f1": 209,
+      "spd_kt": 465.2,
+      "callsign": "HLF9847"
+    },
+    {
+      "id": "T01920",
+      "frames": 17,
+      "f0": 207,
+      "f1": 223,
+      "spd_kt": 407.6,
+      "callsign": "CDG2495"
+    },
+    {
+      "id": "T01921",
+      "frames": 51,
+      "f0": 135,
+      "f1": 185,
+      "spd_kt": 443.7,
+      "callsign": "UAE303"
+    },
+    {
+      "id": "T01925",
+      "frames": 33,
+      "f0": 51,
+      "f1": 83,
+      "spd_kt": 402.4,
+      "callsign": "CSS7363"
+    },
+    {
+      "id": "T01931",
+      "frames": 34,
+      "f0": 140,
+      "f1": 173,
+      "spd_kt": 250.0,
+      "callsign": "CYZ9065"
+    },
+    {
+      "id": "T01951",
+      "frames": 55,
+      "f0": 100,
+      "f1": 154,
+      "spd_kt": 411.8,
+      "callsign": "CSS7211"
+    },
+    {
+      "id": "T01999",
+      "frames": 36,
+      "f0": 204,
+      "f1": 239,
+      "spd_kt": 471.6,
+      "callsign": "SIA605"
+    },
+    {
+      "id": "T02007",
+      "frames": 52,
+      "f0": 121,
+      "f1": 172,
+      "spd_kt": 430.8,
+      "callsign": "ETH685"
+    },
+    {
+      "id": "T02041",
+      "frames": 15,
+      "f0": 222,
+      "f1": 236,
+      "spd_kt": 491.6,
+      "callsign": "CSS7206"
+    },
+    {
+      "id": "T02043",
+      "frames": 23,
+      "f0": 217,
+      "f1": 239,
+      "spd_kt": 468.6,
+      "callsign": "FDX6015"
+    },
+    {
+      "id": "T02049",
+      "frames": 57,
+      "f0": 92,
+      "f1": 148,
+      "spd_kt": 369.5,
+      "callsign": "CSS7255"
+    },
+    {
+      "id": "T02073",
+      "frames": 33,
+      "f0": 53,
+      "f1": 85,
+      "spd_kt": 547.3,
+      "callsign": "AIC356"
+    },
+    {
+      "id": "T02076",
+      "frames": 42,
+      "f0": 115,
+      "f1": 156,
+      "spd_kt": 505.7,
+      "callsign": "JNA864"
+    },
+    {
+      "id": "T02083",
+      "frames": 27,
+      "f0": 106,
+      "f1": 132,
+      "spd_kt": 388.6,
+      "callsign": "CSS7649"
+    },
+    {
+      "id": "T02153",
+      "frames": 22,
+      "f0": 157,
+      "f1": 178,
+      "spd_kt": 446.4,
+      "callsign": "CSS7232"
+    },
+    {
+      "id": "T02160",
+      "frames": 35,
+      "f0": 128,
+      "f1": 162,
+      "spd_kt": 401.0,
+      "callsign": "CSS7313"
+    },
+    {
+      "id": "T02189",
+      "frames": 27,
+      "f0": 116,
+      "f1": 142,
+      "spd_kt": 383.8,
+      "callsign": "CSS7289"
+    },
+    {
+      "id": "T02234",
+      "frames": 33,
+      "f0": 129,
+      "f1": 161,
+      "spd_kt": 401.0,
+      "callsign": "CSS7259"
+    },
+    {
+      "id": "T02237",
+      "frames": 53,
+      "f0": 171,
+      "f1": 223,
+      "spd_kt": 455.7,
+      "callsign": "QTR891"
+    },
+    {
+      "id": "T02256",
+      "frames": 37,
+      "f0": 149,
+      "f1": 185,
+      "spd_kt": 453.8,
+      "callsign": "SIA825"
+    },
+    {
+      "id": "T02263",
+      "frames": 40,
+      "f0": 174,
+      "f1": 213,
+      "spd_kt": 419.4,
+      "callsign": "CSH847"
+    },
+    {
+      "id": "T02270",
+      "frames": 50,
+      "f0": 163,
+      "f1": 212,
+      "spd_kt": 425.9,
+      "callsign": "CCA839"
+    },
+    {
+      "id": "T02443",
+      "frames": 32,
+      "f0": 186,
+      "f1": 217,
+      "spd_kt": 454.8,
+      "callsign": "CSS7120"
+    },
+    {
+      "id": "T02444",
+      "frames": 47,
+      "f0": 193,
+      "f1": 239,
+      "spd_kt": 448.1,
+      "callsign": "QTR871"
+    },
+    {
+      "id": "T02463",
+      "frames": 36,
+      "f0": 204,
+      "f1": 239,
+      "spd_kt": 446.1,
+      "callsign": "DKH1657"
+    },
+    {
+      "id": "T02566",
+      "frames": 17,
+      "f0": 204,
+      "f1": 220,
+      "spd_kt": 413.0,
+      "callsign": "CSS7223"
+    },
+    {
+      "id": "T02623",
+      "frames": 11,
+      "f0": 162,
+      "f1": 172,
+      "spd_kt": 445.0,
+      "callsign": "SPQ401"
+    },
+    {
+      "id": "T02630",
+      "frames": 26,
+      "f0": 214,
+      "f1": 239,
+      "spd_kt": 425.0,
+      "callsign": "CSS6840"
+    },
+    {
+      "id": "T02672",
+      "frames": 30,
+      "f0": 177,
+      "f1": 206,
+      "spd_kt": 399.8,
+      "callsign": "CSS7013"
+    },
+    {
+      "id": "T02729",
+      "frames": 34,
+      "f0": 183,
+      "f1": 216,
+      "spd_kt": 541.6,
+      "callsign": "ANA838"
+    },
+    {
+      "id": "T02799",
+      "frames": 30,
+      "f0": 210,
+      "f1": 239,
+      "spd_kt": 452.8,
+      "callsign": "UAE313"
+    }
+  ]
+}

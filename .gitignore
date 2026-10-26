@@ -68,3 +68,9 @@ filter_valid_pdfs.py
 generate_summaries.py
 integrate_summaries.py
 dedup_pdfs.py
+
+# ==================== 场景数据例外（2026-10-26） ====================
+# 上面的 *.csv 规则会误伤 ADS-B 场景数据与标校集。
+# 这些文件体积小（合计约 4 MB）但不可再生（依赖 776 MB 的原始 FR24 数据），
+# 必须入库，否则 clone 后无法运行任何 adsb_* 场景，也无法复现配准标定。
+!data/adsb/*.csv
