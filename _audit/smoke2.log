@@ -1,0 +1,37 @@
+
+========== PAPER METRICS: multi_cross ==========
+targets=3  frames=54
+
+[1] RMSE (km)
+  R1_only   n=  144  rms= 88.453
+  R2_only   n=  153  rms= 83.492
+  SCC       n=   52  rms= 87.189
+  BC        n=   52  rms= 87.162
+  CI        n=   52  rms= 96.389
+  FCI       n=   52  rms= 88.578
+  R1_only   n=   46  rms=105.911
+  R2_only   n=   49  rms= 88.007
+
+[2] TRACK LENGTH (frames)
+  R1: total=3  real=3 (mean=48.0 med=49.0)  false=0 (mean=NaN)
+  R2: total=3  real=3 (mean=51.0 med=52.0)  false=0 (mean=NaN)
+
+[3] MATCHING
+  pairs=1  correct=0  wrong=1  missed=3  match_rate=0.0%  wrong_rate=100.0%
+
+[4] FALSE TRACK RATE
+  R1=0.0%  R2=0.0%
+
+[5] FUSION COVERAGE
+  both=43  R1_only=3  R2_only=6  coverage=82.7%
+
+[6] COMMON-FRAME RMSE (fair comparison)
+  n=43  R1=96.173  R2=89.178  fused=74.628  gain_vs_best_single=16.3%
+
+[7] CONSISTENCY / LIMITS
+  NEES: R1=455.55 (n=144)  R2=88.02 (n=153)   [consistent ~2]
+  rho(R1,R2)=+0.378
+  theoretical: indep=65.392  optimal(rho)=76.698  actual=74.628
+  gap to optimal: -2.7%
+====================================================
+WROTE reg_smoke.txt

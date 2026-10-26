@@ -1,0 +1,96 @@
+
+########## BATCH 1 START 2026-10-26 00:29:49 ##########
+
+===== START E1_small  (20 units) =====
+[1/20] multi_cross default s01  OK  18s  R1=6.62 SCC=7.33 cov=92.9% match=100.0%
+[2/20] multi_cross default s02  OK  9s  R1=6.81 SCC=5.98 cov=94.8% match=100.0%
+[3/20] multi_cross default s03  OK  8s  R1=5.96 SCC=4.94 cov=96.1% match=100.0%
+[4/20] multi_cross default s04  OK  8s  R1=6.23 SCC=4.98 cov=97.4% match=100.0%
+[5/20] multi_cross default s05  OK  9s  R1=8.00 SCC=17.06 cov=64.4% match=100.0%
+[6/20] multi_cross default s06  OK  8s  R1=6.08 SCC=5.23 cov=83.2% match=100.0%
+[7/20] multi_cross default s07  OK  8s  R1=5.61 SCC=4.23 cov=97.4% match=100.0%
+[8/20] multi_cross default s08  OK  8s  R1=6.35 SCC=5.52 cov=92.7% match=100.0%
+[9/20] multi_cross default s09  OK  8s  R1=6.86 SCC=5.37 cov=94.1% match=100.0%
+[10/20] multi_cross default s10  OK  8s  R1=7.62 SCC=5.77 cov=97.3% match=100.0%
+[11/20] adsb_0002 default s01  OK  55s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[12/20] adsb_0002 default s02  OK  57s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[13/20] adsb_0002 default s03  OK  54s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[14/20] adsb_0002 default s04  OK  57s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[15/20] adsb_0002 default s05  OK  56s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+[16/20] adsb_0002 default s06  OK  57s  R1=11.63 SCC=10.48 cov=89.9% match=88.1%
+[17/20] adsb_0002 default s07  OK  55s  R1=10.91 SCC=10.04 cov=90.5% match=90.5%
+[18/20] adsb_0002 default s08  OK  55s  R1=12.39 SCC=11.00 cov=92.7% match=92.9%
+[19/20] adsb_0002 default s09  OK  56s  R1=12.41 SCC=11.24 cov=90.2% match=95.2%
+[20/20] adsb_0002 default s10  OK  51s  R1=11.51 SCC=10.19 cov=88.8% match=95.2%
+===== END E1_small : run=20 skip=0 fail=0 elapsed=10.8 min =====
+
+===== START E2_assoc_small  (10 units) =====
+[1/10] adsb_0002 dual s01  OK  42s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[2/10] adsb_0002 dual s02  OK  42s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[3/10] adsb_0002 dual s03  OK  42s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[4/10] adsb_0002 dual s04  OK  42s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[5/10] adsb_0002 dual s05  OK  41s  R1=10.82 SCC=9.54 cov=90.0% match=90.5%
+[6/10] adsb_0002 triple s01  OK  45s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[7/10] adsb_0002 triple s02  OK  46s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[8/10] adsb_0002 triple s03  OK  46s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[9/10] adsb_0002 triple s04  OK  45s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[10/10] adsb_0002 triple s05  OK  46s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+===== END E2_assoc_small : run=10 skip=0 fail=0 elapsed=7.3 min =====
+
+===== START E3_t1  (15 units) =====
+[1/15] adsb_0002 T1_20 s01  OK  45s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[2/15] adsb_0002 T1_20 s02  OK  44s  R1=10.86 SCC=12.71 cov=88.5% match=88.1%
+[3/15] adsb_0002 T1_20 s03  OK  45s  R1=11.68 SCC=10.19 cov=90.8% match=90.5%
+[4/15] adsb_0002 T1_20 s04  OK  44s  R1=13.24 SCC=12.35 cov=88.8% match=88.1%
+[5/15] adsb_0002 T1_20 s05  OK  45s  R1=10.82 SCC=9.50 cov=90.0% match=90.5%
+[6/15] adsb_0002 T1_35 s01  OK  45s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[7/15] adsb_0002 T1_35 s02  OK  46s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[8/15] adsb_0002 T1_35 s03  OK  46s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[9/15] adsb_0002 T1_35 s04  OK  45s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[10/15] adsb_0002 T1_35 s05  OK  45s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+[11/15] adsb_0002 T1_50 s01  OK  45s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[12/15] adsb_0002 T1_50 s02  OK  46s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[13/15] adsb_0002 T1_50 s03  OK  46s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[14/15] adsb_0002 T1_50 s04  OK  46s  R1=13.24 SCC=12.56 cov=88.5% match=95.2%
+[15/15] adsb_0002 T1_50 s05  OK  45s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+===== END E3_t1 : run=15 skip=0 fail=0 elapsed=11.3 min =====
+
+===== START E4_m  (15 units) =====
+[1/15] adsb_0002 M_04 s01  OK  45s  R1=12.08 SCC=10.46 cov=89.2% match=90.5%
+[2/15] adsb_0002 M_04 s02  OK  47s  R1=10.86 SCC=10.04 cov=88.0% match=97.6%
+[3/15] adsb_0002 M_04 s03  OK  48s  R1=11.68 SCC=10.28 cov=90.4% match=100.0%
+[4/15] adsb_0002 M_04 s04  OK  47s  R1=13.24 SCC=12.56 cov=88.5% match=95.2%
+[5/15] adsb_0002 M_04 s05  OK  45s  R1=10.82 SCC=9.43 cov=89.8% match=90.5%
+[6/15] adsb_0002 M_08 s01  OK  44s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[7/15] adsb_0002 M_08 s02  OK  46s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[8/15] adsb_0002 M_08 s03  OK  46s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[9/15] adsb_0002 M_08 s04  OK  46s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[10/15] adsb_0002 M_08 s05  OK  46s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+[11/15] adsb_0002 M_12 s01  OK  43s  R1=12.08 SCC=10.36 cov=90.8% match=85.7%
+[12/15] adsb_0002 M_12 s02  OK  45s  R1=10.86 SCC=9.95 cov=88.5% match=88.1%
+[13/15] adsb_0002 M_12 s03  OK  45s  R1=11.68 SCC=10.10 cov=91.2% match=88.1%
+[14/15] adsb_0002 M_12 s04  OK  42s  R1=13.24 SCC=11.85 cov=89.3% match=83.3%
+[15/15] adsb_0002 M_12 s05  OK  45s  R1=10.82 SCC=9.57 cov=90.2% match=88.1%
+===== END E4_m : run=15 skip=0 fail=0 elapsed=11.3 min =====
+
+########## SUMMARIZE ##########
+wrote D:\Desktop\毕设相关\AAA毕业论文撰写\文稿撰写\single_target_with-turn\results\paper\E1_small\summary_E1_small.csv (20 rows)
+wrote D:\Desktop\毕设相关\AAA毕业论文撰写\文稿撰写\single_target_with-turn\results\paper\E2_assoc_small\summary_E2_assoc_small.csv (10 rows)
+wrote D:\Desktop\毕设相关\AAA毕业论文撰写\文稿撰写\single_target_with-turn\results\paper\E3_t1\summary_E3_t1.csv (15 rows)
+wrote D:\Desktop\毕设相关\AAA毕业论文撰写\文稿撰写\single_target_with-turn\results\paper\E4_m\summary_E4_m.csv (15 rows)
+wrote D:\Desktop\毕设相关\AAA毕业论文撰写\文稿撰写\single_target_with-turn\results\paper\summary_all.csv (60 rows)
+
+===== GROUP MEANS =====
+exp          scene        cfg            n      R1      R2     SCC    cov% cf_gain%
+E1_small     adsb_0002    default       10   11.75   13.69   10.56    90.0    10.0
+E1_small     multi_cross  default       10    6.61    7.21    6.64    91.0    10.5
+E2_assoc_small adsb_0002    dual           5   11.74   13.61   10.50    89.6    10.5
+E2_assoc_small adsb_0002    triple         5   11.74   13.61   10.53    89.6    10.9
+E3_t1        adsb_0002    T1_20          5   11.74   13.61   11.00    89.6     9.4
+E3_t1        adsb_0002    T1_35          5   11.74   13.61   10.53    89.6    10.9
+E3_t1        adsb_0002    T1_50          5   11.74   13.61   10.51    89.5    11.1
+E4_m         adsb_0002    M_04           5   11.74   13.61   10.55    89.2    10.8
+E4_m         adsb_0002    M_08           5   11.74   13.61   10.53    89.6    10.9
+E4_m         adsb_0002    M_12           5   11.74   13.61   10.37    90.0    10.4
+
+########## BATCH 1 DONE 2026-10-26 01:10:32 ##########

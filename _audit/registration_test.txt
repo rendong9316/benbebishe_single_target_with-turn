@@ -1,0 +1,61 @@
+=================================================================
+ Registration probe: 3-parameter ML (h, dR, dtheta)
+ MATLAB 9.14.0.2206163 (R2023a)
+=================================================================
+
+[0] BACKWARD COMPATIBILITY of skywave_geometry
+  Rg(no h)        = 3276021.044205 m
+  Rg(h=300km)     = 3276021.044205 m   diff = 0.000e+00 m
+  Rg(h=[])        = 3276021.044205 m   diff = 0.000e+00 m
+  Rg(h=320km)     = 3306505.711145 m   diff vs 300km = 30484.667 m
+  az(no h) - az(h)= 0.000e+00 deg
+  RESULT: PASS (default behaviour unchanged)
+
+[1] SINGLE CALIBRATION TRACK
+  N = 50, dt = 30 s, span 1470 s
+  chord D_tx = 1634.8 ~ 1894.9 km, D_rx = 1254.9 ~ 1521.2 km
+  sensitivity s = dRg/dh: 1.4156 ~ 1.6377 (CV = 0.0435)
+  --- case A ---
+  param               truth        est      error    CRLB_sd    2sig?
+  h [km]            320.000    347.426    +27.426     20.682      YES
+  dR [km]            10.000    -33.071    -43.071     33.813      YES
+  dtheta [deg]        0.300      0.303     +0.003      0.049      YES
+  CRLB matrix:
+    [   427.747   -698.707     -0.000]
+    [  -698.707   1143.308     -0.000]
+    [    -0.000     -0.000      0.002]
+  corr(h,dR) = -0.9991, CV(s) = 0.0423, cond(FIM) = 6.410e+05
+  residual: range mean  -0.000 rms  7.953 max 19.238 km | az mean -0.0000 rms 0.3450 max 1.0000 deg
+  exitflag = 3, iterations = 5, cost = 80.2026, converged = 1, N = 50
+
+[2] MONTE CARLO (50 runs, same geometry)
+  param                bias        std       RMSE    CRLB_sd
+  h [km]             +0.940     21.723     21.525     21.607
+  dR [km]            -2.267     33.333     33.075     32.959
+  dtheta [deg]       -0.003      0.048      0.047      0.049
+  (std vs CRLB ratio: h 1.01, dR 1.01, dtheta 0.97)
+
+[3] MULTI-TRACK JOINT ESTIMATION (3 tracks, wider range span)
+  track ranges D_rx: A 1255-1521 km | B 1089-1380 km | C 1621-1896 km
+  --- case J ---
+  param               truth        est      error    CRLB_sd    2sig?
+  h [km]            320.000    320.130     +0.130      4.495      YES
+  dR [km]            10.000     10.626     +0.626      6.729      YES
+  dtheta [deg]        0.300      0.294     -0.006      0.029      YES
+  CRLB matrix:
+    [    20.209    -30.025     -0.000]
+    [   -30.025     45.275     -0.000]
+    [    -0.000     -0.000      0.001]
+  corr(h,dR) = -0.9926, CV(s) = 0.1227, cond(FIM) = 7.993e+04
+  residual: range mean  +0.000 rms  8.682 max 21.287 km | az mean -0.0000 rms 0.3552 max 1.2674 deg
+  exitflag = 3, iterations = 4, cost = 267.5390, converged = 1, N = 150
+  joint sensitivity s: 1.1836 ~ 1.8131 (CV = 0.1227), N = 150
+
+[4] OPTIMALITY / CONFIG FALLBACK CHECKS
+  bound check h      : est    347.426 in [  200.00,   450.00]  on_bound = 0
+  bound check dR     : est    -33.071 in [  -50.00,    50.00]  on_bound = 0
+  bound check dtheta : est      0.303 in [   -3.00,     3.00]  on_bound = 0
+  cost(eta_hat) = 80.202637
+  perturb h       +0.50: dJ =  +0.33451 | -0.50: dJ =  +0.33371  (local_min = 1)
+  perturb dR      +0.50: dJ =  +0.12500 | -0.50: dJ =  +0.12500  (local_min = 1)
+  perturb dtheta  +0.01: dJ =  +0.04082 | -0.01: dJ =  +0.04082  (local_min = 1)

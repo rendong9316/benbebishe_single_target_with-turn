@@ -1,0 +1,19 @@
+
+########## BATCH 2 START 2026-10-26 02:02:29 ##########
+
+===== START E1_small  (20 units) =====
+[1/20] multi_cross default s01  OK  19s  R1=6.62 SCC=7.33 cov=92.9% match=100.0%
+[2/20] multi_cross default s02  OK  9s  R1=6.81 SCC=5.98 cov=94.8% match=100.0%
+[3/20] multi_cross default s03  OK  9s  R1=5.96 SCC=4.94 cov=96.1% match=100.0%
+[4/20] multi_cross default s04  OK  8s  R1=6.23 SCC=4.98 cov=97.4% match=100.0%
+[5/20] multi_cross default s05  OK  8s  R1=8.00 SCC=17.06 cov=64.4% match=100.0%
+[6/20] multi_cross default s06  OK  8s  R1=6.08 SCC=5.23 cov=83.2% match=100.0%
+[7/20] multi_cross default s07  OK  8s  R1=5.61 SCC=4.23 cov=97.4% match=100.0%
+[8/20] multi_cross default s08  OK  8s  R1=6.35 SCC=5.52 cov=92.7% match=100.0%
+[9/20] multi_cross default s09  OK  8s  R1=6.86 SCC=5.37 cov=94.1% match=100.0%
+[10/20] multi_cross default s10  OK  8s  R1=7.62 SCC=5.77 cov=97.3% match=100.0%
+[11/20] adsb_0002 default s01  OK  55s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[12/20] adsb_0002 default s02  OK  55s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[13/20] adsb_0002 default s03  OK  54s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[14/20] adsb_0002 default s04  OK  54s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[15/20] adsb_0002 default s05  OK  52s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%

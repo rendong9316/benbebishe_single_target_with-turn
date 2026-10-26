@@ -1,0 +1,15 @@
+--- param chain ---
+global imm_q_schedule_enable = 1
+radar1 has field = 1, value = 1
+stage1 scale = 30, frames = 5
+imm.params has q_sched = 1
+imm.age = 0
+imm.ukf_cv.Q_ema = 1
+
+--- run A0 (no sched) twice ---
+A0 run1 R1=6.8820  run2 R1=6.8820  diff=0.0000
+
+--- run A1-extreme (Q x1000) ---
+A0 R1=6.8820   A1-extreme R1=8.2479   change=-19.8%
+
+snapshot ukf fields: x P Q Q_ema mu model_nis log_likelihood

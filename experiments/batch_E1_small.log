@@ -1,0 +1,35 @@
+
+===== START E1_small  (2 units) =====
+===== END E1_small : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E1_small  (2 units) =====
+===== END E1_small : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E1_small  (2 units) =====
+===== END E1_small : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E1_small  (2 units) =====
+===== END E1_small : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E1_small  (2 units) =====
+===== END E1_small : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E1_small  (2 units) =====
+[2/2] adsb_0002 default s06  OK  75s  R1=11.63 SCC=10.48 cov=89.9% match=88.1%
+===== END E1_small : run=1 skip=1 fail=0 elapsed=1.2 min =====
+
+===== START E1_small  (2 units) =====
+[2/2] adsb_0002 default s07  OK  75s  R1=10.91 SCC=10.04 cov=90.5% match=90.5%
+===== END E1_small : run=1 skip=1 fail=0 elapsed=1.3 min =====
+
+===== START E1_small  (2 units) =====
+[2/2] adsb_0002 default s08  OK  77s  R1=12.39 SCC=11.00 cov=92.7% match=92.9%
+===== END E1_small : run=1 skip=1 fail=0 elapsed=1.3 min =====
+
+===== START E1_small  (2 units) =====
+[2/2] adsb_0002 default s09  OK  75s  R1=12.41 SCC=11.24 cov=90.2% match=95.2%
+===== END E1_small : run=1 skip=1 fail=0 elapsed=1.2 min =====
+
+===== START E1_small  (2 units) =====
+[2/2] adsb_0002 default s10  OK  76s  R1=11.51 SCC=10.19 cov=88.8% match=95.2%
+===== END E1_small : run=1 skip=1 fail=0 elapsed=1.3 min =====

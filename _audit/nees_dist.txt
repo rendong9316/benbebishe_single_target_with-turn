@@ -1,0 +1,22 @@
+
+===== multi_cross (n=10) =====
+  NEES_R1: mean=1.24 sd=0.23  [0.90, 1.53]
+  NEES_R2: mean=0.80 sd=0.63  [0.36, 2.53]
+  rho    : mean=+0.219 sd=0.196  [-0.094, +0.486]
+  R1     : mean=6.61 sd=0.74
+  R2     : mean=7.21 sd=2.16
+  SCC    : mean=6.64 sd=3.75
+  gap to opt: mean=+5.8% sd=10.9  [-6.9, +25.4]
+    gap<5% seeds: 7/10
+  R1 better than R2 in 7/10 seeds
+
+===== adsb_0002 (n=10) =====
+  NEES_R1: mean=3.94 sd=0.37  [3.18, 4.41]
+  NEES_R2: mean=2.63 sd=0.36  [2.21, 3.49]
+  rho    : mean=+0.414 sd=0.044  [+0.307, +0.483]
+  R1     : mean=11.75 sd=0.79
+  R2     : mean=13.69 sd=1.17
+  SCC    : mean=10.56 sd=0.86
+  gap to opt: mean=+3.4% sd=2.3  [+0.4, +6.6]
+    gap<5% seeds: 7/10
+  R1 better than R2 in 10/10 seeds

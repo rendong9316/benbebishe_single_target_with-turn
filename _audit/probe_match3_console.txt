@@ -1,0 +1,863 @@
+场景: multi_cross | 目标数=3 | 帧数=54 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=55, 时长=1620s, 起点=(119.80E, 30.50N), 终点=(122.97E, 32.48N)
+目标B: 点数=55, 时长=1620s, 起点=(119.80E, 32.50N), 终点=(122.97E, 30.52N)
+目标C: 点数=52, 时长=1530s, 起点=(119.80E, 31.50N), 终点=(122.97E, 33.18N)
+R1 偏差估计: dr=19468m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15075m, da=3.49deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=335, 真实=102, 虚警=233, 平均每帧=6.20
+R2 点迹: 总数=334, 真实=104, 虚警=230, 平均每帧=6.19
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/ 54: active=0, total=0
+  frame  10/ 54: active=3, total=3
+  frame  20/ 54: active=3, total=3
+  frame  30/ 54: active=3, total=3
+  frame  40/ 54: active=3, total=3
+  frame  50/ 54: active=3, total=3
+  frame  54/ 54: active=2, total=3
+  frame   1/ 54: active=0, total=0
+  frame  10/ 54: active=3, total=3
+  frame  20/ 54: active=3, total=3
+  frame  30/ 54: active=3, total=3
+  frame  40/ 54: active=3, total=3
+  frame  50/ 54: active=3, total=3
+  frame  54/ 54: active=2, total=3
+R1 航迹: 总数=3, 可靠=2, 临时=0, 历史=1
+R2 航迹: 总数=3, 可靠=2, 临时=0, 历史=1
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[三判据匹配] T1=35.0km M=8 var_thresh=50.0km^2 | maha=0(thr=5.99,ratio=0.80) vel=0(kappa=3.0) → 匹配 3 对
+匹配到 3 对航迹
+  Pair 1: R1#2 <-> R2#1, 共现=49帧, 平均距离=6.6km
+  Pair 2: R1#1 <-> R2#2, 共现=50帧, 平均距离=8.8km
+  Pair 3: R1#3 <-> R2#3, 共现=46帧, 平均距离=7.5km
+融合匹配对 1/3: R1#2 <-> R2#1
+融合匹配对 2/3: R1#1 <-> R2#2
+融合匹配对 3/3: R1#3 <-> R2#3
+融合完成: 3 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#2 <-> R2#1) -> 飞机C
+  Pair 2 (R1#1 <-> R2#2) -> 飞机A
+  Pair 3 (R1#3 <-> R2#3) -> 飞机B
+R1 单站跟踪 RMSE:
+  目标1: n=52, median=5.6km, mean=5.7km, RMSE=6.8km, 95%=11.5km
+  目标2: n=47, median=4.4km, mean=5.8km, RMSE=7.1km, 95%=13.7km
+  目标3: n=50, median=5.8km, mean=5.9km, RMSE=6.8km, 95%=12.3km
+  Overall: n=149, median=5.5km, mean=5.8km, RMSE=6.9km, 95%=12.1km
+R2 单站跟踪 RMSE:
+  目标1: n=50, median=4.0km, mean=5.0km, RMSE=6.0km, 95%=13.4km
+  目标2: n=46, median=3.8km, mean=4.6km, RMSE=6.3km, 95%=16.6km
+  目标3: n=49, median=2.5km, mean=3.3km, RMSE=4.5km, 95%=10.2km
+  Overall: n=145, median=3.5km, mean=4.3km, RMSE=5.6km, 95%=13.6km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           149      3.0      3.5      4.3
+  BC            149      3.0      3.5      4.3
+  CI            149      4.4      5.0      6.0
+  FCI           149      3.6      4.1      5.1
+  R1_only       149      5.5      5.8      6.9
+  R2_only       145      3.3      4.1      5.4
+
+Done.
+[双门限匹配] T1=35.0km M=8 var_thresh=50.0km? → 匹配 3 对
+场景: adsb_0002 | 目标数=42 | 帧数=239 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标CES6278: 点数=10, 时长=270s, 起点=(119.64E, 32.07N), 终点=(120.07E, 31.77N)
+目标KAL647: 点数=41, 时长=1200s, 起点=(120.45E, 30.89N), 终点=(118.68E, 29.06N)
+目标CSN8212: 点数=45, 时长=1320s, 起点=(120.49E, 30.91N), 终点=(118.51E, 29.04N)
+目标CSS7017: 点数=29, 时长=840s, 起点=(118.48E, 32.49N), 终点=(117.31E, 31.42N)
+目标ETH673: 点数=50, 时长=1470s, 起点=(120.48E, 31.32N), 终点=(117.04E, 31.29N)
+目标UAE311: 点数=50, 时长=1470s, 起点=(119.92E, 30.75N), 终点=(117.09E, 31.34N)
+目标CES7707: 点数=35, 时长=1020s, 起点=(119.44E, 31.06N), 终点=(119.52E, 29.07N)
+目标SIA839: 点数=23, 时长=660s, 起点=(119.75E, 29.70N), 终点=(118.63E, 29.05N)
+目标CKS524: 点数=50, 时长=1470s, 起点=(120.47E, 31.68N), 终点=(117.11E, 31.33N)
+目标CBJ5710: 点数=35, 时长=1020s, 起点=(117.19E, 31.79N), 终点=(119.32E, 31.03N)
+目标CXA825: 点数=47, 时长=1380s, 起点=(117.37E, 29.02N), 终点=(117.06E, 32.06N)
+目标HLF9847: 点数=36, 时长=1050s, 起点=(117.03E, 31.90N), 终点=(119.35E, 31.15N)
+目标CDG2495: 点数=17, 时长=480s, 起点=(117.05E, 29.66N), 终点=(117.25E, 30.50N)
+目标UAE303: 点数=51, 时长=1500s, 起点=(120.42E, 32.19N), 终点=(117.06E, 31.32N)
+目标CSS7363: 点数=33, 时长=960s, 起点=(119.04E, 31.95N), 终点=(117.08E, 31.38N)
+目标CYZ9065: 点数=34, 时长=990s, 起点=(119.14E, 29.02N), 终点=(119.03E, 30.16N)
+目标CSS7211: 点数=55, 时长=1620s, 起点=(120.46E, 32.19N), 终点=(117.05E, 31.36N)
+目标SIA605: 点数=36, 时长=1050s, 起点=(120.44E, 30.86N), 终点=(118.74E, 29.15N)
+目标ETH685: 点数=52, 时长=1530s, 起点=(120.44E, 32.12N), 终点=(117.05E, 31.31N)
+目标CSS7206: 点数=15, 时长=420s, 起点=(119.49E, 29.01N), 终点=(120.44E, 29.50N)
+目标FDX6015: 点数=23, 时长=660s, 起点=(120.46E, 30.90N), 终点=(119.47E, 29.76N)
+目标CSS7255: 点数=57, 时长=1680s, 起点=(120.32E, 29.74N), 终点=(117.26E, 29.25N)
+目标AIC356: 点数=33, 时长=960s, 起点=(117.51E, 31.74N), 终点=(120.32E, 31.56N)
+目标JNA864: 点数=42, 时长=1230s, 起点=(117.06E, 31.70N), 终点=(120.40E, 31.51N)
+目标CSS7649: 点数=27, 时长=780s, 起点=(118.53E, 32.44N), 终点=(119.25E, 31.21N)
+目标CSS7232: 点数=22, 时长=630s, 起点=(117.03E, 29.34N), 终点=(118.38E, 29.73N)
+目标CSS7313: 点数=35, 时长=1020s, 起点=(119.15E, 31.89N), 终点=(117.05E, 31.33N)
+目标CSS7289: 点数=27, 时长=780s, 起点=(118.86E, 29.49N), 终点=(117.31E, 29.34N)
+目标CSS7259: 点数=33, 时长=960s, 起点=(120.26E, 29.72N), 终点=(118.45E, 29.03N)
+目标QTR891: 点数=53, 时长=1560s, 起点=(119.92E, 30.94N), 终点=(117.08E, 31.33N)
+目标SIA825: 点数=37, 时长=1080s, 起点=(120.48E, 30.57N), 终点=(118.61E, 29.05N)
+目标CSH847: 点数=40, 时长=1170s, 起点=(120.48E, 30.57N), 终点=(118.58E, 29.02N)
+目标CCA839: 点数=50, 时长=1470s, 起点=(120.44E, 32.12N), 终点=(117.13E, 32.48N)
+目标CSS7120: 点数=32, 时长=930s, 起点=(119.89E, 30.78N), 终点=(118.80E, 32.42N)
+目标QTR871: 点数=47, 时长=1380s, 起点=(120.48E, 32.24N), 终点=(117.32E, 31.42N)
+目标DKH1657: 点数=36, 时长=1050s, 起点=(120.47E, 32.19N), 终点=(118.01E, 32.24N)
+目标CSS7223: 点数=17, 时长=480s, 起点=(120.05E, 29.88N), 终点=(119.55E, 29.09N)
+目标SPQ401: 点数=11, 时长=300s, 起点=(119.11E, 29.45N), 终点=(118.60E, 29.04N)
+目标CSS6840: 点数=26, 时长=750s, 起点=(119.35E, 30.66N), 终点=(118.72E, 29.33N)
+目标CSS7013: 点数=30, 时长=870s, 起点=(118.60E, 32.42N), 终点=(119.50E, 31.02N)
+目标ANA838: 点数=34, 时长=990s, 起点=(117.49E, 31.71N), 终点=(120.39E, 31.52N)
+目标UAE313: 点数=30, 时长=870s, 起点=(120.44E, 31.72N), 终点=(118.32E, 31.90N)
+R1 偏差估计: dr=19468m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15075m, da=3.49deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=1977, 真实=912, 虚警=1065, 平均每帧=8.27
+R2 点迹: 总数=1918, 真实=879, 虚警=1039, 平均每帧=8.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/239: active=0, total=0
+  frame  10/239: active=1, total=1
+  frame  20/239: active=1, total=2
+  frame  30/239: active=1, total=2
+  frame  40/239: active=1, total=2
+  frame  50/239: active=0, total=2
+  frame  60/239: active=2, total=4
+  frame  70/239: active=3, total=5
+  frame  80/239: active=4, total=6
+  frame  90/239: active=4, total=8
+  frame 100/239: active=6, total=10
+  frame 110/239: active=6, total=13
+  frame 120/239: active=7, total=15
+  frame 130/239: active=7, total=16
+  frame 140/239: active=8, total=19
+  frame 150/239: active=7, total=20
+  frame 160/239: active=7, total=22
+  frame 170/239: active=8, total=25
+  frame 180/239: active=7, total=28
+  frame 190/239: active=10, total=33
+  frame 200/239: active=11, total=34
+  frame 210/239: active=12, total=37
+  frame 220/239: active=11, total=41
+  frame 230/239: active=9, total=42
+  frame 239/239: active=6, total=42
+  frame   1/239: active=0, total=0
+  frame  10/239: active=0, total=1
+  frame  20/239: active=1, total=2
+  frame  30/239: active=1, total=2
+  frame  40/239: active=1, total=2
+  frame  50/239: active=0, total=2
+  frame  60/239: active=2, total=4
+  frame  70/239: active=4, total=6
+  frame  80/239: active=4, total=6
+  frame  90/239: active=5, total=9
+  frame 100/239: active=4, total=9
+  frame 110/239: active=5, total=12
+  frame 120/239: active=7, total=15
+  frame 130/239: active=7, total=16
+  frame 140/239: active=7, total=18
+  frame 150/239: active=7, total=20
+  frame 160/239: active=7, total=22
+  frame 170/239: active=8, total=25
+  frame 180/239: active=6, total=27
+  frame 190/239: active=9, total=32
+  frame 200/239: active=10, total=34
+  frame 210/239: active=11, total=37
+  frame 220/239: active=10, total=40
+  frame 230/239: active=9, total=42
+  frame 239/239: active=6, total=42
+R1 航迹: 总数=42, 可靠=6, 临时=0, 历史=36
+R2 航迹: 总数=42, 可靠=4, 临时=0, 历史=36
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[三判据匹配] T1=35.0km M=8 var_thresh=50.0km^2 | maha=0(thr=5.99,ratio=0.80) vel=0(kappa=3.0) → 匹配 40 对
+匹配到 40 对航迹
+  Pair 1: R1#10 <-> R2#10, 共现=44帧, 平均距离=5.3km
+  Pair 2: R1#31 <-> R2#32, 共现=42帧, 平均距离=6.0km
+  Pair 3: R1#16 <-> R2#16, 共现=38帧, 平均距离=6.3km
+  Pair 4: R1#18 <-> R2#17, 共现=30帧, 平均距离=5.6km
+  Pair 5: R1#19 <-> R2#20, 共现=41帧, 平均距离=7.0km
+  Pair 6: R1#30 <-> R2#31, 共现=38帧, 平均距离=7.0km
+  Pair 7: R1#20 <-> R2#19, 共现=30帧, 平均距离=6.1km
+  Pair 8: R1#21 <-> R2#21, 共现=30帧, 平均距离=6.4km
+  Pair 9: R1#22 <-> R2#23, 共现=17帧, 平均距离=5.0km
+  Pair 10: R1#34 <-> R2#34, 共现=41帧, 平均距离=7.9km
+  Pair 11: R1#26 <-> R2#26, 共现=45帧, 平均距离=8.9km
+  Pair 12: R1#28 <-> R2#27, 共现=31帧, 平均距离=7.2km
+  Pair 13: R1#11 <-> R2#11, 共现=38帧, 平均距离=8.6km
+  Pair 14: R1#15 <-> R2#15, 共现=23帧, 平均距离=7.0km
+  Pair 15: R1#7 <-> R2#7, 共现=46帧, 平均距离=10.2km
+  Pair 16: R1#39 <-> R2#39, 共现=24帧, 平均距离=7.5km
+  Pair 17: R1#23 <-> R2#22, 共现=37帧, 平均距离=9.2km
+  Pair 18: R1#32 <-> R2#30, 共现=28帧, 平均距离=8.1km
+  Pair 19: R1#14 <-> R2#14, 共现=37帧, 平均距离=9.7km
+  Pair 20: R1#8 <-> R2#8, 共现=32帧, 平均距离=9.1km
+  Pair 21: R1#5 <-> R2#6, 共现=38帧, 平均距离=9.9km
+  Pair 22: R1#29 <-> R2#29, 共现=22帧, 平均距离=8.2km
+  Pair 23: R1#27 <-> R2#28, 共现=33帧, 平均距离=9.8km
+  Pair 24: R1#6 <-> R2#5, 共现=28帧, 平均距离=9.4km
+  Pair 25: R1#4 <-> R2#4, 共现=30帧, 平均距离=9.8km
+  Pair 26: R1#24 <-> R2#25, 共现=43帧, 平均距离=11.6km
+  Pair 27: R1#35 <-> R2#36, 共现=23帧, 平均距离=9.7km
+  Pair 28: R1#2 <-> R2#2, 共现=31帧, 平均距离=11.0km
+  Pair 29: R1#38 <-> R2#38, 共现=9帧, 平均距离=8.1km
+  Pair 30: R1#33 <-> R2#33, 共现=26帧, 平均距离=10.5km
+  Pair 31: R1#9 <-> R2#9, 共现=18帧, 平均距离=9.9km
+  Pair 32: R1#41 <-> R2#40, 共现=20帧, 平均距离=10.9km
+  Pair 33: R1#3 <-> R2#3, 共现=26帧, 平均距离=11.8km
+  Pair 34: R1#37 <-> R2#35, 共现=30帧, 平均距离=12.5km
+  Pair 35: R1#13 <-> R2#12, 共现=23帧, 平均距离=12.5km
+  Pair 36: R1#17 <-> R2#18, 共现=30帧, 平均距离=14.1km
+  Pair 37: R1#36 <-> R2#37, 共现=13帧, 平均距离=12.8km
+  Pair 38: R1#12 <-> R2#13, 共现=19帧, 平均距离=15.8km
+  Pair 39: R1#40 <-> R2#41, 共现=16帧, 平均距离=18.4km
+  Pair 40: R1#42 <-> R2#42, 共现=12帧, 平均距离=20.7km
+融合匹配对 1/40: R1#10 <-> R2#10
+融合匹配对 2/40: R1#31 <-> R2#32
+融合匹配对 3/40: R1#16 <-> R2#16
+融合匹配对 4/40: R1#18 <-> R2#17
+融合匹配对 5/40: R1#19 <-> R2#20
+融合匹配对 6/40: R1#30 <-> R2#31
+融合匹配对 7/40: R1#20 <-> R2#19
+融合匹配对 8/40: R1#21 <-> R2#21
+融合匹配对 9/40: R1#22 <-> R2#23
+融合匹配对 10/40: R1#34 <-> R2#34
+融合匹配对 11/40: R1#26 <-> R2#26
+融合匹配对 12/40: R1#28 <-> R2#27
+融合匹配对 13/40: R1#11 <-> R2#11
+融合匹配对 14/40: R1#15 <-> R2#15
+融合匹配对 15/40: R1#7 <-> R2#7
+融合匹配对 16/40: R1#39 <-> R2#39
+融合匹配对 17/40: R1#23 <-> R2#22
+融合匹配对 18/40: R1#32 <-> R2#30
+融合匹配对 19/40: R1#14 <-> R2#14
+融合匹配对 20/40: R1#8 <-> R2#8
+融合匹配对 21/40: R1#5 <-> R2#6
+融合匹配对 22/40: R1#29 <-> R2#29
+融合匹配对 23/40: R1#27 <-> R2#28
+融合匹配对 24/40: R1#6 <-> R2#5
+融合匹配对 25/40: R1#4 <-> R2#4
+融合匹配对 26/40: R1#24 <-> R2#25
+融合匹配对 27/40: R1#35 <-> R2#36
+融合匹配对 28/40: R1#2 <-> R2#2
+融合匹配对 29/40: R1#38 <-> R2#38
+融合匹配对 30/40: R1#33 <-> R2#33
+融合匹配对 31/40: R1#9 <-> R2#9
+融合匹配对 32/40: R1#41 <-> R2#40
+融合匹配对 33/40: R1#3 <-> R2#3
+融合匹配对 34/40: R1#37 <-> R2#35
+融合匹配对 35/40: R1#13 <-> R2#12
+融合匹配对 36/40: R1#17 <-> R2#18
+融合匹配对 37/40: R1#36 <-> R2#37
+融合匹配对 38/40: R1#12 <-> R2#13
+融合匹配对 39/40: R1#40 <-> R2#41
+融合匹配对 40/40: R1#42 <-> R2#42
+融合完成: 40 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#10 <-> R2#10) -> 飞机CSS7255
+  Pair 2 (R1#31 <-> R2#32) -> 飞机CKS524
+  Pair 3 (R1#16 <-> R2#16) -> 飞机ETH685
+  Pair 4 (R1#18 <-> R2#17) -> 飞机CSS7313
+  Pair 5 (R1#19 <-> R2#20) -> 飞机UAE303
+  Pair 6 (R1#30 <-> R2#31) -> 飞机ETH673
+  Pair 7 (R1#20 <-> R2#19) -> 飞机CYZ9065
+  Pair 8 (R1#21 <-> R2#21) -> 飞机SIA825
+  Pair 9 (R1#22 <-> R2#23) -> 飞机CSS7232
+  Pair 10 (R1#34 <-> R2#34) -> 飞机QTR871
+  Pair 11 (R1#26 <-> R2#26) -> 飞机QTR891
+  Pair 12 (R1#28 <-> R2#27) -> 飞机HLF9847
+  Pair 13 (R1#11 <-> R2#11) -> 飞机CSS7211
+  Pair 14 (R1#15 <-> R2#15) -> 飞机CSS7289
+  Pair 15 (R1#7 <-> R2#7) -> 飞机UAE311
+  Pair 16 (R1#39 <-> R2#39) -> 飞机UAE313
+  Pair 17 (R1#23 <-> R2#22) -> 飞机CXA825
+  Pair 18 (R1#32 <-> R2#30) -> 飞机ANA838
+  Pair 19 (R1#14 <-> R2#14) -> 飞机JNA864
+  Pair 20 (R1#8 <-> R2#8) -> 飞机KAL647
+  Pair 21 (R1#5 <-> R2#6) -> 飞机CSN8212
+  Pair 22 (R1#29 <-> R2#29) -> 飞机CSS7013
+  Pair 23 (R1#27 <-> R2#28) -> 飞机CSH847
+  Pair 24 (R1#6 <-> R2#5) -> 飞机CES7707
+  Pair 25 (R1#4 <-> R2#4) -> 飞机AIC356
+  Pair 26 (R1#24 <-> R2#25) -> 飞机CCA839
+  Pair 27 (R1#35 <-> R2#36) -> 飞机SIA605
+  Pair 28 (R1#2 <-> R2#2) -> 飞机CBJ5710
+  Pair 29 (R1#38 <-> R2#38) -> 飞机CDG2495
+  Pair 30 (R1#33 <-> R2#33) -> 飞机CSS7120
+  Pair 31 (R1#9 <-> R2#9) -> 飞机SIA839
+  Pair 32 (R1#41 <-> R2#40) -> 飞机FDX6015
+  Pair 33 (R1#3 <-> R2#3) -> 飞机CSS7363
+  Pair 34 (R1#37 <-> R2#35) -> 飞机DKH1657
+  Pair 35 (R1#13 <-> R2#12) -> 飞机CSS7649
+  Pair 36 (R1#17 <-> R2#18) -> 飞机CSS7259
+  Pair 37 (R1#36 <-> R2#37) -> 飞机CSS7223
+  Pair 38 (R1#12 <-> R2#13) -> 飞机CSS7017
+  Pair 39 (R1#40 <-> R2#41) -> 飞机CSS6840
+  Pair 40 (R1#42 <-> R2#42) -> 飞机CSS7206
+R1 单站跟踪 RMSE:
+  目标1: n=5, median=5.2km, mean=5.6km, RMSE=6.2km, 95%=10.6km
+  目标2: n=36, median=18.5km, mean=18.6km, RMSE=20.7km, 95%=36.7km
+  目标3: n=40, median=6.9km, mean=9.4km, RMSE=11.8km, 95%=20.9km
+  目标4: n=23, median=10.4km, mean=10.8km, RMSE=14.1km, 95%=31.6km
+  目标5: n=47, median=8.4km, mean=9.5km, RMSE=12.1km, 95%=26.0km
+  目标6: n=47, median=8.1km, mean=9.6km, RMSE=10.7km, 95%=20.7km
+  目标7: n=29, median=8.9km, mean=14.5km, RMSE=19.5km, 95%=39.7km
+  目标8: n=19, median=5.1km, mean=10.1km, RMSE=13.8km, 95%=31.2km
+  目标9: n=47, median=5.2km, mean=5.7km, RMSE=6.0km, 95%=9.4km
+  目标10: n=32, median=8.5km, mean=10.3km, RMSE=12.2km, 95%=20.6km
+  目标11: n=38, median=6.3km, mean=9.8km, RMSE=13.1km, 95%=29.5km
+  目标12: n=32, median=8.0km, mean=9.9km, RMSE=12.5km, 95%=26.5km
+  目标13: n=14, median=8.1km, mean=11.5km, RMSE=13.9km, 95%=29.1km
+  目标14: n=48, median=3.9km, mean=5.5km, RMSE=8.0km, 95%=19.3km
+  目标15: n=31, median=7.2km, mean=7.5km, RMSE=8.6km, 95%=13.8km
+  目标16: n=31, median=6.2km, mean=6.7km, RMSE=7.9km, 95%=13.5km
+  目标17: n=52, median=6.3km, mean=8.9km, RMSE=10.8km, 95%=22.1km
+  目标18: n=33, median=6.0km, mean=7.9km, RMSE=10.2km, 95%=21.0km
+  目标19: n=47, median=4.6km, mean=5.4km, RMSE=6.4km, 95%=11.1km
+  目标20: n=13, median=19.3km, mean=20.5km, RMSE=21.2km, 95%=31.2km
+  目标21: n=20, median=8.4km, mean=8.7km, RMSE=9.1km, 95%=13.9km
+  目标22: n=52, median=5.1km, mean=5.9km, RMSE=8.1km, 95%=21.3km
+  目标23: n=31, median=5.5km, mean=7.2km, RMSE=8.8km, 95%=18.8km
+  目标24: n=39, median=6.5km, mean=7.5km, RMSE=9.0km, 95%=18.4km
+  目标25: n=24, median=12.0km, mean=12.2km, RMSE=14.0km, 95%=25.6km
+  目标26: n=20, median=8.6km, mean=8.5km, RMSE=10.5km, 95%=18.8km
+  目标27: n=31, median=5.4km, mean=5.7km, RMSE=6.4km, 95%=10.6km
+  目标28: n=24, median=5.7km, mean=6.4km, RMSE=6.8km, 95%=11.5km
+  目标29: n=31, median=12.4km, mean=11.4km, RMSE=12.7km, 95%=17.8km
+  目标30: n=50, median=8.3km, mean=12.1km, RMSE=15.5km, 95%=32.5km
+  目标31: n=31, median=8.9km, mean=10.7km, RMSE=12.2km, 95%=21.1km
+  目标32: n=38, median=11.3km, mean=12.0km, RMSE=13.8km, 95%=27.7km
+  目标33: n=48, median=10.0km, mean=10.4km, RMSE=12.4km, 95%=24.6km
+  目标34: n=29, median=15.0km, mean=16.3km, RMSE=18.7km, 95%=31.9km
+  目标35: n=44, median=5.7km, mean=5.8km, RMSE=6.6km, 95%=10.9km
+  目标36: n=30, median=12.0km, mean=10.6km, RMSE=12.2km, 95%=23.8km
+  目标37: n=15, median=17.4km, mean=13.8km, RMSE=15.7km, 95%=24.7km
+  目标38: n=7, median=26.0km, mean=21.5km, RMSE=26.3km, 95%=45.4km
+  目标39: n=22, median=20.8km, mean=19.4km, RMSE=22.5km, 95%=39.6km
+  目标40: n=23, median=14.9km, mean=14.9km, RMSE=15.8km, 95%=24.0km
+  目标41: n=29, median=4.7km, mean=6.0km, RMSE=7.2km, 95%=14.3km
+  目标42: n=25, median=6.2km, mean=7.7km, RMSE=9.8km, 95%=21.2km
+  Overall: n=1327, median=7.3km, mean=9.6km, RMSE=12.3km, 95%=25.2km
+R2 单站跟踪 RMSE:
+  目标1: n=7, median=20.7km, mean=23.5km, RMSE=26.2km, 95%=42.6km
+  目标2: n=33, median=18.2km, mean=17.6km, RMSE=19.4km, 95%=31.4km
+  目标3: n=39, median=13.6km, mean=14.6km, RMSE=15.9km, 95%=25.6km
+  目标4: n=19, median=9.0km, mean=8.4km, RMSE=8.8km, 95%=13.1km
+  目标5: n=44, median=4.9km, mean=5.9km, RMSE=6.8km, 95%=12.1km
+  目标6: n=46, median=5.9km, mean=6.9km, RMSE=8.1km, 95%=12.9km
+  目标7: n=32, median=6.5km, mean=9.8km, RMSE=13.8km, 95%=33.2km
+  目标8: n=20, median=5.8km, mean=6.1km, RMSE=7.0km, 95%=13.7km
+  目标9: n=42, median=3.7km, mean=4.0km, RMSE=4.8km, 95%=9.3km
+  目标10: n=32, median=10.8km, mean=11.1km, RMSE=12.9km, 95%=23.0km
+  目标11: n=43, median=6.9km, mean=9.3km, RMSE=12.6km, 95%=27.8km
+  目标12: n=31, median=7.3km, mean=8.0km, RMSE=9.3km, 95%=17.0km
+  目标13: n=9, median=2.1km, mean=3.8km, RMSE=4.7km, 95%=8.7km
+  目标14: n=41, median=3.9km, mean=4.8km, RMSE=5.8km, 95%=11.1km
+  目标15: n=26, median=10.3km, mean=9.3km, RMSE=10.3km, 95%=17.0km
+  目标16: n=30, median=7.3km, mean=7.4km, RMSE=7.6km, 95%=11.0km
+  目标17: n=47, median=4.2km, mean=5.3km, RMSE=6.7km, 95%=14.6km
+  目标18: n=32, median=12.0km, mean=12.5km, RMSE=13.6km, 95%=21.9km
+  目标19: n=45, median=4.8km, mean=9.1km, RMSE=13.9km, 95%=37.2km
+  目标20: n=12, median=2.8km, mean=2.6km, RMSE=2.8km, 95%=5.1km
+  目标21: n=20, median=6.3km, mean=6.0km, RMSE=6.8km, 95%=12.2km
+  目标22: n=44, median=4.5km, mean=5.3km, RMSE=6.4km, 95%=12.7km
+  目标23: n=30, median=5.4km, mean=6.0km, RMSE=7.2km, 95%=12.9km
+  目标24: n=37, median=9.3km, mean=10.2km, RMSE=12.1km, 95%=22.6km
+  目标25: n=24, median=22.2km, mean=23.7km, RMSE=25.2km, 95%=41.8km
+  目标26: n=17, median=5.7km, mean=7.2km, RMSE=8.8km, 95%=18.3km
+  目标27: n=32, median=3.2km, mean=3.7km, RMSE=4.3km, 95%=8.1km
+  目标28: n=23, median=4.6km, mean=5.0km, RMSE=5.4km, 95%=9.8km
+  目标29: n=30, median=13.4km, mean=13.7km, RMSE=15.2km, 95%=22.7km
+  目标30: n=50, median=3.3km, mean=6.2km, RMSE=9.3km, 95%=22.4km
+  目标31: n=33, median=8.8km, mean=10.3km, RMSE=12.0km, 95%=20.6km
+  目标32: n=33, median=9.1km, mean=10.4km, RMSE=12.4km, 95%=22.3km
+  目标33: n=43, median=12.1km, mean=13.8km, RMSE=16.0km, 95%=30.3km
+  目标34: n=26, median=12.0km, mean=13.6km, RMSE=15.7km, 95%=26.6km
+  目标35: n=41, median=4.9km, mean=5.9km, RMSE=6.8km, 95%=13.2km
+  目标36: n=33, median=5.5km, mean=8.8km, RMSE=11.7km, 95%=24.1km
+  目标37: n=13, median=4.3km, mean=5.0km, RMSE=5.5km, 95%=10.0km
+  目标38: n=7, median=10.2km, mean=10.2km, RMSE=10.6km, 95%=14.6km
+  目标39: n=16, median=8.2km, mean=7.8km, RMSE=9.1km, 95%=16.3km
+  目标40: n=26, median=11.6km, mean=12.8km, RMSE=15.1km, 95%=28.6km
+  目标41: n=31, median=4.6km, mean=6.0km, RMSE=7.6km, 95%=13.0km
+  目标42: n=24, median=5.1km, mean=5.6km, RMSE=6.3km, 95%=11.7km
+  Overall: n=1263, median=6.7km, mean=8.8km, RMSE=11.4km, 95%=23.7km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC          1345      6.1      8.2     10.5
+  BC           1345      6.1      8.2     10.5
+  CI           1345      6.7      8.9     11.4
+  FCI          1345      6.4      8.6     11.0
+  R1_only      1315      7.3      9.6     12.2
+  R2_only      1249      6.1      7.9     10.2
+
+Done.
+场景: adsb_0002 | 目标数=42 | 帧数=239 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标CES6278: 点数=10, 时长=270s, 起点=(119.64E, 32.07N), 终点=(120.07E, 31.77N)
+目标KAL647: 点数=41, 时长=1200s, 起点=(120.45E, 30.89N), 终点=(118.68E, 29.06N)
+目标CSN8212: 点数=45, 时长=1320s, 起点=(120.49E, 30.91N), 终点=(118.51E, 29.04N)
+目标CSS7017: 点数=29, 时长=840s, 起点=(118.48E, 32.49N), 终点=(117.31E, 31.42N)
+目标ETH673: 点数=50, 时长=1470s, 起点=(120.48E, 31.32N), 终点=(117.04E, 31.29N)
+目标UAE311: 点数=50, 时长=1470s, 起点=(119.92E, 30.75N), 终点=(117.09E, 31.34N)
+目标CES7707: 点数=35, 时长=1020s, 起点=(119.44E, 31.06N), 终点=(119.52E, 29.07N)
+目标SIA839: 点数=23, 时长=660s, 起点=(119.75E, 29.70N), 终点=(118.63E, 29.05N)
+目标CKS524: 点数=50, 时长=1470s, 起点=(120.47E, 31.68N), 终点=(117.11E, 31.33N)
+目标CBJ5710: 点数=35, 时长=1020s, 起点=(117.19E, 31.79N), 终点=(119.32E, 31.03N)
+目标CXA825: 点数=47, 时长=1380s, 起点=(117.37E, 29.02N), 终点=(117.06E, 32.06N)
+目标HLF9847: 点数=36, 时长=1050s, 起点=(117.03E, 31.90N), 终点=(119.35E, 31.15N)
+目标CDG2495: 点数=17, 时长=480s, 起点=(117.05E, 29.66N), 终点=(117.25E, 30.50N)
+目标UAE303: 点数=51, 时长=1500s, 起点=(120.42E, 32.19N), 终点=(117.06E, 31.32N)
+目标CSS7363: 点数=33, 时长=960s, 起点=(119.04E, 31.95N), 终点=(117.08E, 31.38N)
+目标CYZ9065: 点数=34, 时长=990s, 起点=(119.14E, 29.02N), 终点=(119.03E, 30.16N)
+目标CSS7211: 点数=55, 时长=1620s, 起点=(120.46E, 32.19N), 终点=(117.05E, 31.36N)
+目标SIA605: 点数=36, 时长=1050s, 起点=(120.44E, 30.86N), 终点=(118.74E, 29.15N)
+目标ETH685: 点数=52, 时长=1530s, 起点=(120.44E, 32.12N), 终点=(117.05E, 31.31N)
+目标CSS7206: 点数=15, 时长=420s, 起点=(119.49E, 29.01N), 终点=(120.44E, 29.50N)
+目标FDX6015: 点数=23, 时长=660s, 起点=(120.46E, 30.90N), 终点=(119.47E, 29.76N)
+目标CSS7255: 点数=57, 时长=1680s, 起点=(120.32E, 29.74N), 终点=(117.26E, 29.25N)
+目标AIC356: 点数=33, 时长=960s, 起点=(117.51E, 31.74N), 终点=(120.32E, 31.56N)
+目标JNA864: 点数=42, 时长=1230s, 起点=(117.06E, 31.70N), 终点=(120.40E, 31.51N)
+目标CSS7649: 点数=27, 时长=780s, 起点=(118.53E, 32.44N), 终点=(119.25E, 31.21N)
+目标CSS7232: 点数=22, 时长=630s, 起点=(117.03E, 29.34N), 终点=(118.38E, 29.73N)
+目标CSS7313: 点数=35, 时长=1020s, 起点=(119.15E, 31.89N), 终点=(117.05E, 31.33N)
+目标CSS7289: 点数=27, 时长=780s, 起点=(118.86E, 29.49N), 终点=(117.31E, 29.34N)
+目标CSS7259: 点数=33, 时长=960s, 起点=(120.26E, 29.72N), 终点=(118.45E, 29.03N)
+目标QTR891: 点数=53, 时长=1560s, 起点=(119.92E, 30.94N), 终点=(117.08E, 31.33N)
+目标SIA825: 点数=37, 时长=1080s, 起点=(120.48E, 30.57N), 终点=(118.61E, 29.05N)
+目标CSH847: 点数=40, 时长=1170s, 起点=(120.48E, 30.57N), 终点=(118.58E, 29.02N)
+目标CCA839: 点数=50, 时长=1470s, 起点=(120.44E, 32.12N), 终点=(117.13E, 32.48N)
+目标CSS7120: 点数=32, 时长=930s, 起点=(119.89E, 30.78N), 终点=(118.80E, 32.42N)
+目标QTR871: 点数=47, 时长=1380s, 起点=(120.48E, 32.24N), 终点=(117.32E, 31.42N)
+目标DKH1657: 点数=36, 时长=1050s, 起点=(120.47E, 32.19N), 终点=(118.01E, 32.24N)
+目标CSS7223: 点数=17, 时长=480s, 起点=(120.05E, 29.88N), 终点=(119.55E, 29.09N)
+目标SPQ401: 点数=11, 时长=300s, 起点=(119.11E, 29.45N), 终点=(118.60E, 29.04N)
+目标CSS6840: 点数=26, 时长=750s, 起点=(119.35E, 30.66N), 终点=(118.72E, 29.33N)
+目标CSS7013: 点数=30, 时长=870s, 起点=(118.60E, 32.42N), 终点=(119.50E, 31.02N)
+目标ANA838: 点数=34, 时长=990s, 起点=(117.49E, 31.71N), 终点=(120.39E, 31.52N)
+目标UAE313: 点数=30, 时长=870s, 起点=(120.44E, 31.72N), 终点=(118.32E, 31.90N)
+R1 偏差估计: dr=19468m, da=-2.98deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-15075m, da=3.49deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=1977, 真实=912, 虚警=1065, 平均每帧=8.27
+R2 点迹: 总数=1918, 真实=879, 虚警=1039, 平均每帧=8.03
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/239: active=0, total=0
+  frame  10/239: active=1, total=1
+  frame  20/239: active=1, total=2
+  frame  30/239: active=1, total=2
+  frame  40/239: active=1, total=2
+  frame  50/239: active=0, total=2
+  frame  60/239: active=2, total=4
+  frame  70/239: active=3, total=5
+  frame  80/239: active=4, total=6
+  frame  90/239: active=4, total=8
+  frame 100/239: active=6, total=10
+  frame 110/239: active=6, total=13
+  frame 120/239: active=7, total=15
+  frame 130/239: active=7, total=16
+  frame 140/239: active=8, total=19
+  frame 150/239: active=7, total=20
+  frame 160/239: active=7, total=22
+  frame 170/239: active=8, total=25
+  frame 180/239: active=7, total=28
+  frame 190/239: active=10, total=33
+  frame 200/239: active=11, total=34
+  frame 210/239: active=12, total=37
+  frame 220/239: active=11, total=41
+  frame 230/239: active=9, total=42
+  frame 239/239: active=6, total=42
+  frame   1/239: active=0, total=0
+  frame  10/239: active=0, total=1
+  frame  20/239: active=1, total=2
+  frame  30/239: active=1, total=2
+  frame  40/239: active=1, total=2
+  frame  50/239: active=0, total=2
+  frame  60/239: active=2, total=4
+  frame  70/239: active=4, total=6
+  frame  80/239: active=4, total=6
+  frame  90/239: active=5, total=9
+  frame 100/239: active=4, total=9
+  frame 110/239: active=5, total=12
+  frame 120/239: active=7, total=15
+  frame 130/239: active=7, total=16
+  frame 140/239: active=7, total=18
+  frame 150/239: active=7, total=20
+  frame 160/239: active=7, total=22
+  frame 170/239: active=8, total=25
+  frame 180/239: active=6, total=27
+  frame 190/239: active=9, total=32
+  frame 200/239: active=10, total=34
+  frame 210/239: active=11, total=37
+  frame 220/239: active=10, total=40
+  frame 230/239: active=9, total=42
+  frame 239/239: active=6, total=42
+R1 航迹: 总数=42, 可靠=6, 临时=0, 历史=36
+R2 航迹: 总数=42, 可靠=4, 临时=0, 历史=36
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[三判据匹配] T1=35.0km M=8 var_thresh=50.0km^2 | maha=1(thr=5.99,ratio=0.80) vel=1(kappa=3.0) → 匹配 40 对
+匹配到 40 对航迹
+  Pair 1: R1#10 <-> R2#10, 共现=44帧, 平均距离=5.3km
+  Pair 2: R1#31 <-> R2#32, 共现=42帧, 平均距离=6.0km
+  Pair 3: R1#16 <-> R2#16, 共现=38帧, 平均距离=6.3km
+  Pair 4: R1#18 <-> R2#17, 共现=30帧, 平均距离=5.6km
+  Pair 5: R1#19 <-> R2#20, 共现=41帧, 平均距离=7.0km
+  Pair 6: R1#30 <-> R2#31, 共现=38帧, 平均距离=7.0km
+  Pair 7: R1#20 <-> R2#19, 共现=30帧, 平均距离=6.1km
+  Pair 8: R1#21 <-> R2#21, 共现=30帧, 平均距离=6.4km
+  Pair 9: R1#22 <-> R2#23, 共现=17帧, 平均距离=5.0km
+  Pair 10: R1#34 <-> R2#34, 共现=41帧, 平均距离=7.9km
+  Pair 11: R1#26 <-> R2#26, 共现=45帧, 平均距离=8.9km
+  Pair 12: R1#28 <-> R2#27, 共现=31帧, 平均距离=7.2km
+  Pair 13: R1#15 <-> R2#15, 共现=23帧, 平均距离=7.0km
+  Pair 14: R1#7 <-> R2#7, 共现=46帧, 平均距离=10.2km
+  Pair 15: R1#39 <-> R2#39, 共现=24帧, 平均距离=7.5km
+  Pair 16: R1#23 <-> R2#22, 共现=37帧, 平均距离=9.2km
+  Pair 17: R1#32 <-> R2#30, 共现=28帧, 平均距离=8.1km
+  Pair 18: R1#14 <-> R2#14, 共现=37帧, 平均距离=9.7km
+  Pair 19: R1#8 <-> R2#8, 共现=32帧, 平均距离=9.1km
+  Pair 20: R1#5 <-> R2#6, 共现=38帧, 平均距离=9.9km
+  Pair 21: R1#29 <-> R2#29, 共现=22帧, 平均距离=8.2km
+  Pair 22: R1#27 <-> R2#28, 共现=33帧, 平均距离=9.8km
+  Pair 23: R1#6 <-> R2#5, 共现=28帧, 平均距离=9.4km
+  Pair 24: R1#4 <-> R2#4, 共现=30帧, 平均距离=9.8km
+  Pair 25: R1#24 <-> R2#25, 共现=43帧, 平均距离=11.6km
+  Pair 26: R1#35 <-> R2#36, 共现=23帧, 平均距离=9.7km
+  Pair 27: R1#2 <-> R2#2, 共现=31帧, 平均距离=11.0km
+  Pair 28: R1#38 <-> R2#38, 共现=9帧, 平均距离=8.1km
+  Pair 29: R1#33 <-> R2#33, 共现=26帧, 平均距离=10.5km
+  Pair 30: R1#9 <-> R2#9, 共现=18帧, 平均距离=9.9km
+  Pair 31: R1#41 <-> R2#40, 共现=20帧, 平均距离=10.9km
+  Pair 32: R1#3 <-> R2#3, 共现=26帧, 平均距离=11.8km
+  Pair 33: R1#37 <-> R2#35, 共现=30帧, 平均距离=12.5km
+  Pair 34: R1#13 <-> R2#12, 共现=23帧, 平均距离=12.5km
+  Pair 35: R1#17 <-> R2#18, 共现=30帧, 平均距离=14.1km
+  Pair 36: R1#36 <-> R2#37, 共现=13帧, 平均距离=12.8km
+  Pair 37: R1#12 <-> R2#13, 共现=19帧, 平均距离=15.8km
+  Pair 38: R1#40 <-> R2#41, 共现=16帧, 平均距离=18.4km
+  Pair 39: R1#42 <-> R2#42, 共现=12帧, 平均距离=20.7km
+  Pair 40: R1#11 <-> R2#11, 共现=8帧, 平均距离=24.5km
+融合匹配对 1/40: R1#10 <-> R2#10
+融合匹配对 2/40: R1#31 <-> R2#32
+融合匹配对 3/40: R1#16 <-> R2#16
+融合匹配对 4/40: R1#18 <-> R2#17
+融合匹配对 5/40: R1#19 <-> R2#20
+融合匹配对 6/40: R1#30 <-> R2#31
+融合匹配对 7/40: R1#20 <-> R2#19
+融合匹配对 8/40: R1#21 <-> R2#21
+融合匹配对 9/40: R1#22 <-> R2#23
+融合匹配对 10/40: R1#34 <-> R2#34
+融合匹配对 11/40: R1#26 <-> R2#26
+融合匹配对 12/40: R1#28 <-> R2#27
+融合匹配对 13/40: R1#15 <-> R2#15
+融合匹配对 14/40: R1#7 <-> R2#7
+融合匹配对 15/40: R1#39 <-> R2#39
+融合匹配对 16/40: R1#23 <-> R2#22
+融合匹配对 17/40: R1#32 <-> R2#30
+融合匹配对 18/40: R1#14 <-> R2#14
+融合匹配对 19/40: R1#8 <-> R2#8
+融合匹配对 20/40: R1#5 <-> R2#6
+融合匹配对 21/40: R1#29 <-> R2#29
+融合匹配对 22/40: R1#27 <-> R2#28
+融合匹配对 23/40: R1#6 <-> R2#5
+融合匹配对 24/40: R1#4 <-> R2#4
+融合匹配对 25/40: R1#24 <-> R2#25
+融合匹配对 26/40: R1#35 <-> R2#36
+融合匹配对 27/40: R1#2 <-> R2#2
+融合匹配对 28/40: R1#38 <-> R2#38
+融合匹配对 29/40: R1#33 <-> R2#33
+融合匹配对 30/40: R1#9 <-> R2#9
+融合匹配对 31/40: R1#41 <-> R2#40
+融合匹配对 32/40: R1#3 <-> R2#3
+融合匹配对 33/40: R1#37 <-> R2#35
+融合匹配对 34/40: R1#13 <-> R2#12
+融合匹配对 35/40: R1#17 <-> R2#18
+融合匹配对 36/40: R1#36 <-> R2#37
+融合匹配对 37/40: R1#12 <-> R2#13
+融合匹配对 38/40: R1#40 <-> R2#41
+融合匹配对 39/40: R1#42 <-> R2#42
+融合匹配对 40/40: R1#11 <-> R2#11
+融合完成: 40 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#10 <-> R2#10) -> 飞机CSS7255
+  Pair 2 (R1#31 <-> R2#32) -> 飞机CKS524
+  Pair 3 (R1#16 <-> R2#16) -> 飞机ETH685
+  Pair 4 (R1#18 <-> R2#17) -> 飞机CSS7313
+  Pair 5 (R1#19 <-> R2#20) -> 飞机UAE303
+  Pair 6 (R1#30 <-> R2#31) -> 飞机ETH673
+  Pair 7 (R1#20 <-> R2#19) -> 飞机CYZ9065
+  Pair 8 (R1#21 <-> R2#21) -> 飞机SIA825
+  Pair 9 (R1#22 <-> R2#23) -> 飞机CSS7232
+  Pair 10 (R1#34 <-> R2#34) -> 飞机QTR871
+  Pair 11 (R1#26 <-> R2#26) -> 飞机QTR891
+  Pair 12 (R1#28 <-> R2#27) -> 飞机HLF9847
+  Pair 13 (R1#15 <-> R2#15) -> 飞机CSS7289
+  Pair 14 (R1#7 <-> R2#7) -> 飞机UAE311
+  Pair 15 (R1#39 <-> R2#39) -> 飞机UAE313
+  Pair 16 (R1#23 <-> R2#22) -> 飞机CXA825
+  Pair 17 (R1#32 <-> R2#30) -> 飞机ANA838
+  Pair 18 (R1#14 <-> R2#14) -> 飞机JNA864
+  Pair 19 (R1#8 <-> R2#8) -> 飞机KAL647
+  Pair 20 (R1#5 <-> R2#6) -> 飞机CSN8212
+  Pair 21 (R1#29 <-> R2#29) -> 飞机CSS7013
+  Pair 22 (R1#27 <-> R2#28) -> 飞机CSH847
+  Pair 23 (R1#6 <-> R2#5) -> 飞机CES7707
+  Pair 24 (R1#4 <-> R2#4) -> 飞机AIC356
+  Pair 25 (R1#24 <-> R2#25) -> 飞机CCA839
+  Pair 26 (R1#35 <-> R2#36) -> 飞机SIA605
+  Pair 27 (R1#2 <-> R2#2) -> 飞机CBJ5710
+  Pair 28 (R1#38 <-> R2#38) -> 飞机CDG2495
+  Pair 29 (R1#33 <-> R2#33) -> 飞机CSS7120
+  Pair 30 (R1#9 <-> R2#9) -> 飞机SIA839
+  Pair 31 (R1#41 <-> R2#40) -> 飞机FDX6015
+  Pair 32 (R1#3 <-> R2#3) -> 飞机CSS7363
+  Pair 33 (R1#37 <-> R2#35) -> 飞机DKH1657
+  Pair 34 (R1#13 <-> R2#12) -> 飞机CSS7649
+  Pair 35 (R1#17 <-> R2#18) -> 飞机CSS7259
+  Pair 36 (R1#36 <-> R2#37) -> 飞机CSS7223
+  Pair 37 (R1#12 <-> R2#13) -> 飞机CSS7017
+  Pair 38 (R1#40 <-> R2#41) -> 飞机CSS6840
+  Pair 39 (R1#42 <-> R2#42) -> 飞机CSS7206
+  Pair 40 (R1#11 <-> R2#11) -> 飞机CSS7211
+R1 单站跟踪 RMSE:
+  目标1: n=5, median=5.2km, mean=5.6km, RMSE=6.2km, 95%=10.6km
+  目标2: n=36, median=18.5km, mean=18.6km, RMSE=20.7km, 95%=36.7km
+  目标3: n=40, median=6.9km, mean=9.4km, RMSE=11.8km, 95%=20.9km
+  目标4: n=23, median=10.4km, mean=10.8km, RMSE=14.1km, 95%=31.6km
+  目标5: n=47, median=8.4km, mean=9.5km, RMSE=12.1km, 95%=26.0km
+  目标6: n=47, median=8.1km, mean=9.6km, RMSE=10.7km, 95%=20.7km
+  目标7: n=29, median=8.9km, mean=14.5km, RMSE=19.5km, 95%=39.7km
+  目标8: n=19, median=5.1km, mean=10.1km, RMSE=13.8km, 95%=31.2km
+  目标9: n=47, median=5.2km, mean=5.7km, RMSE=6.0km, 95%=9.4km
+  目标10: n=32, median=8.5km, mean=10.3km, RMSE=12.2km, 95%=20.6km
+  目标11: n=38, median=6.3km, mean=9.8km, RMSE=13.1km, 95%=29.5km
+  目标12: n=32, median=8.0km, mean=9.9km, RMSE=12.5km, 95%=26.5km
+  目标13: n=14, median=8.1km, mean=11.5km, RMSE=13.9km, 95%=29.1km
+  目标14: n=48, median=3.9km, mean=5.5km, RMSE=8.0km, 95%=19.3km
+  目标15: n=31, median=7.2km, mean=7.5km, RMSE=8.6km, 95%=13.8km
+  目标16: n=31, median=6.2km, mean=6.7km, RMSE=7.9km, 95%=13.5km
+  目标17: n=52, median=6.3km, mean=8.9km, RMSE=10.8km, 95%=22.1km
+  目标18: n=33, median=6.0km, mean=7.9km, RMSE=10.2km, 95%=21.0km
+  目标19: n=47, median=4.6km, mean=5.4km, RMSE=6.4km, 95%=11.1km
+  目标20: n=13, median=19.3km, mean=20.5km, RMSE=21.2km, 95%=31.2km
+  目标21: n=20, median=8.4km, mean=8.7km, RMSE=9.1km, 95%=13.9km
+  目标22: n=52, median=5.1km, mean=5.9km, RMSE=8.1km, 95%=21.3km
+  目标23: n=31, median=5.5km, mean=7.2km, RMSE=8.8km, 95%=18.8km
+  目标24: n=39, median=6.5km, mean=7.5km, RMSE=9.0km, 95%=18.4km
+  目标25: n=24, median=12.0km, mean=12.2km, RMSE=14.0km, 95%=25.6km
+  目标26: n=20, median=8.6km, mean=8.5km, RMSE=10.5km, 95%=18.8km
+  目标27: n=31, median=5.4km, mean=5.7km, RMSE=6.4km, 95%=10.6km
+  目标28: n=24, median=5.7km, mean=6.4km, RMSE=6.8km, 95%=11.5km
+  目标29: n=31, median=12.4km, mean=11.4km, RMSE=12.7km, 95%=17.8km
+  目标30: n=50, median=8.3km, mean=12.1km, RMSE=15.5km, 95%=32.5km
+  目标31: n=31, median=8.9km, mean=10.7km, RMSE=12.2km, 95%=21.1km
+  目标32: n=38, median=11.3km, mean=12.0km, RMSE=13.8km, 95%=27.7km
+  目标33: n=48, median=10.0km, mean=10.4km, RMSE=12.4km, 95%=24.6km
+  目标34: n=29, median=15.0km, mean=16.3km, RMSE=18.7km, 95%=31.9km
+  目标35: n=44, median=5.7km, mean=5.8km, RMSE=6.6km, 95%=10.9km
+  目标36: n=30, median=12.0km, mean=10.6km, RMSE=12.2km, 95%=23.8km
+  目标37: n=15, median=17.4km, mean=13.8km, RMSE=15.7km, 95%=24.7km
+  目标38: n=7, median=26.0km, mean=21.5km, RMSE=26.3km, 95%=45.4km
+  目标39: n=22, median=20.8km, mean=19.4km, RMSE=22.5km, 95%=39.6km
+  目标40: n=23, median=14.9km, mean=14.9km, RMSE=15.8km, 95%=24.0km
+  目标41: n=29, median=4.7km, mean=6.0km, RMSE=7.2km, 95%=14.3km
+  目标42: n=25, median=6.2km, mean=7.7km, RMSE=9.8km, 95%=21.2km
+  Overall: n=1327, median=7.3km, mean=9.6km, RMSE=12.3km, 95%=25.2km
+R2 单站跟踪 RMSE:
+  目标1: n=7, median=20.7km, mean=23.5km, RMSE=26.2km, 95%=42.6km
+  目标2: n=33, median=18.2km, mean=17.6km, RMSE=19.4km, 95%=31.4km
+  目标3: n=39, median=13.6km, mean=14.6km, RMSE=15.9km, 95%=25.6km
+  目标4: n=19, median=9.0km, mean=8.4km, RMSE=8.8km, 95%=13.1km
+  目标5: n=44, median=4.9km, mean=5.9km, RMSE=6.8km, 95%=12.1km
+  目标6: n=46, median=5.9km, mean=6.9km, RMSE=8.1km, 95%=12.9km
+  目标7: n=32, median=6.5km, mean=9.8km, RMSE=13.8km, 95%=33.2km
+  目标8: n=20, median=5.8km, mean=6.1km, RMSE=7.0km, 95%=13.7km
+  目标9: n=42, median=3.7km, mean=4.0km, RMSE=4.8km, 95%=9.3km
+  目标10: n=32, median=10.8km, mean=11.1km, RMSE=12.9km, 95%=23.0km
+  目标11: n=43, median=6.9km, mean=9.3km, RMSE=12.6km, 95%=27.8km
+  目标12: n=31, median=7.3km, mean=8.0km, RMSE=9.3km, 95%=17.0km
+  目标13: n=9, median=2.1km, mean=3.8km, RMSE=4.7km, 95%=8.7km
+  目标14: n=41, median=3.9km, mean=4.8km, RMSE=5.8km, 95%=11.1km
+  目标15: n=26, median=10.3km, mean=9.3km, RMSE=10.3km, 95%=17.0km
+  目标16: n=30, median=7.3km, mean=7.4km, RMSE=7.6km, 95%=11.0km
+  目标17: n=47, median=4.2km, mean=5.3km, RMSE=6.7km, 95%=14.6km
+  目标18: n=32, median=12.0km, mean=12.5km, RMSE=13.6km, 95%=21.9km
+  目标19: n=45, median=4.8km, mean=9.1km, RMSE=13.9km, 95%=37.2km
+  目标20: n=12, median=2.8km, mean=2.6km, RMSE=2.8km, 95%=5.1km
+  目标21: n=20, median=6.3km, mean=6.0km, RMSE=6.8km, 95%=12.2km
+  目标22: n=44, median=4.5km, mean=5.3km, RMSE=6.4km, 95%=12.7km
+  目标23: n=30, median=5.4km, mean=6.0km, RMSE=7.2km, 95%=12.9km
+  目标24: n=37, median=9.3km, mean=10.2km, RMSE=12.1km, 95%=22.6km
+  目标25: n=24, median=22.2km, mean=23.7km, RMSE=25.2km, 95%=41.8km
+  目标26: n=17, median=5.7km, mean=7.2km, RMSE=8.8km, 95%=18.3km
+  目标27: n=32, median=3.2km, mean=3.7km, RMSE=4.3km, 95%=8.1km
+  目标28: n=23, median=4.6km, mean=5.0km, RMSE=5.4km, 95%=9.8km
+  目标29: n=30, median=13.4km, mean=13.7km, RMSE=15.2km, 95%=22.7km
+  目标30: n=50, median=3.3km, mean=6.2km, RMSE=9.3km, 95%=22.4km
+  目标31: n=33, median=8.8km, mean=10.3km, RMSE=12.0km, 95%=20.6km
+  目标32: n=33, median=9.1km, mean=10.4km, RMSE=12.4km, 95%=22.3km
+  目标33: n=43, median=12.1km, mean=13.8km, RMSE=16.0km, 95%=30.3km
+  目标34: n=26, median=12.0km, mean=13.6km, RMSE=15.7km, 95%=26.6km
+  目标35: n=41, median=4.9km, mean=5.9km, RMSE=6.8km, 95%=13.2km
+  目标36: n=33, median=5.5km, mean=8.8km, RMSE=11.7km, 95%=24.1km
+  目标37: n=13, median=4.3km, mean=5.0km, RMSE=5.5km, 95%=10.0km
+  目标38: n=7, median=10.2km, mean=10.2km, RMSE=10.6km, 95%=14.6km
+  目标39: n=16, median=8.2km, mean=7.8km, RMSE=9.1km, 95%=16.3km
+  目标40: n=26, median=11.6km, mean=12.8km, RMSE=15.1km, 95%=28.6km
+  目标41: n=31, median=4.6km, mean=6.0km, RMSE=7.6km, 95%=13.0km
+  目标42: n=24, median=5.1km, mean=5.6km, RMSE=6.3km, 95%=11.7km
+  Overall: n=1263, median=6.7km, mean=8.8km, RMSE=11.4km, 95%=23.7km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC          1345      6.1      8.2     10.5
+  BC           1345      6.1      8.2     10.5
+  CI           1345      6.7      8.9     11.4
+  FCI          1345      6.4      8.6     11.0
+  R1_only      1315      7.3      9.6     12.2
+  R2_only      1249      6.1      7.9     10.2
+
+Done.
+[三判据匹配] T1=35.0km M=8 var_thresh=50.0km^2 | maha=0(thr=5.99,ratio=0.80) vel=0(kappa=3.0) → 匹配 58 对
+[三判据匹配] T1=35.0km M=8 var_thresh=50.0km^2 | maha=1(thr=5.99,ratio=0.80) vel=1(kappa=3.0) → 匹配 44 对
+===== probe_match3_test =====
+MATLAB 9.14.0.2206163 (R2023a)
+
+----- TEST 1: multi_cross (backward compatibility) -----
+run time           : 17.7 s
+new  (gates OFF)   : 3 pairs
+orig (backup file) : 3 pairs
+IDENTICAL          : YES (same ids, same match_count, same quality)
+  R1id  R2id  nMatch  dist_km   var   quality  maha_r  vel_d  vel_tol
+     2     1      49     6.56   13.97    81.40     NaN     NaN      NaN
+     1     2      50     8.77   38.98    78.55     NaN     NaN      NaN
+     3     3      46     7.46   52.98    77.03     NaN     NaN      NaN
+
+----- TEST 2: adsb_0002 (real ADS-B, 42 tracks) -----
+run time  A(dual only)=53.8 s   B(three gates)=53.8 s
+targets=42  frames=239
+
+[A] dual-gate only (var + no velocity)
+  pairs      : 40
+  correct    : 40
+  wrong      : 0
+  missed     : 2  (truth targets in both radars but unmatched)
+  avg quality: 37.46
+  common truth targets: 42 / total 42
+
+[B] three gates (mahalanobis + velocity)
+  pairs      : 40
+  correct    : 40
+  wrong      : 0
+  missed     : 2  (truth targets in both radars but unmatched)
+  avg quality: 36.85
+  common truth targets: 42 / total 42
+
+[CAND-A] candidates before 1v1 exclusion, dual-gate only
+  pairs      : 58
+  correct    : 40
+  wrong      : 18
+  missed     : 2  (truth targets in both radars but unmatched)
+  avg quality: 32.10
+  common truth targets: 42 / total 42
+
+[CAND-B] candidates before 1v1 exclusion, three gates
+  pairs      : 44
+  correct    : 40
+  wrong      : 4
+  missed     : 2  (truth targets in both radars but unmatched)
+  avg quality: 36.28
+  common truth targets: 42 / total 42
+
+----- pair detail A -----
+  R1id  R2id  nMatch  dist_km   var   quality  maha_r  vel_d  vel_tol
+    10    10      44     5.25    9.32    47.65     NaN     NaN      NaN
+    31    32      42     6.02    4.19    45.79     NaN     NaN      NaN
+    16    16      38     6.28   16.83    44.47     NaN     NaN      NaN
+    18    17      30     5.65   15.47    43.98     NaN     NaN      NaN
+    19    20      41     7.04   30.55    43.74     NaN     NaN      NaN
+    30    31      38     7.00   44.73    43.18     NaN     NaN      NaN
+    20    19      30     6.08    4.80    43.17     NaN     NaN      NaN
+    21    21      30     6.36   18.00    42.66     NaN     NaN      NaN
+    22    23      17     5.01   11.27    42.48     NaN     NaN      NaN
+    34    34      41     7.89   18.62    42.27     NaN     NaN      NaN
+    26    26      45     8.94   59.01    41.39     NaN     NaN      NaN
+    28    27      31     7.22   19.24    41.34     NaN     NaN      NaN
+    11    11      38     8.56   25.97    40.54     NaN     NaN      NaN
+    15    15      23     6.98    6.94    40.09     NaN     NaN      NaN
+     7     7      46    10.22   31.23    39.61     NaN     NaN      NaN
+    39    39      24     7.55   41.38    39.31     NaN     NaN      NaN
+    23    22      37     9.23   46.21    39.26     NaN     NaN      NaN
+    32    30      28     8.13   13.03    39.15     NaN     NaN      NaN
+    14    14      37     9.67   33.33    38.57     NaN     NaN      NaN
+     8     8      32     9.12   24.01    38.38     NaN     NaN      NaN
+     5     6      38     9.94   33.94    38.36     NaN     NaN      NaN
+    29    29      22     8.21   18.79    37.77     NaN     NaN      NaN
+    27    28      33     9.84   42.04    37.47     NaN     NaN      NaN
+     6     5      28     9.37   83.42    37.16     NaN     NaN      NaN
+     4     4      30     9.77   26.63    36.95     NaN     NaN      NaN
+    24    25      43    11.64   38.19    36.93     NaN     NaN      NaN
+    35    36      23     9.66   43.61    35.66     NaN     NaN      NaN
+     2     2      31    11.01   34.92    35.32     NaN     NaN      NaN
+    38    38       9     8.07   19.16    35.28     NaN     NaN      NaN
+    33    33      26    10.49   51.75    35.03     NaN     NaN      NaN
+     9     9      18     9.92   43.51    34.22     NaN     NaN      NaN
+    41    40      20    10.92   35.48    33.15     NaN     NaN      NaN
+     3     3      26    11.82   54.22    33.13     NaN     NaN      NaN
+    37    35      30    12.50   53.84    33.05     NaN     NaN      NaN
+    13    12      23    12.48   66.46    31.60     NaN     NaN      NaN
+    17    18      30    14.10  130.72    30.98     NaN     NaN      NaN
+    36    37      13    12.85   96.34    29.02     NaN     NaN      NaN
+    12    13      19    15.81   91.84    26.65     NaN     NaN      NaN
+    40    41      16    18.43   96.19    23.24     NaN     NaN      NaN
+    42    42      12    20.68   31.41    20.29     NaN     NaN      NaN
+
+----- pair detail B -----
+  R1id  R2id  nMatch  dist_km   var   quality  maha_r  vel_d  vel_tol
+    10    10      44     5.25    9.32    47.65   1.000  0.0424   0.3093
+    31    32      42     6.02    4.19    45.79   1.000  0.0492   0.3161
+    16    16      38     6.28   16.83    44.47   1.000  0.0602   0.3206
+    18    17      30     5.65   15.47    43.98   1.000  0.0496   0.2973
+    19    20      41     7.04   30.55    43.74   1.000  0.0857   0.4503
+    30    31      38     7.00   44.73    43.18   1.000  0.0420   0.3683
+    20    19      30     6.08    4.80    43.17   1.000  0.0219   0.2085
+    21    21      30     6.36   18.00    42.66   1.000  0.0671   0.2518
+    22    23      17     5.01   11.27    42.48   1.000  0.0628   0.2948
+    34    34      41     7.89   18.62    42.27   1.000  0.0662   0.3294
+    26    26      45     8.94   59.01    41.39   1.000  0.0675   0.3196
+    28    27      31     7.22   19.24    41.34   1.000  0.0941   0.4189
+    15    15      23     6.98    6.94    40.09   1.000  0.0580   0.3146
+     7     7      46    10.22   31.23    39.61   1.000  0.0812   0.3831
+    39    39      24     7.55   41.38    39.31   1.000  0.1273   0.5532
+    23    22      37     9.23   46.21    39.26   0.838  0.0794   0.3170
+    32    30      28     8.13   13.03    39.15   1.000  0.0724   0.4549
+    14    14      37     9.67   33.33    38.57   1.000  0.0996   0.4808
+     8     8      32     9.12   24.01    38.38   1.000  0.1338   0.3632
+     5     6      38     9.94   33.94    38.36   1.000  0.0533   0.2898
+    29    29      22     8.21   18.79    37.77   1.000  0.0971   0.2598
+    27    28      33     9.84   42.04    37.47   0.970  0.0698   0.2723
+     6     5      28     9.37   83.42    37.16   0.964  0.0768   0.3230
+     4     4      30     9.77   26.63    36.95   1.000  0.1343   0.4377
+    24    25      43    11.64   38.19    36.93   1.000  0.0574   0.3258
+    35    36      23     9.66   43.61    35.66   1.000  0.1118   0.3470
+     2     2      31    11.01   34.92    35.32   1.000  0.1707   0.4111
+    38    38       9     8.07   19.16    35.28   1.000  0.0445   0.5257
+    33    33      26    10.49   51.75    35.03   0.962  0.0741   0.2882
+     9     9      18     9.92   43.51    34.22   1.000  0.1281   0.5005
+    41    40      20    10.92   35.48    33.15   1.000  0.0803   0.4488
+     3     3      26    11.82   54.22    33.13   0.962  0.0673   0.4053
+    37    35      30    12.50   53.84    33.05   1.000  0.1429   0.3952
+    13    12      23    12.48   66.46    31.60   0.913  0.0663   0.2482
+    17    18      30    14.10  130.72    30.98   0.967  0.1774   0.3981
+    36    37      13    12.85   96.34    29.02   1.000  0.1042   0.4620
+    12    13      19    15.81   91.84    26.65   1.000  0.0670   0.4281
+    40    41      16    18.43   96.19    23.24   0.812  0.1152   0.2805
+    42    42      12    20.68   31.41    20.29   0.917  0.2775   0.4466
+    11    11       8    24.46   62.74    16.39   1.000  0.1926   0.4404
+
+----- wrong pairs -----
+A wrong (0) : 
+B wrong (0) : 
+CAND-A wrong (18) : (R1#5/t3<->R2#5/t7) (R1#5/t3<->R2#9/t8) (R1#6/t7<->R2#6/t3) (R1#7/t6<->R2#13/t4) (R1#9/t8<->R2#6/t3) (R1#10/t22<->R2#8/t2) (R1#10/t22<->R2#15/t28) (R1#15/t28<->R2#10/t22) (R1#20/t16<->R2#18/t29) (R1#28/t12<->R2#29/t40) (R1#28/t12<->R2#30/t41) (R1#29/t40<->R2#27/t12) (R1#30/t5<->R2#32/t9) (R1#31/t9<->R2#31/t5) (R1#32/t41<->R2#27/t12) (R1#35/t18<->R2#41/t39) (R1#37/t36<->R2#39/t42) (R1#39/t42<->R2#35/t36)
+CAND-B wrong (4) : (R1#5/t3<->R2#9/t8) (R1#10/t22<->R2#15/t28) (R1#15/t28<->R2#10/t22) (R1#30/t5<->R2#32/t9)
+
+===== done =====
+

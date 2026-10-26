@@ -1,0 +1,11 @@
+x0 = [1 1]; lb = [0 0]; ub = [2 2];
+f = @(x) [x(1)^2 + x(2) - 3; x(1) + x(2)^2 - 3];
+o1 = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt','Display','off','FunctionTolerance',1e-14,'StepTolerance',1e-14);
+[x,rn,~,ef,out] = lsqnonlin(f, x0, [], [], o1);
+fprintf('LM_NOBOUND x=[%.6f %.6f] exit=%d iter=%d rn=%.2e\n', x(1), x(2), ef, out.iterations, rn);
+o2 = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt','Display','off','FunctionTolerance',1e-14,'StepTolerance',1e-14);
+[x,rn,~,ef,out] = lsqnonlin(f, x0, lb, ub, o2);
+fprintf('LM_BOUND   x=[%.6f %.6f] exit=%d iter=%d rn=%.2e\n', x(1), x(2), ef, out.iterations, rn);
+o3 = optimoptions('lsqnonlin','Algorithm','trust-region-reflective','Display','off','FunctionTolerance',1e-14,'StepTolerance',1e-14);
+[x,rn,~,ef,out] = lsqnonlin(f, x0, lb, ub, o3);
+fprintf('TRR_BOUND  x=[%.6f %.6f] exit=%d iter=%d rn=%.2e\n', x(1), x(2), ef, out.iterations, rn);

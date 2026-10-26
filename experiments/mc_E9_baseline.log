@@ -1,0 +1,505 @@
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s01  OK  70s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[2/2] multi_cross w07_15 s01  OK  14s  R1=6.62 SCC=7.33 cov=92.9% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E9_baseline  (2 units) =====
+
+===== START E9_baseline  (2 units) =====
+===== END E9_baseline : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s02  OK  66s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[2/2] multi_cross w07_15 s02  OK  12s  R1=6.81 SCC=5.98 cov=94.8% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.3 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s03  OK  79s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[2/2] multi_cross w07_15 s03  OK  12s  R1=5.96 SCC=4.94 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s04  OK  79s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[2/2] multi_cross w07_15 s04  OK  13s  R1=6.23 SCC=4.98 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s05  OK  78s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+[2/2] multi_cross w07_15 s05  OK  12s  R1=8.00 SCC=17.06 cov=64.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s06  OK  79s  R1=11.63 SCC=10.48 cov=89.9% match=88.1%
+[2/2] multi_cross w07_15 s06  OK  12s  R1=6.08 SCC=5.23 cov=83.2% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s07  OK  78s  R1=10.91 SCC=10.04 cov=90.5% match=90.5%
+[2/2] multi_cross w07_15 s07  OK  12s  R1=5.61 SCC=4.23 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s08  OK  78s  R1=12.39 SCC=11.00 cov=92.7% match=92.9%
+[2/2] multi_cross w07_15 s08  OK  12s  R1=6.35 SCC=5.52 cov=92.7% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s09  OK  79s  R1=12.41 SCC=11.24 cov=90.2% match=95.2%
+[2/2] multi_cross w07_15 s09  OK  12s  R1=6.86 SCC=5.37 cov=94.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s10  OK  79s  R1=11.51 SCC=10.19 cov=88.8% match=95.2%
+[2/2] multi_cross w07_15 s10  OK  12s  R1=7.62 SCC=5.77 cov=97.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s11  OK  78s  R1=12.69 SCC=11.12 cov=89.8% match=92.9%
+[2/2] multi_cross w07_15 s11  OK  12s  R1=5.46 SCC=4.18 cov=97.9% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s12  OK  78s  R1=13.02 SCC=9.99 cov=91.9% match=95.2%
+[2/2] multi_cross w07_15 s12  OK  12s  R1=6.05 SCC=4.25 cov=95.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s13  OK  79s  R1=12.89 SCC=10.59 cov=89.3% match=92.9%
+[2/2] multi_cross w07_15 s13  OK  13s  R1=6.71 SCC=5.11 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s14  OK  79s  R1=11.04 SCC=9.85 cov=92.0% match=95.2%
+[2/2] multi_cross w07_15 s14  OK  12s  R1=5.49 SCC=4.54 cov=94.6% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s15  OK  78s  R1=12.31 SCC=10.38 cov=82.2% match=95.2%
+[2/2] multi_cross w07_15 s15  OK  12s  R1=5.09 SCC=3.91 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s16  OK  79s  R1=11.21 SCC=10.38 cov=91.1% match=92.9%
+[2/2] multi_cross w07_15 s16  OK  12s  R1=7.57 SCC=6.65 cov=94.8% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s17  OK  79s  R1=12.23 SCC=10.91 cov=88.1% match=88.1%
+[2/2] multi_cross w07_15 s17  OK  12s  R1=5.29 SCC=4.19 cov=94.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s18  OK  80s  R1=11.55 SCC=10.61 cov=93.4% match=95.2%
+[2/2] multi_cross w07_15 s18  OK  12s  R1=6.59 SCC=5.00 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s19  OK  79s  R1=12.77 SCC=10.20 cov=90.2% match=95.2%
+[2/2] multi_cross w07_15 s19  OK  12s  R1=5.90 SCC=3.67 cov=91.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s20  OK  79s  R1=11.52 SCC=10.67 cov=91.6% match=92.9%
+[2/2] multi_cross w07_15 s20  OK  13s  R1=7.64 SCC=5.63 cov=94.8% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s21  OK  78s  R1=14.75 SCC=12.08 cov=91.3% match=92.9%
+[2/2] multi_cross w07_15 s21  OK  13s  R1=6.64 SCC=5.25 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s22  OK  78s  R1=11.24 SCC=11.33 cov=92.9% match=95.2%
+[2/2] multi_cross w07_15 s22  OK  13s  R1=5.30 SCC=4.36 cov=98.7% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s23  OK  77s  R1=11.97 SCC=11.34 cov=86.9% match=92.9%
+[2/2] multi_cross w07_15 s23  OK  13s  R1=7.99 SCC=5.56 cov=95.5% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s24  OK  78s  R1=12.55 SCC=10.72 cov=92.3% match=92.9%
+[2/2] multi_cross w07_15 s24  OK  12s  R1=5.98 SCC=4.27 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s25  OK  78s  R1=12.74 SCC=10.73 cov=91.9% match=95.2%
+[2/2] multi_cross w07_15 s25  OK  12s  R1=6.58 SCC=5.23 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s26  OK  80s  R1=11.92 SCC=10.70 cov=90.9% match=95.2%
+[2/2] multi_cross w07_15 s26  OK  13s  R1=5.22 SCC=4.04 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s27  OK  78s  R1=12.30 SCC=10.33 cov=88.5% match=92.9%
+[2/2] multi_cross w07_15 s27  OK  12s  R1=6.28 SCC=4.98 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s28  OK  79s  R1=11.83 SCC=10.25 cov=88.6% match=92.9%
+[2/2] multi_cross w07_15 s28  OK  12s  R1=5.69 SCC=5.05 cov=90.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s29  OK  80s  R1=12.13 SCC=11.14 cov=90.7% match=95.2%
+[2/2] multi_cross w07_15 s29  OK  12s  R1=5.98 SCC=4.70 cov=94.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s30  OK  80s  R1=11.69 SCC=10.90 cov=90.2% match=95.2%
+[2/2] multi_cross w07_15 s30  OK  12s  R1=6.48 SCC=4.88 cov=94.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s31  OK  81s  R1=10.06 SCC=9.79 cov=92.9% match=95.2%
+[2/2] multi_cross w07_15 s31  OK  12s  R1=6.31 SCC=5.33 cov=77.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s32  OK  79s  R1=12.10 SCC=10.92 cov=89.3% match=95.2%
+[2/2] multi_cross w07_15 s32  OK  12s  R1=7.90 SCC=5.53 cov=98.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s33  OK  80s  R1=12.80 SCC=11.22 cov=91.2% match=95.2%
+[2/2] multi_cross w07_15 s33  OK  12s  R1=7.38 SCC=8.80 cov=95.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s34  OK  82s  R1=12.70 SCC=10.01 cov=90.7% match=95.2%
+[2/2] multi_cross w07_15 s34  OK  13s  R1=7.36 SCC=4.75 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s35  OK  83s  R1=11.19 SCC=10.55 cov=91.4% match=92.9%
+[2/2] multi_cross w07_15 s35  OK  13s  R1=8.78 SCC=6.02 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s36  OK  82s  R1=11.51 SCC=10.23 cov=91.3% match=95.2%
+[2/2] multi_cross w07_15 s36  OK  13s  R1=7.46 SCC=5.51 cov=94.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s37  OK  83s  R1=12.19 SCC=10.39 cov=92.2% match=95.2%
+[2/2] multi_cross w07_15 s37  OK  12s  R1=6.81 SCC=5.05 cov=92.2% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s38  OK  78s  R1=12.37 SCC=10.24 cov=91.9% match=95.2%
+[2/2] multi_cross w07_15 s38  OK  13s  R1=9.11 SCC=5.80 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s39  OK  80s  R1=12.68 SCC=11.29 cov=88.1% match=95.2%
+[2/2] multi_cross w07_15 s39  OK  12s  R1=7.32 SCC=5.94 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s40  OK  78s  R1=12.85 SCC=11.03 cov=88.0% match=90.5%
+[2/2] multi_cross w07_15 s40  OK  13s  R1=7.59 SCC=5.08 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s41  OK  78s  R1=12.15 SCC=10.54 cov=91.9% match=95.2%
+[2/2] multi_cross w07_15 s41  OK  12s  R1=6.65 SCC=4.80 cov=91.5% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s42  OK  80s  R1=12.28 SCC=10.50 cov=90.6% match=95.2%
+[2/2] multi_cross w07_15 s42  OK  13s  R1=6.88 SCC=4.34 cov=97.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s43  OK  78s  R1=13.13 SCC=10.13 cov=90.3% match=95.2%
+[2/2] multi_cross w07_15 s43  OK  13s  R1=6.60 SCC=5.62 cov=88.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s44  OK  78s  R1=10.85 SCC=9.48 cov=90.8% match=90.5%
+[2/2] multi_cross w07_15 s44  OK  12s  R1=5.13 SCC=4.90 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s45  OK  77s  R1=11.66 SCC=9.98 cov=90.5% match=92.9%
+[2/2] multi_cross w07_15 s45  OK  12s  R1=5.97 SCC=5.44 cov=94.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s46  OK  77s  R1=13.23 SCC=10.81 cov=91.1% match=92.9%
+[2/2] multi_cross w07_15 s46  OK  12s  R1=7.04 SCC=4.96 cov=98.7% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s47  OK  78s  R1=12.55 SCC=10.67 cov=92.0% match=92.9%
+[2/2] multi_cross w07_15 s47  OK  12s  R1=5.33 SCC=4.31 cov=94.8% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s48  OK  78s  R1=11.27 SCC=10.47 cov=90.3% match=95.2%
+[2/2] multi_cross w07_15 s48  OK  12s  R1=6.48 SCC=5.04 cov=91.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s49  OK  77s  R1=11.78 SCC=10.01 cov=92.3% match=92.9%
+[2/2] multi_cross w07_15 s49  OK  13s  R1=5.12 SCC=3.25 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s50  OK  79s  R1=11.56 SCC=10.63 cov=91.6% match=95.2%
+[2/2] multi_cross w07_15 s50  OK  12s  R1=6.63 SCC=5.24 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s51  OK  91s  R1=12.95 SCC=10.51 cov=90.9% match=90.5%
+[2/2] multi_cross w07_15 s51  OK  14s  R1=6.24 SCC=4.64 cov=94.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s52  OK  90s  R1=11.82 SCC=10.45 cov=92.2% match=92.9%
+[2/2] multi_cross w07_15 s52  OK  14s  R1=6.17 SCC=5.16 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s53  OK  93s  R1=11.40 SCC=10.35 cov=88.2% match=95.2%
+[2/2] multi_cross w07_15 s53  OK  14s  R1=7.07 SCC=4.91 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s54  OK  91s  R1=12.16 SCC=10.41 cov=93.1% match=92.9%
+[2/2] multi_cross w07_15 s54  OK  14s  R1=6.11 SCC=5.01 cov=92.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s55  OK  91s  R1=11.87 SCC=10.46 cov=90.7% match=95.2%
+[2/2] multi_cross w07_15 s55  OK  14s  R1=7.61 SCC=5.54 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s56  OK  92s  R1=12.04 SCC=10.12 cov=92.0% match=95.2%
+[2/2] multi_cross w07_15 s56  OK  14s  R1=7.58 SCC=5.25 cov=96.6% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s57  OK  92s  R1=11.61 SCC=10.57 cov=91.4% match=95.2%
+[2/2] multi_cross w07_15 s57  OK  14s  R1=6.13 SCC=4.68 cov=96.6% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s58  OK  92s  R1=11.81 SCC=10.18 cov=91.7% match=95.2%
+[2/2] multi_cross w07_15 s58  OK  14s  R1=9.47 SCC=7.03 cov=96.7% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s59  OK  90s  R1=11.58 SCC=10.01 cov=90.8% match=92.9%
+[2/2] multi_cross w07_15 s59  OK  14s  R1=6.55 SCC=4.66 cov=91.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s60  OK  92s  R1=12.83 SCC=10.80 cov=90.6% match=95.2%
+[2/2] multi_cross w07_15 s60  OK  14s  R1=5.86 SCC=4.55 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s61  OK  102s  R1=11.90 SCC=9.90 cov=91.5% match=92.9%
+[2/2] multi_cross w07_15 s61  OK  13s  R1=6.36 SCC=4.60 cov=89.9% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s62  OK  82s  R1=11.21 SCC=10.30 cov=92.3% match=92.9%
+[2/2] multi_cross w07_15 s62  OK  13s  R1=5.99 SCC=5.61 cov=81.9% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s63  OK  81s  R1=12.07 SCC=10.53 cov=91.0% match=92.9%
+[2/2] multi_cross w07_15 s63  OK  12s  R1=8.80 SCC=5.11 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s64  OK  81s  R1=12.52 SCC=10.88 cov=89.1% match=92.9%
+[2/2] multi_cross w07_15 s64  OK  12s  R1=6.04 SCC=4.67 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s65  OK  82s  R1=12.05 SCC=10.73 cov=92.3% match=92.9%
+[2/2] multi_cross w07_15 s65  OK  12s  R1=5.26 SCC=3.66 cov=97.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s66  OK  82s  R1=11.68 SCC=10.42 cov=90.8% match=95.2%
+[2/2] multi_cross w07_15 s66  OK  13s  R1=7.87 SCC=4.64 cov=94.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s67  OK  79s  R1=11.52 SCC=10.50 cov=86.9% match=90.5%
+[2/2] multi_cross w07_15 s67  OK  12s  R1=6.74 SCC=4.62 cov=97.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s68  OK  82s  R1=12.10 SCC=10.83 cov=90.1% match=95.2%
+[2/2] multi_cross w07_15 s68  OK  13s  R1=5.63 SCC=4.18 cov=98.7% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s69  OK  82s  R1=11.49 SCC=9.82 cov=92.7% match=95.2%
+[2/2] multi_cross w07_15 s69  OK  12s  R1=6.38 SCC=4.94 cov=77.2% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s70  OK  81s  R1=10.97 SCC=9.47 cov=91.8% match=92.9%
+[2/2] multi_cross w07_15 s70  OK  13s  R1=8.85 SCC=6.19 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s71  OK  82s  R1=11.08 SCC=9.66 cov=92.8% match=95.2%
+[2/2] multi_cross w07_15 s71  OK  12s  R1=5.93 SCC=4.63 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s72  OK  81s  R1=11.86 SCC=10.32 cov=89.5% match=92.9%
+[2/2] multi_cross w07_15 s72  OK  12s  R1=7.09 SCC=5.58 cov=92.6% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s73  OK  82s  R1=12.15 SCC=10.39 cov=90.3% match=92.9%
+[2/2] multi_cross w07_15 s73  OK  12s  R1=7.54 SCC=5.77 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s74  OK  81s  R1=13.20 SCC=10.68 cov=92.6% match=92.9%
+[2/2] multi_cross w07_15 s74  OK  13s  R1=5.80 SCC=5.32 cov=87.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s75  OK  83s  R1=11.96 SCC=11.19 cov=90.0% match=95.2%
+[2/2] multi_cross w07_15 s75  OK  12s  R1=6.90 SCC=4.62 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s76  OK  82s  R1=13.20 SCC=10.41 cov=90.3% match=92.9%
+[2/2] multi_cross w07_15 s76  OK  13s  R1=6.99 SCC=6.01 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s77  OK  90s  R1=12.41 SCC=10.67 cov=90.2% match=95.2%
+[2/2] multi_cross w07_15 s77  OK  13s  R1=8.35 SCC=5.68 cov=94.2% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s78  OK  93s  R1=12.89 SCC=10.36 cov=87.4% match=95.2%
+[2/2] multi_cross w07_15 s78  OK  12s  R1=5.90 SCC=5.11 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s79  OK  81s  R1=11.94 SCC=10.83 cov=89.2% match=95.2%
+[2/2] multi_cross w07_15 s79  OK  12s  R1=6.11 SCC=4.82 cov=98.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s80  OK  83s  R1=12.23 SCC=10.94 cov=91.5% match=95.2%
+[2/2] multi_cross w07_15 s80  OK  13s  R1=7.39 SCC=5.40 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s81  OK  80s  R1=12.22 SCC=10.54 cov=91.1% match=92.9%
+[2/2] multi_cross w07_15 s81  OK  12s  R1=7.41 SCC=5.59 cov=94.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s82  OK  82s  R1=13.03 SCC=11.35 cov=90.9% match=95.2%
+[2/2] multi_cross w07_15 s82  OK  13s  R1=6.93 SCC=4.92 cov=93.2% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s83  OK  81s  R1=12.31 SCC=10.03 cov=91.2% match=92.9%
+[2/2] multi_cross w07_15 s83  OK  12s  R1=7.28 SCC=6.30 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s84  OK  81s  R1=11.96 SCC=10.65 cov=92.8% match=92.9%
+[2/2] multi_cross w07_15 s84  OK  12s  R1=6.35 SCC=4.35 cov=95.9% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s85  OK  82s  R1=11.87 SCC=10.15 cov=90.4% match=92.9%
+[2/2] multi_cross w07_15 s85  OK  13s  R1=6.54 SCC=4.80 cov=96.6% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s86  OK  81s  R1=12.07 SCC=10.55 cov=91.3% match=95.2%
+[2/2] multi_cross w07_15 s86  OK  12s  R1=6.59 SCC=5.25 cov=96.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s87  OK  79s  R1=12.57 SCC=11.27 cov=92.5% match=90.5%
+[2/2] multi_cross w07_15 s87  OK  12s  R1=8.35 SCC=6.20 cov=91.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s88  OK  82s  R1=12.27 SCC=10.45 cov=92.2% match=95.2%
+[2/2] multi_cross w07_15 s88  OK  13s  R1=6.41 SCC=4.95 cov=98.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s89  OK  81s  R1=14.00 SCC=11.55 cov=90.3% match=92.9%
+[2/2] multi_cross w07_15 s89  OK  12s  R1=7.67 SCC=5.07 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s90  OK  81s  R1=11.58 SCC=10.46 cov=87.6% match=92.9%
+[2/2] multi_cross w07_15 s90  OK  12s  R1=9.22 SCC=6.82 cov=99.3% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s91  OK  80s  R1=12.58 SCC=11.07 cov=90.9% match=92.9%
+[2/2] multi_cross w07_15 s91  OK  12s  R1=5.68 SCC=5.46 cov=94.7% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s92  OK  81s  R1=11.88 SCC=9.49 cov=89.6% match=92.9%
+[2/2] multi_cross w07_15 s92  OK  12s  R1=6.11 SCC=5.29 cov=88.8% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s93  OK  82s  R1=12.39 SCC=10.82 cov=91.7% match=95.2%
+[2/2] multi_cross w07_15 s93  OK  12s  R1=6.24 SCC=5.43 cov=96.6% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s94  OK  82s  R1=12.89 SCC=10.33 cov=92.2% match=95.2%
+[2/2] multi_cross w07_15 s94  OK  13s  R1=5.80 SCC=4.70 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s95  OK  80s  R1=12.34 SCC=10.76 cov=91.0% match=90.5%
+[2/2] multi_cross w07_15 s95  OK  13s  R1=6.31 SCC=5.30 cov=96.1% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s96  OK  82s  R1=12.10 SCC=10.33 cov=92.9% match=95.2%
+[2/2] multi_cross w07_15 s96  OK  12s  R1=7.09 SCC=5.23 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s97  OK  82s  R1=11.35 SCC=10.30 cov=91.2% match=92.9%
+[2/2] multi_cross w07_15 s97  OK  12s  R1=5.60 SCC=4.91 cov=95.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s98  OK  80s  R1=12.62 SCC=10.35 cov=91.0% match=90.5%
+[2/2] multi_cross w07_15 s98  OK  12s  R1=6.23 SCC=5.59 cov=98.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s99  OK  81s  R1=12.67 SCC=10.37 cov=88.6% match=92.9%
+[2/2] multi_cross w07_15 s99  OK  13s  R1=5.76 SCC=4.07 cov=98.0% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E9_baseline  (2 units) =====
+[1/2] adsb_0002 w07_15 s100  OK  86s  R1=12.44 SCC=10.08 cov=91.4% match=95.2%
+[2/2] multi_cross w07_15 s100  OK  14s  R1=5.97 SCC=4.55 cov=97.4% match=100.0%
+===== END E9_baseline : run=2 skip=0 fail=0 elapsed=1.7 min =====

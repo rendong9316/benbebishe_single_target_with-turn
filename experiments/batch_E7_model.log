@@ -1,0 +1,45 @@
+
+===== START E7_model  (6 units) =====
+[1/6] adsb_0002 w07_15 s01  OK  96s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[2/6] adsb_0002 w02_07 s01  OK  84s  R1=10.93 SCC=9.46 cov=90.0% match=90.5%
+[3/6] adsb_0002 w005_02 s01  OK  69s  R1=10.44 SCC=7.84 cov=90.0% match=90.5%
+[4/6] multi_cross w07_15 s01  OK  11s  R1=6.62 SCC=7.33 cov=92.9% match=100.0%
+[5/6] multi_cross w02_07 s01  OK  11s  R1=6.55 SCC=7.17 cov=92.9% match=100.0%
+[6/6] multi_cross w005_02 s01  OK  10s  R1=6.10 SCC=6.65 cov=92.9% match=100.0%
+===== END E7_model : run=6 skip=0 fail=0 elapsed=4.7 min =====
+
+===== START E7_model  (6 units) =====
+[1/6] adsb_0002 w07_15 s02  OK  82s  R1=10.86 SCC=9.96 cov=88.4% match=92.9%
+[2/6] adsb_0002 w02_07 s02  OK  61s  R1=10.88 SCC=9.15 cov=88.4% match=92.9%
+[3/6] adsb_0002 w005_02 s02  OK  60s  R1=10.92 SCC=8.27 cov=88.4% match=92.9%
+[4/6] multi_cross w07_15 s02  OK  10s  R1=6.81 SCC=5.98 cov=94.8% match=100.0%
+[5/6] multi_cross w02_07 s02  OK  10s  R1=6.84 SCC=6.28 cov=94.8% match=100.0%
+[6/6] multi_cross w005_02 s02  OK  9s  R1=6.63 SCC=6.10 cov=94.8% match=100.0%
+===== END E7_model : run=6 skip=0 fail=0 elapsed=3.9 min =====
+
+===== START E7_model  (6 units) =====
+[1/6] adsb_0002 w07_15 s03  OK  71s  R1=11.68 SCC=10.13 cov=90.9% match=92.9%
+[2/6] adsb_0002 w02_07 s03  OK  61s  R1=10.78 SCC=8.99 cov=90.9% match=92.9%
+[3/6] adsb_0002 w005_02 s03  OK  60s  R1=10.51 SCC=7.57 cov=90.9% match=92.9%
+[4/6] multi_cross w07_15 s03  OK  9s  R1=5.96 SCC=4.94 cov=96.1% match=100.0%
+[5/6] multi_cross w02_07 s03  OK  9s  R1=6.02 SCC=5.20 cov=96.1% match=100.0%
+[6/6] multi_cross w005_02 s03  OK  9s  R1=5.71 SCC=5.21 cov=96.1% match=100.0%
+===== END E7_model : run=6 skip=0 fail=0 elapsed=3.7 min =====
+
+===== START E7_model  (6 units) =====
+[1/6] adsb_0002 w07_15 s04  OK  71s  R1=13.24 SCC=12.61 cov=88.8% match=92.9%
+[2/6] adsb_0002 w02_07 s04  OK  60s  R1=12.34 SCC=11.52 cov=88.8% match=92.9%
+[3/6] adsb_0002 w005_02 s04  OK  60s  R1=13.58 SCC=10.84 cov=88.8% match=92.9%
+[4/6] multi_cross w07_15 s04  OK  10s  R1=6.23 SCC=4.98 cov=97.4% match=100.0%
+[5/6] multi_cross w02_07 s04  OK  9s  R1=6.14 SCC=5.02 cov=97.4% match=100.0%
+[6/6] multi_cross w005_02 s04  OK  9s  R1=5.57 SCC=4.63 cov=97.4% match=100.0%
+===== END E7_model : run=6 skip=0 fail=0 elapsed=3.7 min =====
+
+===== START E7_model  (6 units) =====
+[1/6] adsb_0002 w07_15 s05  OK  70s  R1=10.82 SCC=9.65 cov=90.0% match=92.9%
+[2/6] adsb_0002 w02_07 s05  OK  59s  R1=9.98 SCC=8.50 cov=90.0% match=92.9%
+[3/6] adsb_0002 w005_02 s05  OK  60s  R1=11.10 SCC=8.08 cov=90.0% match=92.9%
+[4/6] multi_cross w07_15 s05  OK  10s  R1=8.00 SCC=17.06 cov=64.4% match=100.0%
+[5/6] multi_cross w02_07 s05  OK  9s  R1=8.20 SCC=7.68 cov=64.2% match=100.0%
+[6/6] multi_cross w005_02 s05  OK  9s  R1=7.56 SCC=7.37 cov=64.2% match=100.0%
+===== END E7_model : run=6 skip=0 fail=0 elapsed=3.6 min =====

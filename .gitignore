@@ -19,3 +19,52 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# ==================== 2026-10-26 追加 ====================
+# 诊断与临时产物
+_audit/*.mat
+_audit/*.png
+.drafts/
+logs/
+temp_*
+
+# 大批量实验结果（体积大，可由 experiments/ 脚本重跑复现）
+results/paper/
+
+# 文献与外部资料（体积大，不随代码走）
+pdfs/
+papers/
+web_media_downloader/
+docs/*.json
+
+# 历史迭代残留（调试脚本与备份）
+ukf/*.modified
+ukf/*.new_test
+ukf/ukf_imm_5model_*.m
+ukf/ukf_imm_new.m
+ukf/ukf_imm_final.m
+ukf/test_5model*.m
+ukf/verify_5model*.m
+ukf/verify_final.m
+ukf/quick_check.m
+ukf/run_single*.m
+ukf/run_mc_serial.py
+ukf/write_*.py
+ukf/clean_ukf_imm.py
+ukf/patch_ukf_imm.py
+ukf/ukf_imm_new_temp.py
+test_5model_simple.m
+ukf/test_*.m
+ukf_imm_final.m
+nsfc_figures/
+问题积累、科研点子子/
+*_workflow.js
+split_batches.js
+prep_summary_tasks.js
+prepare_tasks.py
+prepare_literature_tasks.py
+extract_pdf_content.py
+filter_valid_pdfs.py
+generate_summaries.py
+integrate_summaries.py
+dedup_pdfs.py

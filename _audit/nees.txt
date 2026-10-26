@@ -1,0 +1,15 @@
+===== adsb_0002 =====
+  R1: n=1327  NEES mean=4.76  median=2.26  p95=18.4  (consistent if ~2)
+      NEES<5.99 占比=78.3%  (should be ~95% if consistent)
+      NIS  mean=4.13  (measurement dim=3, consistent if ~3)
+  R2: n=1263  NEES mean=1.80  median=0.68  p95=7.4  (consistent if ~2)
+      NEES<5.99 占比=92.9%  (should be ~95% if consistent)
+      NIS  mean=1.86  (measurement dim=3, consistent if ~3)
+
+===== multi_cross (seed42) =====
+  R1: n=149  NEES mean=1.21  median=0.83  p95=3.9  (consistent if ~2)
+      NEES<5.99 占比=99.3%  (should be ~95% if consistent)
+      NIS  mean=1.79  (measurement dim=3, consistent if ~3)
+  R2: n=145  NEES mean=0.58  median=0.28  p95=1.9  (consistent if ~2)
+      NEES<5.99 占比=100.0%  (should be ~95% if consistent)
+      NIS  mean=0.68  (measurement dim=3, consistent if ~3)

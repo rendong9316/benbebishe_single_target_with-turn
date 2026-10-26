@@ -1,0 +1,20 @@
+
+===== A0-clean  R1 RMSE=6.882 =====
+  age 1-3    n=  2  velErr= 112.7 m/s  posRMS= 5.58 km
+  age 4-5    n=  4  velErr= 104.2 m/s  posRMS= 6.02 km
+  age 6-10   n= 14  velErr=  80.2 m/s  posRMS= 9.40 km
+  age 11-15  n= 15  velErr=  44.8 m/s  posRMS= 9.77 km
+  age 16-25  n= 30  velErr=  22.6 m/s  posRMS= 7.38 km
+  age 26-40  n= 45  velErr=  19.2 m/s  posRMS= 6.71 km
+  age >40    n= 39  velErr=   NaN m/s  posRMS= 3.67 km
+  q-trace: 
+
+===== A1-Qsched  R1 RMSE=7.092 =====
+  age 1-3    n=  2  velErr= 112.7 m/s  posRMS= 5.58 km
+  age 4-5    n=  4  velErr= 103.5 m/s  posRMS= 6.04 km
+  age 6-10   n= 14  velErr=  79.5 m/s  posRMS= 9.37 km
+  age 11-15  n= 15  velErr=  43.4 m/s  posRMS= 9.66 km
+  age 16-25  n= 30  velErr=  24.1 m/s  posRMS= 8.23 km
+  age 26-40  n= 45  velErr=  20.1 m/s  posRMS= 6.81 km
+  age >40    n= 39  velErr=   NaN m/s  posRMS= 3.72 km
+  q-trace: 

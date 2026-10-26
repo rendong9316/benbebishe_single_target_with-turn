@@ -1,0 +1,6 @@
+
+===== START E13_dense  (2 units) =====
+ERROR: MATLAB error Exit Status: 0xffffffff
+87 SCC=11.62 cov=90.4% match=85.3%
+[2/2] adsb_0608 w005_02 s03  OK  3205s  R1=12.34 SCC=8.61 cov=90.3% match=84.3%
+===== END E13_dense : run=2 skip=0 fail=0 elapsed=99.2 min =====

@@ -1,0 +1,250 @@
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s01  OK  71s  R1=10.93 SCC=9.46 cov=90.0% match=90.5%
+[2/2] multi_cross w02_07 s01  OK  12s  R1=6.55 SCC=7.17 cov=92.9% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s02  OK  72s  R1=10.88 SCC=9.15 cov=88.4% match=92.9%
+[2/2] multi_cross w02_07 s02  OK  12s  R1=6.84 SCC=6.28 cov=94.8% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s03  OK  72s  R1=10.78 SCC=8.99 cov=90.9% match=92.9%
+[2/2] multi_cross w02_07 s03  OK  12s  R1=6.02 SCC=5.20 cov=96.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s04  OK  73s  R1=12.34 SCC=11.52 cov=88.8% match=92.9%
+[2/2] multi_cross w02_07 s04  OK  12s  R1=6.14 SCC=5.02 cov=97.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s05  OK  72s  R1=9.98 SCC=8.50 cov=90.0% match=92.9%
+[2/2] multi_cross w02_07 s05  OK  12s  R1=8.20 SCC=7.68 cov=64.2% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s06  OK  72s  R1=10.40 SCC=8.95 cov=89.0% match=90.5%
+[2/2] multi_cross w02_07 s06  OK  12s  R1=6.05 SCC=5.26 cov=83.2% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s07  OK  72s  R1=10.42 SCC=8.50 cov=90.9% match=90.5%
+[2/2] multi_cross w02_07 s07  OK  12s  R1=5.64 SCC=4.39 cov=97.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s08  OK  74s  R1=11.30 SCC=8.68 cov=92.7% match=92.9%
+[2/2] multi_cross w02_07 s08  OK  12s  R1=6.50 SCC=5.74 cov=92.7% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s09  OK  78s  R1=11.14 SCC=9.29 cov=90.2% match=95.2%
+[2/2] multi_cross w02_07 s09  OK  12s  R1=7.11 SCC=5.48 cov=94.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s10  OK  76s  R1=10.42 SCC=7.94 cov=88.9% match=92.9%
+[2/2] multi_cross w02_07 s10  OK  13s  R1=7.46 SCC=5.93 cov=97.3% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s11  OK  99s  R1=12.10 SCC=9.71 cov=89.8% match=92.9%
+[2/2] multi_cross w02_07 s11  OK  18s  R1=5.58 SCC=4.64 cov=97.9% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s12  OK  109s  R1=12.54 SCC=8.93 cov=91.9% match=95.2%
+[2/2] multi_cross w02_07 s12  OK  16s  R1=5.88 SCC=4.39 cov=95.3% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s13  OK  126s  R1=13.15 SCC=9.32 cov=89.1% match=90.5%
+[2/2] multi_cross w02_07 s13  OK  20s  R1=6.89 SCC=5.25 cov=97.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=2.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s14  OK  116s  R1=9.82 SCC=8.65 cov=92.0% match=95.2%
+[2/2] multi_cross w02_07 s14  OK  14s  R1=5.58 SCC=4.87 cov=94.6% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=2.2 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s15  OK  92s  R1=11.18 SCC=9.04 cov=83.7% match=92.9%
+[2/2] multi_cross w02_07 s15  OK  14s  R1=4.97 SCC=3.98 cov=97.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s16  OK  91s  R1=10.42 SCC=8.90 cov=91.1% match=92.9%
+[2/2] multi_cross w02_07 s16  OK  14s  R1=7.41 SCC=6.45 cov=94.8% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s17  OK  92s  R1=10.99 SCC=8.98 cov=92.1% match=92.9%
+[2/2] multi_cross w02_07 s17  OK  14s  R1=5.19 SCC=4.25 cov=94.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s18  OK  92s  R1=10.73 SCC=9.46 cov=93.4% match=95.2%
+[2/2] multi_cross w02_07 s18  OK  14s  R1=6.43 SCC=5.12 cov=95.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s19  OK  92s  R1=12.50 SCC=9.42 cov=90.2% match=95.2%
+[2/2] multi_cross w02_07 s19  OK  14s  R1=5.75 SCC=3.89 cov=91.3% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s20  OK  93s  R1=10.04 SCC=9.00 cov=91.4% match=95.2%
+[2/2] multi_cross w02_07 s20  OK  14s  R1=7.40 SCC=5.69 cov=94.8% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s21  OK  92s  R1=13.77 SCC=11.47 cov=91.3% match=92.9%
+[2/2] multi_cross w02_07 s21  OK  14s  R1=6.35 SCC=5.08 cov=95.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s22  OK  92s  R1=10.22 SCC=9.02 cov=92.9% match=95.2%
+[2/2] multi_cross w02_07 s22  OK  14s  R1=5.43 SCC=4.76 cov=98.7% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s23  OK  91s  R1=10.85 SCC=9.67 cov=86.9% match=92.9%
+[2/2] multi_cross w02_07 s23  OK  14s  R1=8.36 SCC=5.98 cov=95.5% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s24  OK  91s  R1=11.26 SCC=9.41 cov=92.3% match=95.2%
+[2/2] multi_cross w02_07 s24  OK  14s  R1=5.96 SCC=4.30 cov=96.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s25  OK  92s  R1=11.90 SCC=8.90 cov=91.9% match=95.2%
+[2/2] multi_cross w02_07 s25  OK  14s  R1=6.62 SCC=5.26 cov=96.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s26  OK  77s  R1=12.08 SCC=9.47 cov=90.0% match=95.2%
+[2/2] multi_cross w02_07 s26  OK  11s  R1=4.98 SCC=4.10 cov=95.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s27  OK  92s  R1=11.83 SCC=9.04 cov=88.2% match=95.2%
+[2/2] multi_cross w02_07 s27  OK  14s  R1=6.03 SCC=4.91 cov=96.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s28  OK  91s  R1=11.10 SCC=9.09 cov=88.6% match=92.9%
+[2/2] multi_cross w02_07 s28  OK  14s  R1=5.44 SCC=5.03 cov=90.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s29  OK  90s  R1=10.66 SCC=9.40 cov=90.7% match=95.2%
+[2/2] multi_cross w02_07 s29  OK  14s  R1=5.83 SCC=5.03 cov=94.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s30  OK  91s  R1=11.23 SCC=9.22 cov=90.2% match=95.2%
+[2/2] multi_cross w02_07 s30  OK  14s  R1=6.52 SCC=5.16 cov=94.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s31  OK  92s  R1=8.74 SCC=8.80 cov=92.9% match=95.2%
+[2/2] multi_cross w02_07 s31  OK  14s  R1=6.22 SCC=5.17 cov=77.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s32  OK  91s  R1=11.57 SCC=9.88 cov=89.3% match=95.2%
+[2/2] multi_cross w02_07 s32  OK  14s  R1=7.87 SCC=5.66 cov=98.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s33  OK  91s  R1=10.93 SCC=9.39 cov=91.2% match=95.2%
+[2/2] multi_cross w02_07 s33  OK  14s  R1=7.64 SCC=8.13 cov=95.3% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s34  OK  93s  R1=11.94 SCC=9.11 cov=90.7% match=95.2%
+[2/2] multi_cross w02_07 s34  OK  14s  R1=7.39 SCC=4.95 cov=97.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s35  OK  90s  R1=10.47 SCC=9.55 cov=91.4% match=92.9%
+[2/2] multi_cross w02_07 s35  OK  14s  R1=9.18 SCC=6.13 cov=97.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s36  OK  91s  R1=10.84 SCC=9.08 cov=91.5% match=92.9%
+[2/2] multi_cross w02_07 s36  OK  14s  R1=7.76 SCC=5.81 cov=94.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s37  OK  91s  R1=11.30 SCC=9.12 cov=92.2% match=95.2%
+[2/2] multi_cross w02_07 s37  OK  14s  R1=6.78 SCC=5.08 cov=92.2% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s38  OK  91s  R1=11.76 SCC=9.03 cov=91.9% match=92.9%
+[2/2] multi_cross w02_07 s38  OK  14s  R1=9.47 SCC=6.10 cov=96.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s39  OK  91s  R1=11.34 SCC=10.01 cov=88.1% match=95.2%
+[2/2] multi_cross w02_07 s39  OK  14s  R1=7.41 SCC=6.02 cov=96.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s40  OK  90s  R1=12.30 SCC=9.51 cov=89.7% match=95.2%
+[2/2] multi_cross w02_07 s40  OK  13s  R1=7.51 SCC=5.14 cov=95.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s41  OK  83s  R1=11.42 SCC=9.15 cov=91.9% match=95.2%
+[2/2] multi_cross w02_07 s41  OK  14s  R1=6.85 SCC=5.01 cov=91.5% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s42  OK  92s  R1=11.14 SCC=9.02 cov=90.6% match=95.2%
+[2/2] multi_cross w02_07 s42  OK  15s  R1=6.87 SCC=4.54 cov=97.3% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s43  OK  85s  R1=11.48 SCC=8.84 cov=90.3% match=95.2%
+[2/2] multi_cross w02_07 s43  OK  13s  R1=6.79 SCC=5.94 cov=88.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s44  OK  69s  R1=10.01 SCC=8.58 cov=90.8% match=90.5%
+[2/2] multi_cross w02_07 s44  OK  12s  R1=5.12 SCC=5.23 cov=95.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.4 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s45  OK  114s  R1=10.80 SCC=9.04 cov=90.4% match=95.2%
+[2/2] multi_cross w02_07 s45  OK  15s  R1=5.89 SCC=5.62 cov=94.1% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s46  OK  92s  R1=12.38 SCC=9.55 cov=91.1% match=92.9%
+[2/2] multi_cross w02_07 s46  OK  14s  R1=7.63 SCC=5.59 cov=98.7% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s47  OK  92s  R1=11.65 SCC=9.25 cov=92.0% match=92.9%
+[2/2] multi_cross w02_07 s47  OK  14s  R1=5.39 SCC=4.14 cov=94.8% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s48  OK  91s  R1=10.79 SCC=9.24 cov=90.3% match=92.9%
+[2/2] multi_cross w02_07 s48  OK  14s  R1=6.39 SCC=5.19 cov=91.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s49  OK  91s  R1=10.72 SCC=8.53 cov=92.3% match=92.9%
+[2/2] multi_cross w02_07 s49  OK  14s  R1=4.70 SCC=3.32 cov=96.0% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E11_mid  (2 units) =====
+[1/2] adsb_0002 w02_07 s50  OK  90s  R1=10.54 SCC=9.07 cov=91.8% match=92.9%
+[2/2] multi_cross w02_07 s50  OK  14s  R1=6.73 SCC=5.52 cov=95.4% match=100.0%
+===== END E11_mid : run=2 skip=0 fail=0 elapsed=1.7 min =====

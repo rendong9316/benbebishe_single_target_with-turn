@@ -1,0 +1,13 @@
+===== adsb_0002 =====
+  n=1219
+  rho_truth (needs truth)      = +0.4266
+  rho_est   (position diff,2x2)= -0.6073
+  rho_scalar(position diff)    = -0.6073
+  var_1=17.04 var_2=28.69 var_d=72.59
+
+===== multi_cross (seed42) =====
+  n=145
+  rho_truth (needs truth)      = -0.2269
+  rho_est   (position diff,2x2)= -0.2386
+  rho_scalar(position diff)    = -0.2386
+  var_1=16.10 var_2=21.75 var_d=46.78

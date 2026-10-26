@@ -1,0 +1,25 @@
+n=1219  R1=12.03 R2=10.30 SCC=10.25 (gain 0.5%)
+
+=== gain by chi2 bin ===
+chi2           n      R1      R2     SCC   gain%%
+0-2          939    9.72    8.96    9.03     -0.8
+2-5          236   16.29   13.55   12.90      4.8
+5-10          41   23.14   15.08   16.08     -6.6
+
+=== gated: fuse if chi2 < thr, else use R2 ===
+thr      n_fuse      R2   gated   gain%%
+2           939   10.30   10.35     -0.5
+3          1069   10.30   10.09      2.1
+5          1175   10.30   10.19      1.1
+8          1213   10.30   10.23      0.7
+12         1217   10.30   10.22      0.8
+20         1219   10.30   10.25      0.5
+50         1219   10.30   10.25      0.5
+1000000000   1219   10.30   10.25      0.5
+
+=== chi2 vs fusion-success ===
+  fusion-success frames: 288 (23.6%)
+  mean chi2 | success = 1.70
+  mean chi2 | failure = 1.30
+  median chi2 | success = 1.24
+  median chi2 | failure = 0.80

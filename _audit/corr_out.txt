@@ -1,0 +1,11 @@
+===== adsb_0002 =====
+n=1219  R1=12.03  R2=10.30  fused=10.25
+measured rho=0.4266
+independent-hypothesis fused=7.82 (gain 24.0%)
+actual gain=0.5%
+
+===== multi_cross =====
+n=145  R1=6.86  R2=5.40  fused=4.21
+measured rho=-0.2269
+independent-hypothesis fused=4.24
+actual gain=21.9%

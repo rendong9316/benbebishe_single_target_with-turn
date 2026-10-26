@@ -1,0 +1,15 @@
+===== adsb_0002 =====
+  n=1219  R1=12.03  R2=10.30  SCC=10.25  rho=+0.427
+  kappa(NEES)=2.40  kappa(NIS)=1.39  (1=consistent)
+  report P1=36.7 km^2  actual var1=72.4 km^2
+  SCC(orig P)  = 10.25 km  (gain 0.5%)
+  CCF-SCC      = 10.05 km  (gain 2.4%)
+  OPT(w=0.37,true rho) = 9.30 km  (gain 9.7%)
+
+===== multi_cross (seed42) =====
+  n=145  R1=6.86  R2=5.40  SCC=4.21  rho=-0.227
+  kappa(NEES)=0.61  kappa(NIS)=0.60  (1=consistent)
+  report P1=37.7 km^2  actual var1=23.7 km^2
+  SCC(orig P)  = 4.21 km  (gain 21.9%)
+  CCF-SCC      = 4.29 km  (gain 20.5%)
+  OPT(w=0.40,true rho) = 3.74 km  (gain 30.7%)

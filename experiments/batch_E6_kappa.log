@@ -1,0 +1,10 @@
+
+===== START E6_kappa  (5 units) =====
+[1/5] adsb_0002 k_0.4 s01  OK  69s  R1=12.08 SCC=10.43 cov=90.0% match=90.5%
+[2/5] adsb_0002 k_0.7 s01  OK  70s  R1=12.08 SCC=10.30 cov=90.0% match=90.5%
+
+===== START E6_kappa  (5 units) =====
+[3/5] adsb_0002 k_1.0 s01  OK  66s  R1=12.08 SCC=10.27 cov=90.0% match=90.5%
+[4/5] adsb_0002 k_1.5 s01  OK  75s  R1=12.08 SCC=10.31 cov=90.0% match=90.5%
+[5/5] adsb_0002 k_2.4 s01  OK  69s  R1=12.08 SCC=10.44 cov=90.0% match=90.5%
+===== END E6_kappa : run=3 skip=2 fail=0 elapsed=3.5 min =====

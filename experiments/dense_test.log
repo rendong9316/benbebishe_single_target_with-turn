@@ -1,0 +1,5 @@
+
+===== START E13_dense  (4 units) =====
+[1/4] adsb_0608 w07_15 s01  OK  1787s  R1=12.96 SCC=11.66 cov=91.2% match=87.3%
+[2/4] adsb_0608 w005_02 s01  OK  1748s  R1=12.10 SCC=8.68 cov=91.1% match=87.3%
+ERROR: MATLAB error Exit Status: 0xffffffff

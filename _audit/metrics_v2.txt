@@ -1,0 +1,8 @@
+
+### multi_cross
+  NEES R1=1.21(n=149) R2=0.58(n=145)
+  rho=-0.227  indep=4.24  opt=3.74  actual=4.21  gap=12.7%
+
+### adsb_0002
+  NEES R1=4.76(n=1327) R2=1.80(n=1263)
+  rho=+0.427  indep=7.82  opt=9.30  actual=10.25  gap=10.2%

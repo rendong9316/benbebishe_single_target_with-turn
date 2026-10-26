@@ -1,0 +1,488 @@
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s01  OK  78s  R1=10.44 SCC=7.84 cov=90.0% match=90.5%
+[2/2] multi_cross w005_02 s01  OK  12s  R1=6.10 SCC=6.65 cov=92.9% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s02  OK  79s  R1=10.92 SCC=8.27 cov=88.4% match=92.9%
+[2/2] multi_cross w005_02 s02  OK  13s  R1=6.63 SCC=6.10 cov=94.8% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s03  OK  80s  R1=10.51 SCC=7.57 cov=90.9% match=92.9%
+[2/2] multi_cross w005_02 s03  OK  13s  R1=5.71 SCC=5.21 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s04  OK  77s  R1=13.58 SCC=10.84 cov=88.8% match=92.9%
+[2/2] multi_cross w005_02 s04  OK  13s  R1=5.57 SCC=4.63 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s05  OK  78s  R1=11.10 SCC=8.08 cov=90.0% match=92.9%
+[2/2] multi_cross w005_02 s05  OK  12s  R1=7.56 SCC=7.37 cov=64.2% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s06  OK  77s  R1=9.95 SCC=7.69 cov=91.8% match=90.5%
+[2/2] multi_cross w005_02 s06  OK  12s  R1=5.64 SCC=4.91 cov=83.2% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s07  OK  77s  R1=13.15 SCC=8.13 cov=91.0% match=88.1%
+[2/2] multi_cross w005_02 s07  OK  12s  R1=5.25 SCC=4.16 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s08  OK  78s  R1=10.27 SCC=7.42 cov=92.7% match=92.9%
+[2/2] multi_cross w005_02 s08  OK  12s  R1=6.21 SCC=5.58 cov=92.7% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s09  OK  78s  R1=12.43 SCC=8.20 cov=90.2% match=95.2%
+[2/2] multi_cross w005_02 s09  OK  12s  R1=6.91 SCC=5.34 cov=94.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s10  OK  79s  R1=10.79 SCC=7.40 cov=88.4% match=95.2%
+[2/2] multi_cross w005_02 s10  OK  13s  R1=7.04 SCC=5.78 cov=97.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s11  OK  78s  R1=11.77 SCC=8.42 cov=88.7% match=92.9%
+[2/2] multi_cross w005_02 s11  OK  12s  R1=5.46 SCC=4.70 cov=97.9% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s12  OK  79s  R1=12.83 SCC=8.19 cov=91.9% match=95.2%
+[2/2] multi_cross w005_02 s12  OK  13s  R1=5.40 SCC=4.33 cov=95.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s13  OK  77s  R1=11.54 SCC=7.76 cov=89.1% match=90.5%
+[2/2] multi_cross w005_02 s13  OK  13s  R1=6.76 SCC=4.94 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s14  OK  78s  R1=11.29 SCC=7.39 cov=92.5% match=92.9%
+[2/2] multi_cross w005_02 s14  OK  13s  R1=5.30 SCC=4.69 cov=94.6% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s15  OK  78s  R1=11.30 SCC=7.86 cov=83.7% match=92.9%
+[2/2] multi_cross w005_02 s15  OK  12s  R1=4.73 SCC=3.83 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s16  OK  78s  R1=10.38 SCC=7.05 cov=91.1% match=92.9%
+[2/2] multi_cross w005_02 s16  OK  12s  R1=6.98 SCC=6.19 cov=94.8% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s17  OK  79s  R1=10.96 SCC=7.39 cov=92.1% match=92.9%
+[2/2] multi_cross w005_02 s17  OK  13s  R1=5.13 SCC=4.39 cov=94.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s18  OK  79s  R1=10.76 SCC=8.30 cov=90.4% match=90.5%
+[2/2] multi_cross w005_02 s18  OK  12s  R1=6.33 SCC=5.12 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s19  OK  78s  R1=11.40 SCC=8.12 cov=90.2% match=95.2%
+[2/2] multi_cross w005_02 s19  OK  12s  R1=5.14 SCC=3.56 cov=91.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s20  OK  80s  R1=9.91 SCC=7.54 cov=91.4% match=95.2%
+[2/2] multi_cross w005_02 s20  OK  13s  R1=7.09 SCC=5.38 cov=94.8% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s21  OK  81s  R1=14.79 SCC=9.80 cov=91.3% match=92.9%
+[2/2] multi_cross w005_02 s21  OK  13s  R1=5.88 SCC=4.76 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s22  OK  82s  R1=10.78 SCC=7.67 cov=92.9% match=95.2%
+[2/2] multi_cross w005_02 s22  OK  13s  R1=5.23 SCC=4.75 cov=98.7% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s23  OK  81s  R1=11.38 SCC=8.70 cov=86.9% match=92.9%
+[2/2] multi_cross w005_02 s23  OK  13s  R1=8.77 SCC=6.24 cov=95.5% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s24  OK  80s  R1=11.14 SCC=7.93 cov=92.5% match=90.5%
+[2/2] multi_cross w005_02 s24  OK  13s  R1=5.73 SCC=4.13 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s25  OK  82s  R1=11.74 SCC=7.98 cov=91.9% match=95.2%
+[2/2] multi_cross w005_02 s25  OK  13s  R1=6.51 SCC=5.03 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s26  OK  82s  R1=12.36 SCC=8.24 cov=90.9% match=95.2%
+[2/2] multi_cross w005_02 s26  OK  13s  R1=4.71 SCC=3.82 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s27  OK  82s  R1=11.47 SCC=8.31 cov=88.2% match=95.2%
+[2/2] multi_cross w005_02 s27  OK  13s  R1=5.65 SCC=4.55 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s28  OK  81s  R1=12.92 SCC=7.59 cov=88.8% match=90.5%
+[2/2] multi_cross w005_02 s28  OK  13s  R1=5.17 SCC=4.72 cov=90.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s29  OK  81s  R1=11.18 SCC=8.27 cov=90.7% match=95.2%
+[2/2] multi_cross w005_02 s29  OK  13s  R1=5.71 SCC=4.90 cov=94.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s30  OK  82s  R1=11.58 SCC=8.59 cov=90.2% match=95.2%
+[2/2] multi_cross w005_02 s30  OK  13s  R1=6.13 SCC=5.00 cov=94.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s31  OK  83s  R1=9.47 SCC=7.63 cov=92.9% match=95.2%
+[2/2] multi_cross w005_02 s31  OK  14s  R1=6.16 SCC=4.88 cov=77.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s32  OK  82s  R1=13.70 SCC=9.45 cov=89.3% match=95.2%
+[2/2] multi_cross w005_02 s32  OK  13s  R1=7.62 SCC=5.73 cov=98.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s33  OK  82s  R1=10.75 SCC=7.88 cov=91.2% match=95.2%
+[2/2] multi_cross w005_02 s33  OK  13s  R1=7.61 SCC=8.09 cov=95.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s34  OK  82s  R1=11.97 SCC=7.88 cov=90.8% match=92.9%
+[2/2] multi_cross w005_02 s34  OK  13s  R1=7.22 SCC=4.88 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s35  OK  81s  R1=10.02 SCC=7.87 cov=91.4% match=90.5%
+[2/2] multi_cross w005_02 s35  OK  13s  R1=9.34 SCC=6.14 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s36  OK  81s  R1=10.75 SCC=7.74 cov=91.5% match=92.9%
+[2/2] multi_cross w005_02 s36  OK  13s  R1=7.87 SCC=5.79 cov=94.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s37  OK  80s  R1=11.93 SCC=8.22 cov=92.2% match=95.2%
+[2/2] multi_cross w005_02 s37  OK  13s  R1=6.73 SCC=5.00 cov=92.2% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s38  OK  81s  R1=12.91 SCC=7.62 cov=91.9% match=92.9%
+[2/2] multi_cross w005_02 s38  OK  13s  R1=9.56 SCC=6.22 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s39  OK  83s  R1=10.64 SCC=8.15 cov=88.1% match=95.2%
+[2/2] multi_cross w005_02 s39  OK  13s  R1=7.11 SCC=5.96 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s40  OK  81s  R1=11.93 SCC=7.73 cov=89.7% match=92.9%
+[2/2] multi_cross w005_02 s40  OK  13s  R1=7.41 SCC=5.09 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s41  OK  82s  R1=11.63 SCC=7.73 cov=91.9% match=95.2%
+[2/2] multi_cross w005_02 s41  OK  13s  R1=6.60 SCC=5.00 cov=91.5% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s42  OK  82s  R1=11.15 SCC=8.05 cov=90.6% match=95.2%
+[2/2] multi_cross w005_02 s42  OK  13s  R1=6.56 SCC=4.38 cov=97.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s43  OK  81s  R1=10.62 SCC=7.63 cov=90.3% match=95.2%
+[2/2] multi_cross w005_02 s43  OK  13s  R1=6.82 SCC=6.02 cov=88.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s44  OK  81s  R1=10.45 SCC=7.19 cov=90.8% match=90.5%
+[2/2] multi_cross w005_02 s44  OK  13s  R1=4.78 SCC=5.84 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s45  OK  81s  R1=10.13 SCC=7.66 cov=90.4% match=95.2%
+[2/2] multi_cross w005_02 s45  OK  13s  R1=5.53 SCC=5.39 cov=94.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s46  OK  82s  R1=12.13 SCC=8.61 cov=91.1% match=92.9%
+[2/2] multi_cross w005_02 s46  OK  13s  R1=7.14 SCC=5.11 cov=98.7% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s47  OK  80s  R1=11.56 SCC=8.45 cov=92.1% match=90.5%
+[2/2] multi_cross w005_02 s47  OK  13s  R1=5.18 SCC=3.79 cov=94.8% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s48  OK  82s  R1=10.69 SCC=7.56 cov=89.4% match=92.9%
+[2/2] multi_cross w005_02 s48  OK  13s  R1=6.32 SCC=4.96 cov=91.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s49  OK  81s  R1=11.30 SCC=8.36 cov=92.3% match=92.9%
+[2/2] multi_cross w005_02 s49  OK  13s  R1=4.37 SCC=3.14 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s50  OK  81s  R1=9.70 SCC=7.22 cov=91.8% match=92.9%
+[2/2] multi_cross w005_02 s50  OK  13s  R1=6.61 SCC=5.52 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s51  OK  90s  R1=11.74 SCC=7.81 cov=91.0% match=92.9%
+[2/2] multi_cross w005_02 s51  OK  14s  R1=5.95 SCC=4.44 cov=94.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.7 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s52  OK  89s  R1=10.95 SCC=8.10 cov=92.2% match=95.2%
+[2/2] multi_cross w005_02 s52  OK  19s  R1=5.97 SCC=4.83 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s53  OK  83s  R1=9.91 SCC=7.56 cov=88.2% match=95.2%
+[2/2] multi_cross w005_02 s53  OK  11s  R1=6.78 SCC=5.06 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s54  OK  125s  R1=10.67 SCC=6.98 cov=93.0% match=95.2%
+[2/2] multi_cross w005_02 s54  OK  29s  R1=5.62 SCC=5.08 cov=92.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s55  OK  143s  R1=10.24 SCC=7.85 cov=90.7% match=95.2%
+[2/2] multi_cross w005_02 s55  OK  16s  R1=7.36 SCC=5.59 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.7 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s56  OK  128s  R1=11.71 SCC=11.23 cov=89.1% match=90.5%
+[2/2] multi_cross w005_02 s56  OK  16s  R1=7.27 SCC=5.39 cov=96.6% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.4 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s57  OK  113s  R1=10.69 SCC=8.34 cov=91.4% match=95.2%
+[2/2] multi_cross w005_02 s57  OK  13s  R1=5.66 SCC=4.53 cov=96.6% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s58  OK  114s  R1=11.49 SCC=8.08 cov=91.7% match=95.2%
+[2/2] multi_cross w005_02 s58  OK  11s  R1=9.76 SCC=7.18 cov=96.7% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s59  OK  141s  R1=10.30 SCC=7.13 cov=90.2% match=92.9%
+[2/2] multi_cross w005_02 s59  OK  12s  R1=6.04 SCC=4.47 cov=91.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s60  OK  112s  R1=12.03 SCC=7.83 cov=91.2% match=92.9%
+[2/2] multi_cross w005_02 s60  OK  12s  R1=5.34 SCC=4.18 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s61  OK  110s  R1=14.55 SCC=7.66 cov=91.5% match=95.2%
+[2/2] multi_cross w005_02 s61  OK  13s  R1=6.13 SCC=4.90 cov=89.9% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s62  OK  103s  R1=10.45 SCC=7.98 cov=92.3% match=92.9%
+[2/2] multi_cross w005_02 s62  OK  12s  R1=5.41 SCC=5.68 cov=81.9% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s63  OK  122s  R1=11.68 SCC=8.21 cov=91.0% match=92.9%
+[2/2] multi_cross w005_02 s63  OK  12s  R1=9.56 SCC=5.20 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.2 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s64  OK  112s  R1=11.74 SCC=8.56 cov=88.8% match=90.5%
+[2/2] multi_cross w005_02 s64  OK  14s  R1=5.72 SCC=4.60 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s65  OK  122s  R1=10.91 SCC=7.72 cov=92.3% match=92.9%
+[2/2] multi_cross w005_02 s65  OK  12s  R1=5.18 SCC=3.73 cov=97.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.2 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s66  OK  100s  R1=11.18 SCC=8.14 cov=90.8% match=95.2%
+[2/2] multi_cross w005_02 s66  OK  14s  R1=8.81 SCC=5.18 cov=94.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s67  OK  96s  R1=9.74 SCC=7.52 cov=86.7% match=92.9%
+[2/2] multi_cross w005_02 s67  OK  14s  R1=5.89 SCC=4.37 cov=97.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.8 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s68  OK  107s  R1=10.19 SCC=7.91 cov=90.1% match=95.2%
+[2/2] multi_cross w005_02 s68  OK  13s  R1=5.04 SCC=3.96 cov=98.7% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s69  OK  111s  R1=10.68 SCC=8.21 cov=92.7% match=95.2%
+[2/2] multi_cross w005_02 s69  OK  12s  R1=6.34 SCC=4.99 cov=77.2% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s70  OK  108s  R1=11.14 SCC=7.03 cov=91.8% match=92.9%
+[2/2] multi_cross w005_02 s70  OK  13s  R1=9.01 SCC=6.41 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s71  OK  113s  R1=10.87 SCC=7.61 cov=92.8% match=95.2%
+[2/2] multi_cross w005_02 s71  OK  14s  R1=5.44 SCC=4.46 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s72  OK  122s  R1=11.45 SCC=8.28 cov=89.5% match=92.9%
+[2/2] multi_cross w005_02 s72  OK  12s  R1=6.51 SCC=5.15 cov=92.6% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.2 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s73  OK  108s  R1=11.16 SCC=7.81 cov=90.3% match=95.2%
+[2/2] multi_cross w005_02 s73  OK  13s  R1=6.86 SCC=5.49 cov=95.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s74  OK  104s  R1=13.01 SCC=8.80 cov=92.6% match=92.9%
+[2/2] multi_cross w005_02 s74  OK  12s  R1=5.20 SCC=5.21 cov=87.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s75  OK  103s  R1=10.03 SCC=7.70 cov=90.2% match=92.9%
+[2/2] multi_cross w005_02 s75  OK  12s  R1=6.42 SCC=4.39 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s76  OK  102s  R1=12.71 SCC=8.20 cov=90.1% match=92.9%
+[2/2] multi_cross w005_02 s76  OK  13s  R1=7.34 SCC=6.20 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s77  OK  121s  R1=12.11 SCC=7.54 cov=90.2% match=95.2%
+[2/2] multi_cross w005_02 s77  OK  13s  R1=8.74 SCC=5.79 cov=94.2% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.2 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s78  OK  115s  R1=11.73 SCC=8.59 cov=87.4% match=95.2%
+[2/2] multi_cross w005_02 s78  OK  12s  R1=5.77 SCC=5.42 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s79  OK  103s  R1=10.59 SCC=8.51 cov=89.0% match=95.2%
+[2/2] multi_cross w005_02 s79  OK  12s  R1=5.68 SCC=4.64 cov=98.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s80  OK  104s  R1=11.69 SCC=9.29 cov=91.5% match=95.2%
+[2/2] multi_cross w005_02 s80  OK  13s  R1=7.28 SCC=5.70 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s81  OK  103s  R1=10.81 SCC=8.01 cov=91.1% match=92.9%
+[2/2] multi_cross w005_02 s81  OK  12s  R1=7.15 SCC=5.31 cov=94.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s82  OK  114s  R1=11.09 SCC=8.53 cov=90.9% match=95.2%
+[2/2] multi_cross w005_02 s82  OK  20s  R1=6.73 SCC=4.91 cov=93.2% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.2 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s83  OK  150s  R1=12.15 SCC=7.69 cov=91.2% match=92.9%
+[2/2] multi_cross w005_02 s83  OK  25s  R1=7.09 SCC=6.56 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s84  OK  375s  R1=11.01 SCC=7.86 cov=92.5% match=95.2%
+[2/2] multi_cross w005_02 s84  OK  20s  R1=5.87 SCC=4.15 cov=95.9% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=6.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s85  OK  129s  R1=12.21 SCC=8.02 cov=90.6% match=90.5%
+[2/2] multi_cross w005_02 s85  OK  23s  R1=6.52 SCC=4.91 cov=96.6% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s86  OK  152s  R1=10.96 SCC=8.14 cov=91.3% match=95.2%
+[2/2] multi_cross w005_02 s86  OK  23s  R1=6.56 SCC=5.27 cov=96.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.9 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s87  OK  151s  R1=11.68 SCC=9.66 cov=91.7% match=90.5%
+[2/2] multi_cross w005_02 s87  OK  34s  R1=7.98 SCC=5.88 cov=91.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=3.1 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s88  OK  178s  R1=11.37 SCC=7.45 cov=92.2% match=95.2%
+[2/2] multi_cross w005_02 s88  OK  28s  R1=6.19 SCC=4.85 cov=98.0% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=3.4 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s89  OK  129s  R1=11.71 SCC=8.44 cov=90.4% match=90.5%
+[2/2] multi_cross w005_02 s89  OK  12s  R1=7.39 SCC=5.04 cov=96.1% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.4 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s90  OK  85s  R1=10.54 SCC=8.56 cov=87.9% match=90.5%
+[2/2] multi_cross w005_02 s90  OK  10s  R1=8.45 SCC=6.41 cov=99.3% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.6 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s91  OK  80s  R1=11.35 SCC=7.78 cov=90.9% match=92.9%
+[2/2] multi_cross w005_02 s91  OK  12s  R1=5.24 SCC=5.19 cov=94.7% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=1.5 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s92  OK  358s  R1=12.29 SCC=7.98 cov=88.7% match=92.9%
+[2/2] multi_cross w005_02 s92  OK  27s  R1=5.62 SCC=5.10 cov=88.8% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=6.4 min =====
+
+===== START E10_optimal  (2 units) =====
+===== END E10_optimal : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E10_optimal  (2 units) =====
+===== END E10_optimal : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E10_optimal  (2 units) =====
+===== END E10_optimal : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s96  OK  125s  R1=12.45 SCC=6.94 cov=93.1% match=92.9%
+[2/2] multi_cross w005_02 s96  OK  16s  R1=6.66 SCC=5.27 cov=97.4% match=100.0%
+===== END E10_optimal : run=2 skip=0 fail=0 elapsed=2.4 min =====
+
+===== START E10_optimal  (2 units) =====
+[2/2] multi_cross w005_02 s97  OK  37s  R1=5.72 SCC=5.11 cov=95.4% match=100.0%
+===== END E10_optimal : run=1 skip=1 fail=0 elapsed=0.6 min =====
+
+===== START E10_optimal  (2 units) =====
+===== END E10_optimal : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E10_optimal  (2 units) =====
+===== END E10_optimal : run=0 skip=2 fail=0 elapsed=0.0 min =====
+
+===== START E10_optimal  (2 units) =====
+[1/2] adsb_0002 w005_02 s100  OK  111s  R1=11.47 SCC=7.82 cov=91.4% match=95.2%
+===== END E10_optimal : run=1 skip=1 fail=0 elapsed=1.9 min =====

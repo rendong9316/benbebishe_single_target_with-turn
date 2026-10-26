@@ -1,0 +1,36 @@
+
+################ adsb_0002 ################
+  baseline 0.7/1.5 : n=50
+  optimal  0.05/0.2: n=50
+    0.7/1.5   R1=12.06±0.82  R2=13.07±1.02  SCC=10.57±0.59  rho=+0.417±0.063  NEES=4.21±0.48  gain=+11.0%±4.0
+              gain 95% CI [+9.8, +12.1]  min=-0.8 max=+19.9  负增益 1/50
+    0.05/0.2  R1=11.36±1.09  R2=11.60±1.19  SCC=8.02±0.66  rho=+0.169±0.070  NEES=2.90±0.31  gain=+26.4%±4.1
+              gain 95% CI [+25.2, +27.5]  min=+19.4 max=+40.2  负增益 0/50
+
+  --- paired t-test (n=50) ---
+    R1    :   +5.8%  p=2.83e-06
+    SCC   :  +24.1%  p=1.79e-35
+    rho   : +0.248   p=1.63e-29
+    NEES  :  +1.31   p=6.74e-26
+    gain  :  +15.4 pp  p=6.54e-26
+    effect size dz: R1=0.75  SCC=4.75  rho=3.53  gain=-2.93
+    gain 95% CI: baseline [9.8, 12.1]  optimal [25.2, 27.5]
+    negative-gain seeds: baseline 1/50  optimal 0/50
+
+################ multi_cross ################
+  baseline 0.7/1.5 : n=50
+  optimal  0.05/0.2: n=50
+    0.7/1.5   R1=6.56±0.95  R2=6.51±1.85  SCC=5.35±1.92  rho=+0.149±0.177  NEES=1.38±0.43  gain=+7.2%±35.9
+              gain 95% CI [-2.8, +17.1]  min=-226.9 max=+37.7  负增益 8/50
+    0.05/0.2  R1=6.34±1.14  R2=6.51±1.79  SCC=5.15±0.93  rho=+0.213±0.204  NEES=1.82±0.85  gain=+8.5%±14.4
+              gain 95% CI [+4.5, +12.4]  min=-27.6 max=+30.7  负增益 11/50
+
+  --- paired t-test (n=50) ---
+    R1    :   +3.3%  p=3.04e-05
+    SCC   :   +3.7%  p=3.29e-01
+    rho   : -0.064   p=1.65e-06
+    NEES  :  -0.44   p=4.24e-08
+    gain  :   +1.3 pp  p=7.63e-01
+    effect size dz: R1=0.65  SCC=0.14  rho=-0.77  gain=-0.04
+    gain 95% CI: baseline [-2.8, 17.1]  optimal [4.5, 12.4]
+    negative-gain seeds: baseline 8/50  optimal 11/50

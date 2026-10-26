@@ -1,0 +1,9 @@
+E10_optimal|92|
+E10_optimal|93|
+E10_optimal|94|
+E10_optimal|95|
+E10_optimal|96|
+E10_optimal|97|
+E10_optimal|98|
+E10_optimal|99|
+E10_optimal|100|

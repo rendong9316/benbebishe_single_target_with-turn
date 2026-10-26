@@ -1,0 +1,66 @@
+场景: multi_cross | 目标数=3 | 帧数=54 | dt=30s
+雷达硬约束: Pd=0.60, Pfa=0.0010
+目标A: 点数=55, 时长=1620s, 起点=(119.80E, 30.50N), 终点=(122.97E, 32.48N)
+目标B: 点数=55, 时长=1620s, 起点=(119.80E, 32.50N), 终点=(122.97E, 30.52N)
+目标C: 点数=52, 时长=1530s, 起点=(119.80E, 31.50N), 终点=(122.97E, 33.18N)
+  配准[mle3] R1: h=318.7km dR=21.85km dth=-2.985deg (真值 h=320km dR=20.0km dth=-3.00deg)
+  配准[mle3] R2: h=327.0km dR=-25.88km dth=3.480deg (真值 h=320km dR=-15.0km dth=3.50deg)
+  虚高已反馈到反演/滤波: R1=318.7km, R2=327.0km (真值 320km)
+R1 偏差估计: dr=21850m, da=-2.99deg (真实: 20000m, -3.00deg)
+R2 偏差估计: dr=-25883m, da=3.48deg (真实: -15000m, 3.50deg)
+R1 点迹: 总数=351, 真实=98, 虚警=253, 平均每帧=6.50
+R2 点迹: 总数=369, 真实=104, 虚警=265, 平均每帧=6.83
+R1 IMM: Q=1e+05, range_std=10000m, az_std=0.35deg
+R2 IMM: Q=2e+05, range_std=20000m, az_std=0.60deg
+  frame   1/ 54: active=0, total=0
+  frame  10/ 54: active=3, total=3
+  frame  20/ 54: active=3, total=3
+  frame  30/ 54: active=3, total=3
+  frame  40/ 54: active=3, total=3
+  frame  50/ 54: active=3, total=3
+  frame  54/ 54: active=2, total=3
+  frame   1/ 54: active=0, total=0
+  frame  10/ 54: active=3, total=3
+  frame  20/ 54: active=3, total=3
+  frame  30/ 54: active=3, total=3
+  frame  40/ 54: active=3, total=3
+  frame  50/ 54: active=3, total=3
+  frame  54/ 54: active=2, total=3
+R1 航迹: 总数=3, 可靠=2, 临时=0, 历史=1
+R2 航迹: 总数=3, 可靠=2, 临时=0, 历史=1
+Oracle lifecycle invariants: R1/R2 通过
+R2 已回退对齐到 R1 时间基准: 13.0s
+[三判据匹配] T1=35.0km M=8 var_thresh=50.0km^2 | maha=1(thr=5.99,ratio=0.80) vel=1(kappa=3.0) → 匹配 3 对
+匹配到 3 对航迹
+  Pair 1: R1#2 <-> R2#1, 共现=49帧, 平均距离=6.1km
+  Pair 2: R1#1 <-> R2#3, 共现=48帧, 平均距离=7.2km
+  Pair 3: R1#3 <-> R2#2, 共现=31帧, 平均距离=7.6km
+融合匹配对 1/3: R1#2 <-> R2#1
+融合匹配对 2/3: R1#1 <-> R2#3
+融合匹配对 3/3: R1#3 <-> R2#2
+融合完成: 3 对 x 4 算法
+
+匹配对 -> 真值飞机映射:
+  Pair 1 (R1#2 <-> R2#1) -> 飞机A
+  Pair 2 (R1#1 <-> R2#3) -> 飞机C
+  Pair 3 (R1#3 <-> R2#2) -> 飞机B
+R1 单站跟踪 RMSE:
+  目标1: n=49, median=2.7km, mean=4.1km, RMSE=5.2km, 95%=11.2km
+  目标2: n=46, median=3.2km, mean=4.3km, RMSE=5.2km, 95%=11.2km
+  目标3: n=49, median=5.4km, mean=7.0km, RMSE=8.5km, 95%=15.0km
+  Overall: n=144, median=3.4km, mean=5.1km, RMSE=6.5km, 95%=13.0km
+R2 单站跟踪 RMSE:
+  目标1: n=52, median=3.8km, mean=3.7km, RMSE=4.2km, 95%=7.6km
+  目标2: n=52, median=12.3km, mean=15.7km, RMSE=20.6km, 95%=39.5km
+  目标3: n=49, median=4.0km, mean=4.7km, RMSE=5.7km, 95%=11.8km
+  Overall: n=153, median=4.2km, mean=8.1km, RMSE=12.7km, 95%=32.3km
+融合 RMSE 对比:
+  算法              n   median     mean     RMSE
+  SCC           154      3.6      5.3      7.3
+  BC            154      3.6      5.3      7.3
+  CI            154      3.9      6.2      9.0
+  FCI           154      4.2      5.7      7.8
+  R1_only       144      3.4      5.1      6.5
+  R2_only       153      4.1      7.6     11.9
+
+Done.

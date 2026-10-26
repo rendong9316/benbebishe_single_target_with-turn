@@ -1,0 +1,11 @@
+
+===== adsb_0002 OK (88 s) =====
+targets=42  frames=239
+R1 n=1327 rms=12.276  R2 n=1263 rms=11.360
+matched pairs=40
+  SCC        n=1345 rms=10.497
+  BC         n=1345 rms=10.494
+  CI         n=1345 rms=11.399
+  FCI        n=1345 rms=10.970
+  R1_only    n=1315 rms=12.175
+  R2_only    n=1249 rms=10.239

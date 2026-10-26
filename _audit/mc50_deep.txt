@@ -1,0 +1,51 @@
+
+################ adsb_0002 ################
+  paired seeds: 50  (range 1-50)
+
+  [1] gain distribution (% vs best single station)
+      config          p5     p25  median     p75     p95    mean      sd
+      0.7/1.5        4.7     8.1    10.9    13.4    16.1    11.0     4.0
+      0.05/0.2      20.1    23.5    26.0    28.5    34.6    26.4     4.1
+      optimal > baseline: 50/50 seeds;  optimal gain > 15%: 50/50;  > 20%: 48/50
+
+  [2] outliers
+      none
+
+  [3] mechanism test: does dRho predict dGain across seeds?
+      corr(dRho,dGain) = -0.522  (n=50, all)
+      corr(dRho,dGain) = -0.522  (n=50, |dGain|>=50 removed)
+      mean dRho=-0.2482  mean dGain=+15.4 pp
+      OLS: dGain = -39.0*dRho +5.7   => rho -0.1 => gain +3.9 pp
+
+  [4] effect size (paired, baseline vs optimal)
+      R1     base=  12.056  opt=  11.361  diff=  +0.695  dz= +0.75  p=2.83e-06
+      R2     base=  13.066  opt=  11.599  diff=  +1.467  dz= +1.59  p=3.33e-15
+      SCC    base=  10.573  opt=   8.023  diff=  +2.550  dz= +4.75  p=1.79e-35
+      rho    base=   0.417  opt=   0.169  diff=  +0.248  dz= +3.53  p=1.63e-29
+      NEES   base=   4.208  opt=   2.901  diff=  +1.307  dz= +2.93  p=6.74e-26
+
+################ multi_cross ################
+  paired seeds: 50  (range 1-50)
+
+  [1] gain distribution (% vs best single station)
+      config          p5     p25  median     p75     p95    mean      sd
+      0.7/1.5      -19.2     6.6    14.0    20.0    23.9     7.2    35.9
+      0.05/0.2     -25.7     3.1    11.6    18.8    26.8     8.5    14.4
+      optimal > baseline: 14/50 seeds;  optimal gain > 15%: 16/50;  > 20%: 7/50
+
+  [2] outliers
+        seed    SCC_b    SCC_o    rho_b    rho_o   gain_b   gain_o    n_b
+           5    17.06     7.37    0.003    0.421   -226.9    -27.6
+
+  [3] mechanism test: does dRho predict dGain across seeds?
+      corr(dRho,dGain) = +0.597  (n=50, all)
+      corr(dRho,dGain) = +0.003  (n=49, |dGain|>=50 removed)
+      mean dRho=+0.0643  mean dGain=+1.3 pp
+      OLS: dGain = 0.3*dRho -2.8   => rho -0.1 => gain -0.0 pp
+
+  [4] effect size (paired, baseline vs optimal)
+      R1     base=   6.559  opt=   6.339  diff=  +0.220  dz= +0.65  p=3.04e-05
+      R2     base=   6.513  opt=   6.512  diff=  +0.001  dz= +0.00  p=9.89e-01
+      SCC    base=   5.351  opt=   5.155  diff=  +0.196  dz= +0.14  p=3.29e-01
+      rho    base=   0.149  opt=   0.213  diff=  -0.064  dz= -0.77  p=1.65e-06
+      NEES   base=   1.383  opt=   1.823  diff=  -0.440  dz= -0.92  p=4.24e-08

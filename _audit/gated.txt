@@ -1,0 +1,22 @@
+n=1219
+ALL   R1=12.028  R2=10.301  SCC=10.248  (SCC gain 0.5% vs best single)
+
+=== gated by R1 distance (fuse if d1 < thr, else use R2) ===
+thr      n_fuse      R1      R2   gated   gain%%
+1300        150   12.03   10.30   10.20      1.0
+1350        305   12.03   10.30    9.98      3.1
+1400        475   12.03   10.30    9.77      5.2
+1450        735   12.03   10.30    9.64      6.4
+1500       1023   12.03   10.30    9.92      3.7
+1700       1219   12.03   10.30   10.25      0.5
+
+=== gated by |d1-d2| (fuse if close, else use nearer station) ===
+thr      n_fuse      R1      R2   gated   gain%%
+100           0   12.03   10.30   10.30      0.0
+150           0   12.03   10.30   10.30      0.0
+200          19   12.03   10.30   10.15      1.4
+250        1216   12.03   10.30   10.24      0.6
+400        1219   12.03   10.30   10.25      0.5
+
+=== oracle gate: fuse only when SCC actually beats both singles ===
+fuse frames=288 (23.6%)  gated=6.706 km  gain=34.9%
