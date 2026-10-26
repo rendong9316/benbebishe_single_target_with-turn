@@ -80,6 +80,10 @@ function matched_pairs = track_matcher_dualgate_fast(trackSnapshots_R1, trackSna
     gates.use_vel     = logical(get_param_local(params, 'dualgate_use_vel', false));
     % 速度一致性倍数（sigma 倍数）
     gates.vel_kappa   = get_param_local(params, 'dualgate_vel_kappa', 3.0);
+    % 判据①的帧计数模式（针对低发现概率场景的容错改造）：
+    %   'continuous' — 严格连续（原逻辑）：NaN 或距离超限都立即归零
+    %   'cumulative' — 累计容错：NaN（漏检/航迹中断）跳过但不归零，距离超限才归零
+    gates.gate_mode   = char(get_param_local(params, 'dualgate_gate_mode', 'continuous'));
 
     % 收集 R1/R2 所有曾经活跃的航迹 ID
     % collect_all_active_ids 遍历所有帧快照，提取非 HISTORY 航迹的 ID
@@ -439,9 +443,13 @@ function [matched, info] = dual_threshold_decide(dist_series, T1, M, ...
 
     for i = 1:n
         if isnan(dist_series(i))
-            % 任一航迹在该帧不存在 → 视为中断，计数器归零
-            k_count = 0;
-            first_pass_idx = 0;
+            % 任一航迹在该帧不存在（漏检 / 航迹中断）
+            %   continuous：视为中断，计数器归零（原逻辑）
+            %   cumulative / leaky：视为「无证据」，跳过但不归零
+            if strcmp(gates.gate_mode, 'continuous')
+                k_count = 0;
+                first_pass_idx = 0;
+            end
             continue;
         end
 
@@ -517,9 +525,16 @@ function [matched, info] = dual_threshold_decide(dist_series, T1, M, ...
                 % 这意味着可能是短期巧合（两条不同航迹在某几帧偶然靠近）
             end
         else
-            % 不通过判据① → k_count 立即归零
-            k_count = 0;
-            first_pass_idx = 0;
+            % 不通过判据①（有数据但距离 >= T1）
+            %   continuous / cumulative：立即归零（严格否决）
+            %   leaky：漏桶衰减（k_count-1），容忍偶发超限后仍可继续累积
+            if strcmp(gates.gate_mode, 'leaky')
+                k_count = max(0, k_count - 1);
+                if k_count == 0, first_pass_idx = 0; end
+            else
+                k_count = 0;
+                first_pass_idx = 0;
+            end
         end
     end
 end
