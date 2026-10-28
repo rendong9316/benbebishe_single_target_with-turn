@@ -1,0 +1,6 @@
+function c = make_cand(r1, r2, score, ev, n_coexist)
+%MAKE_CAND 组装一个候选对记录
+    c = struct('r1_id', r1, 'r2_id', r2, 'score', score, ...
+        'dist_km', ev.dist_km, 'd2', ev.d2, ...
+        'vdiff', ev.vdiff, 'vtol', ev.vtol, 'n_coexist', n_coexist);
+end

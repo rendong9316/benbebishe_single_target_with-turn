@@ -1,0 +1,6 @@
+function a = blank_acc()
+%BLANK_ACC 一条空的逐对累计证据记录
+    a = struct('r1', 0, 'r2', 0, 'n_coexist', 0, 'sum_ed', 0, ...
+               'n_maha', 0, 'n_vel', 0, 'run_ok', 0, 'max_run_ok', 0, ...
+               'last_k', NaN, 'last_ev', online_assoc.empty_ev());
+end
