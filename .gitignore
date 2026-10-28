@@ -82,3 +82,12 @@ dedup_pdfs.py
 # 这些文件体积小（合计约 4 MB）但不可再生（依赖 776 MB 的原始 FR24 数据），
 # 必须入库，否则 clone 后无法运行任何 adsb_* 场景，也无法复现配准标定。
 !data/adsb/*.csv
+# ==================== 2026-10-28 复核追加 ====================
+# 诊断/临时产物（报告遗留项 7）：不删文件，改为不入库
+tmp/
+_analysis/
+results/_*.txt
+results/_verify_report/
+results/online_fr24_v*/
+experiments/*.log
+问题积累*/
