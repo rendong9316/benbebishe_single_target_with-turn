@@ -62,10 +62,18 @@ function params = params_coverage_online()
     params.online_gate_chi2 = 5.99;
     % 确认帧数：最近 N 帧内累计 M 帧落在门限内，才把第二个源并入系统航迹
     % 用 M/N 而不是"连续 M 帧"，避免个别帧越门限就把计数清零
-    params.online_M = 8;
-    params.online_N = 10;
+    % 覆盖互补布设下共视段只有约 21-24 帧，还要扣掉两条航迹各自的起始成熟段，
+    % 因此 M 取 6（180 s），N 取 8；这一组取值满足"共视段能完成确认"的硬约束。
+    params.online_M = 6;
+    params.online_N = 8;
+    % 证据起算的最小成熟度：两条局部航迹都要 life >= 该值才允许累积证据。
+    % 这是"延迟起算"而不是"放宽门限"——用帧数余量换判别力。
+    params.online_min_life = 5;
     % 系统航迹连续无源多少帧后删除
     params.online_K_loss = 8;
+    % 重复系统航迹合并：两条各持一站源的单源系统航迹，连续多少帧落在同一
+    % 门限内就合并为一条双源系统航迹（合并时保留出生早的编号并拼接历史）
+    params.online_merge_confirm = 3;
     % 融合算法：SCC / CI / BC
     params.online_fusion_method = 'SCC';
 
