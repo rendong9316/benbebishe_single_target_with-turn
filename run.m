@@ -210,8 +210,15 @@ function result = run(scenario_name, params_override, opts)
     matched_pairs = pairs_from_log(pair_log);
 
     % 航迹长度对比（系统航迹 vs 单站基线）
-    lengthTable = evaluate_online_track_length(ctSnap, trackSnapshots_R1, aligned_R2, n_frames, ...
-        scenario.labels);
+    % 合成场景（build_truth_scenario）没有 labels 字段，ADS-B 场景才有；
+    % 原写法直接用 scenario.labels，导致 'multi_cross' 等合成场景在 Stage 7 报
+    % "无法识别的字段名称 labels"（2026-10-28 复核发现）。
+    if isfield(scenario, 'labels')
+        labels = scenario.labels;
+    else
+        labels = {};
+    end
+    lengthTable = evaluate_online_track_length(ctSnap, trackSnapshots_R1, aligned_R2, n_frames, labels);
 
     % 六项论文指标（在线口径）
     % 先把已算出的部分装配成 result，再交给指标模块，保证口径与最终输出完全一致
