@@ -1,28 +1,44 @@
-function result = run(scenario_name, params_override)
-    % 主入口：双基地 OTH-SWR 单/多目标跟踪仿真全流程
-    %
-    % 完整流水线（Phase 0-10）：
-    %   Phase 0: Oracle 场景初始化（参数 + 真值航迹）
-    %   Phase 1: ADS-B 数据标定系统偏差（dr, da）
-    %   Phase 2: 多目标点迹生成 + 偏差校正
-    %   Phase 3: UKF/IMM 滤波器模板初始化
-    %   Phase 4: 南阳式 Oracle 航迹维护（每站独立）
-    %   Phase 5: 跨雷达航迹时间对齐（R2 → R1 时间基准）
-    %   Phase 6: 跨雷达航迹匹配（双门限法 / 传统法）
-    %   Phase 7: 航迹级融合（SCC/BC/CI/FCI 四种算法）
-    %   Phase 8: RMSE 定量误差评估（单站 + 融合）
-    %   Phase 9: 可视化绘图
-    %   Phase 10: 数据保存
+function result = run(scenario_name, params_override, opts)
+%RUN 双照射源外辐射源雷达主链路（全在线，逐帧推进）
+%
+%   result = run(scenario_name)
+%   result = run(scenario_name, params_override)
+%   result = run(scenario_name, params_override, opts)
+%
+%   【主链路的九个阶段，逐帧推进】
+%     Stage 0  场景构建         → 第2章 2.3  数据驱动场景
+%     Stage 1  时空配准         → 第2章 2.4  三参数 MLE (dsv41) + h 反馈
+%     Stage 2  点迹生成         → 第2章 2.2  双基地天波量测模型
+%     Stage 3  单站跟踪         → 第3章      5 模型 IMM-UKF
+%     Stage 4  时间对齐         → 第4章 4.1  CV 状态外推
+%     Stage 5  跨站关联         → 第4章 4.2  在线分配与 M/N 序贯确认
+%     Stage 6  航迹融合         → 第5章      SCC / BC / CI / FCI
+%     Stage 7  指标与出图       → 第6章      6 项考核指标 + 航迹长度
+%
+%   【与旧批处理版的根本差别】
+%     旧版按阶段扫全时间轴：整段对齐 → 整段匹配 → 整段融合，
+%     匹配与融合内部都用到了未来帧（见 双站航迹配对与融合在线处理模型_20261028.md
+%     第 12 节缺陷清单）。本版把 Stage 2~6 全部放进同一个逐帧循环，
+%     第 k 帧的判决只允许使用第 k 帧及以前的信息。
+%
+%   【场景与部署】
+%     scenario_name:
+%       'multi_cross' / 'single_*' / 'left_*' 等 → 合成场景
+%       'adsb_0002' / 'adsb_0608' / 'adsb_0911'   → 派生 ADS-B 场景
+%       'adsb_ns'                              → 南北向派生场景
+%       'adsb_ns_fr24'                         → FR24 原始文件南北向场景
+%     部署由 params 决定：
+%       simulation_params_oracle()   近共视（15° 视场两站几乎重合）
+%       params_coverage_online()     覆盖互补（15° 视场两站错开 100 km）
+%
+%   【输出】
+%     见 docs/主链路在线化重构契约_20261028.md 第 6 节。
 
-    % 参数检查：若调用方未传场景名，则使用默认的多目标交叉场景
-    if nargin < 1 || isempty(scenario_name)
-        scenario_name = 'multi_cross';
-    end
+    if nargin < 1 || isempty(scenario_name), scenario_name = 'multi_cross'; end
+    if nargin < 2 || isempty(params_override), params_override = []; end
+    if nargin < 3 || isempty(opts), opts = struct(); end
 
-    % 将 run.m 所在仓库的代码目录加入搜索路径，不依赖调用方当前目录。
-    % 【2026-10-26 优化】原用 addpath(genpath(project_root))，会扫描 results/ 下
-    % 9000+ 个 .mat 与 docs/ 下 PDF，单次调用耗时数十秒，批量实验时成为瓶颈。
-    % 改为显式列出代码目录，跳过数据目录。
+    % 代码目录显式加入搜索路径：不用 genpath（会扫描 results/ 下上万个 .mat）
     project_root = fileparts(mfilename('fullpath'));
     code_dirs = {'config','simulation','ukf','tracker','fusion', ...
                  'evaluation','utils','visualization','validation','experiments','io'};
@@ -32,35 +48,43 @@ function result = run(scenario_name, params_override)
         if exist(d_i, 'dir'), addpath(d_i); end
     end
 
-    % ====== Phase 0: Oracle 场景初始化 ======
-    % 加载全局仿真参数（雷达几何坐标、UKF 噪声、IMM 转移概率、双门限配置等）
-    % 可选支持：run(scenario_name, params_override) — 允许传入自定义params
-    if nargin >= 2 && isstruct(params_override) && ischar(scenario_name)
-        params = params_override;
-    else
+    if isempty(params_override)
         params = simulation_params_oracle();
+    else
+        params = params_override;
     end
-    % 用配置中的随机种子初始化 RNG，保证仿真可复现
     rng(params.random_seed);
-    % 根据场景名生成真值航迹数据结构（支持 single_straight / single_turn / single_uturn / multi_cross）
-    scenario = build_truth_scenario(scenario_name, params);
-    % 解包场景对象中的各个字段
-    truth_all = scenario.truth_all;           % 所有目标的真值轨迹（结构体数组）
-    truthTrajs = scenario.truthTrajs;         % 各目标的 truth 结构体，供后续 RMSE 计算使用
-    t1_grid = scenario.t1_grid;               % R1 的时间网格（帧序号 → 秒）
-    t2_grid = scenario.t2_grid;               % R2 的时间网格
-    n_frames = scenario.n_frames;             % 总帧数
-    % 打印场景基本信息和目标概况
-    fprintf('场景: %s | 目标数=%d | 帧数=%d | dt=%.0fs%s', scenario.name, scenario.n_targets, n_frames, params.dt_sec, newline);
-    fprintf('雷达硬约束: Pd=%.2f, Pfa=%.4f%s', params.detection_probability, params.false_alarm_rate, newline);
-    print_truth_summary(truthTrajs);
+    % 点迹噪声用两站各自独立的随机流：与配准/跟踪的随机消耗解耦，两站量测相互独立
+    detection_rng('init', params);
 
-    % ====== Phase 1: ADS-B 系统偏差标定 ======
-    % 从 ADS-B CSV 数据中采样目标位置，计算 R1/R2 的距离和方位偏差估计
-    % 原理：ADS-B 提供高精度位置 → 计算理论群距离/方位角 → 与实际雷达量测比较 → 取均值
-    [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_bias(params);
-    % 【2026-10-26】三参数配准：把估计出的电离层虚高反馈给反演与滤波模型。
-    % 这一步是"效果显现"的关键——只估不反馈，距离相关偏差依然存在。
+    stage_log = struct('stage', {}, 'elapsed_sec', {}, 'note', {});
+
+    % =====================================================================
+    % Stage 0：场景构建（第2章 2.3）
+    % =====================================================================
+    t_stage = tic;
+    scenario = build_truth_scenario(scenario_name, params);
+    truth_all = scenario.truth_all;
+    truthTrajs = scenario.truthTrajs;
+    t1_grid = scenario.t1_grid;
+    t2_grid = scenario.t2_grid;
+    n_frames = scenario.n_frames;
+    max_frames = get_opt(opts, 'max_frames', Inf);
+    n_frames = min(n_frames, max_frames);
+    % 时间网格与实际运行帧数对齐（截断运行时要同步截断网格）
+    t1_grid = t1_grid(1:n_frames);
+    t2_grid = t2_grid(1:n_frames);
+    fprintf('场景 %s：%d 条航迹，%d 帧（dt=%.0fs）%s', ...
+        scenario.name, scenario.n_targets, n_frames, params.dt_sec, newline);
+    stage_log(end+1) = struct('stage', 'S0_scenario', 'elapsed_sec', toc(t_stage), ...
+        'note', sprintf('%d targets', scenario.n_targets)); %#ok<AGROW>
+
+    % =====================================================================
+    % Stage 1：时空配准（第2章 2.4）
+    % =====================================================================
+    t_stage = tic;
+    [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_radar_bias(params);
+    % 三参数 MLE：把估计出的电离层虚高反馈给反演与滤波模型
     if strcmpi(reg.mode, 'mle3') && isfield(params, 'registration_apply_h') && params.registration_apply_h
         if isfinite(reg.h1_km), params.radar1_assumed_h_km = reg.h1_km; end
         if isfinite(reg.h2_km), params.radar2_assumed_h_km = reg.h2_km; end
@@ -72,146 +96,172 @@ function result = run(scenario_name, params_override)
         dr1_est, da1_est, params.radar1_range_bias_m, params.radar1_azimuth_bias_deg, newline);
     fprintf('R2 偏差估计: dr=%.0fm, da=%.2fdeg (真实: %.0fm, %.2fdeg)%s', ...
         dr2_est, da2_est, params.radar2_range_bias_m, params.radar2_azimuth_bias_deg, newline);
+    stage_log(end+1) = struct('stage', 'S1_registration', 'elapsed_sec', toc(t_stage), ...
+        'note', reg.mode); %#ok<AGROW>
 
-    % ====== Phase 2: 多目标点迹生成 + 偏差校正 ======
-    % 对每个雷达站，逐帧生成检测点迹（目标检测+杂波），然后用 Phase 1 的偏差估计做校正
-    detList_R1 = generate_radar_detections(1, params, truth_all, t1_grid, n_frames, dr1_est, da1_est);
-    detList_R2 = generate_radar_detections(2, params, truth_all, t2_grid, n_frames, dr2_est, da2_est);
-    print_detection_summary(detList_R1, 'R1');
-    print_detection_summary(detList_R2, 'R2');
-
-    % ====== Phase 3: UKF/IMM 模板初始化 ======
-    % 从全局参数中提取 R1/R2 各自的雷达专属参数（噪声/Q/门限）
+    % =====================================================================
+    % Stage 2~6：逐帧主循环
+    % =====================================================================
+    % 滤波器模板（两站各一份）
     params_r1 = radar_params(params, 1);
     params_r2 = radar_params(params, 2);
-    % 通过 ukf_imm('create') 为 R1 创建五模型 IMM UKF 模板。
-    % 模型顺序：CV、慢左转、快左转、快右转、慢右转。
     ukf1_tpl = ukf_imm('create', params_r1, params.radar1_lon, params.radar1_lat, ...
         params.radar1_tx_lon, params.radar1_tx_lat, params.dt_sec);
-    % 同理为 R2 创建滤波器模板
     ukf2_tpl = ukf_imm('create', params_r2, params.radar2_lon, params.radar2_lat, ...
         params.radar2_tx_lon, params.radar2_tx_lat, params.dt_sec);
-    fprintf('R1 IMM: Q=%.2g, range_std=%.0fm, az_std=%.2fdeg%s', ...
-        params_r1.ukf_Q_scale, params_r1.ukf_range_std_m, params_r1.ukf_azimuth_std_deg, newline);
-    fprintf('R2 IMM: Q=%.2g, range_std=%.0fm, az_std=%.2fdeg%s', ...
-        params_r2.ukf_Q_scale, params_r2.ukf_range_std_m, params_r2.ukf_azimuth_std_deg, newline);
 
-    % ====== Phase 4: 南阳式 Oracle 航迹维护 ======
-    % 对每个雷达的校准点迹序列，执行完整的 Oracle 航迹处理：
-    %   航迹生命周期管理 → UKF 预测 → Oracle 关联 → UKF 更新 → 航迹起始
-    % 返回：航迹列表 + 临时起始缓冲区 + 逐帧快照 + 诊断信息
-    [trackList_R1, tempTrackList_R1, trackSnapshots_R1, diag_R1] = run_oracle_tracker( ...
-        detList_R1, ukf1_tpl, params_r1, truth_all, t1_grid);
-    [trackList_R2, tempTrackList_R2, trackSnapshots_R2, diag_R2] = run_oracle_tracker( ...
-        detList_R2, ukf2_tpl, params_r2, truth_all, t2_grid);
-    print_track_summary(trackList_R1, 'R1', params);
-    print_track_summary(trackList_R2, 'R2', params);
-    % 验证 Oracle 不变量：点迹不重复消耗、快照字段完整、生命周期事件合法等
-    validate_oracle_invariants(trackSnapshots_R1, detList_R1, diag_R1, params_r1, trackList_R1);
-    validate_oracle_invariants(trackSnapshots_R2, detList_R2, diag_R2, params_r2, trackList_R2);
-    fprintf('Oracle lifecycle invariants: R1/R2 通过%s', newline);
+    % 单站跟踪状态（跨帧保持）
+    trackList1 = {};  temp1 = struct([]);  next_id1 = 1;
+    trackList2 = {};  temp2 = struct([]);  next_id2 = 1;
 
-    % ====== Phase 5: 航迹级时间对齐 ======
-    % R2 比 R1 晚 dt_offset 秒采样，需要将 R2 航迹状态回退到 R1 的时间网格
-    % 使用 CV 模型逆向传播：x(t-Δt) = F(-Δt) * x(t), P(t-Δt) = FPF' + Q_scaled
-    aligned_R2 = time_align_tracks(trackSnapshots_R2, params);
-    fprintf('R2 已回退对齐到 R1 时间基准: %.1fs%s', params.time_offset_radar2_sec, newline);
+    % 融合中心状态（系统航迹 + 关联策略 + 融合算法）
+    CT = central_track_manager('init', params);
 
-    % ====== 快速模式（离线配对对比用）======
-    % params.fast_mode=true 时，跳过跨站匹配与融合/评估/绘图，仅返回对齐快照。
-    % 必须放在 Phase 6 之前：否则密集场景（数百航迹）会在此跑一遍 O(N×M) 的
-    % dualgate 匹配（实测 203 航迹 >20 分钟），而离线对比根本不需要这次匹配。
-    if isfield(params, 'fast_mode') && params.fast_mode
-        result = struct();
-        result.params = params;
-        result.scenario = scenario;
-        result.truth_all = truth_all;
-        result.truthTrajs = truthTrajs;
-        result.trackSnapshots_R1 = trackSnapshots_R1;
-        result.trackSnapshots_R2 = trackSnapshots_R2;
-        result.aligned_R2 = aligned_R2;
-        result.n_frames = n_frames;
-        fprintf('%s[fast_mode] 已跳过匹配/融合/绘图，仅返回对齐快照。%s', newline, newline);
-        return;
+    % 输出缓存
+    trackSnapshots_R1 = cell(n_frames, 1);
+    trackSnapshots_R2 = cell(n_frames, 1);
+    aligned_R2       = cell(n_frames, 1);
+    ctSnap           = cell(n_frames, 1);
+    fused_snapshots  = cell(n_frames, 1);
+    frameLog         = cell(n_frames, 1);
+    detList_R1       = cell(n_frames, 1);
+    detList_R2       = cell(n_frames, 1);
+    pair_log         = struct('frame', {}, 'ct_id', {}, 'src1_id', {}, 'src2_id', {}, ...
+                              'truth1', {}, 'truth2', {}, 'ok', {});
+
+    verbose = get_opt(opts, 'verbose', false);
+    log_file = get_opt(opts, 'log_file', '');
+    fid = [];
+    if ~isempty(log_file)
+        fid = fopen(log_file, 'w');
+        if fid < 0
+            error('run:logOpen', '无法写入日志文件：%s', log_file);
+        end
+        fprintf(fid, 'frame,n_local1,n_local2,n_ct,n_two,n_confirmed,n_new,n_merge,n_cand,n_assigned\n');
     end
 
-    % ====== Phase 6: 跨雷达航迹匹配 ======
-    % 支持的匹配方法（params.track_matcher_method）：
-    %   'dualgate'    — 三判据关联（位置 + 马氏 + 速度，含 1v1 互斥），默认
-    %   'mewf'        — 多证据加权融合（判定层四特征软融合 + 指派层马氏全局最优）
-    %   'nn'          — 朴素最近邻基线（仅位置距离贪心 1v1，无门限/无时间校验）
-    %   'sequential'  — 序贯最近邻基线（马氏距离门限 + 贪心 1v1，无时间连续性/速度判据）
-    %   'legacy'      — 原 fusion/track_matcher.m（已废弃，仅向后兼容，正常不应使用）
-    matcher_method = 'dualgate';
-    if isfield(params, 'track_matcher_method') && ~isempty(params.track_matcher_method)
-        matcher_method = char(params.track_matcher_method);
-    end
-    switch lower(matcher_method)
-        case 'dualgate'
-            matched_pairs_struct = track_matcher_dualgate(trackSnapshots_R1, aligned_R2, params);
-        case 'mewf'
-            matched_pairs_struct = track_matcher_mewf(trackSnapshots_R1, aligned_R2, params);
-        case 'nn'
-            matched_pairs_struct = track_matcher_nn(trackSnapshots_R1, aligned_R2, params);
-        case 'sequential'
-            matched_pairs_struct = track_matcher_sequential(trackSnapshots_R1, aligned_R2, params);
-        otherwise
-            % 未知方法回退到已废弃的 legacy matcher（不崩溃，但应修正配置）
-            matched_pairs_struct = track_matcher(trackSnapshots_R1, aligned_R2, params);
-    end
-    print_match_summary(matched_pairs_struct);
+    t_stage = tic;
+    for k = 1:n_frames
+        % ---- Stage 2：点迹生成（双基地天波量测模型）----
+        detRaw1 = generate_one_frame_detections(1, params, truth_all, t1_grid(k), k, dr1_est, da1_est);
+        detRaw2 = generate_one_frame_detections(2, params, truth_all, t2_grid(k), k, dr2_est, da2_est);
+        detList_R1{k} = detRaw1;
+        detList_R2{k} = detRaw2;
 
+        % ---- Stage 3：单站跟踪（5 模型 IMM-UKF，跨帧状态保持）----
+        [trackList1, temp1, snap1, next_id1, ~] = TRACK_MAIN_ORACLE( ...
+            trackList1, temp1, detRaw1, ukf1_tpl, params_r1, k, next_id1, truth_all, t1_grid);
+        [trackList2, temp2, snap2, next_id2, ~] = TRACK_MAIN_ORACLE( ...
+            trackList2, temp2, detRaw2, ukf2_tpl, params_r2, k, next_id2, truth_all, t2_grid);
 
-    % ====== Phase 7: 航迹融合 ======
-    % 对每对匹配航迹，依次执行 SCC/BC/CI/FCI 四种融合算法
-    % 输出：all_fused_snapshots{pair_idx, method_idx}[frame] → 融合航迹快照
-    method_names = {'SCC', 'BC', 'CI', 'FCI'};
-    all_fused_snapshots = cell(length(matched_pairs_struct), length(method_names));
-    for p = 1:length(matched_pairs_struct)
-        fprintf('融合匹配对 %d/%d: R1#%d <-> R2#%d%s', p, length(matched_pairs_struct), ...
-            matched_pairs_struct(p).R1_track_id, matched_pairs_struct(p).R2_track_id, newline);
-        for m = 1:length(method_names)
-            all_fused_snapshots{p, m} = run_track_fusion(matched_pairs_struct(p), ...
-                trackSnapshots_R1, aligned_R2, params, method_names{m});
+        % ---- Stage 4：时间对齐（R2 状态回退到 R1 时间基准，只用本帧）----
+        snap2a = time_align_tracks({snap2}, params);
+        snap2a = snap2a{1};
+
+        % ---- Stage 5+6：跨站关联 + 航迹融合（融合中心逐周期执行）----
+        [CT, log] = central_track_manager('step', CT, snap1, snap2a, k, params);
+
+        trackSnapshots_R1{k} = snap1;
+        trackSnapshots_R2{k} = snap2;
+        aligned_R2{k} = snap2a;
+        ctSnap{k} = CT.CT;
+        fused_snapshots{k} = CT.fused;
+        frameLog{k} = log;
+
+        % 配对事件汇总（跨帧）
+        for i = 1:numel(CT.CT)
+            pl = CT.CT(i).pair_log;
+            for p = 1:numel(pl)
+                pair_log(end+1) = pl{p}; %#ok<AGROW>
+            end
+        end
+
+        if ~isempty(fid)
+            fprintf(fid, '%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n', k, log.n_local1, log.n_local2, ...
+                log.n_ct, log.n_two, log.n_confirmed, log.n_new, log.n_merge, ...
+                log.n_cand, log.n_assigned);
+        end
+        if verbose && (k == 1 || mod(k, 50) == 0 || k == n_frames)
+            fprintf('  frame %4d/%4d | R1 %d, R2 %d | 系统航迹 %d（双源 %d）%s', ...
+                k, n_frames, log.n_local1, log.n_local2, log.n_ct, log.n_two, newline);
         end
     end
-    fprintf('融合完成: %d 对 x %d 算法%s', length(matched_pairs_struct), length(method_names), newline);
+    if ~isempty(fid), fclose(fid); end
+    stage_log(end+1) = struct('stage', 'S2_S6_online_loop', 'elapsed_sec', toc(t_stage), ...
+        'note', sprintf('%d frames', n_frames)); %#ok<AGROW>
 
-    % ====== Phase 8: RMSE 定量误差评估 ======
-    % 构建匹配上下文（ID→位置立方体映射），用于融合评估中的 pair→aircraft 映射
-    matcher_multi = build_matcher_context(matched_pairs_struct, trackSnapshots_R1, aligned_R2, n_frames);
-    % 融合 RMSE：每种算法在所有匹配对上的误差统计
-    fusion_eval = evaluate_all_multi('fusion', all_fused_snapshots, method_names, ...
-        matched_pairs_struct, trackSnapshots_R1, aligned_R2, truthTrajs, n_frames, params.dt_sec, matcher_multi);
-    % 单站 RMSE：R1/R2 各自的 UKF 跟踪误差
+    % =====================================================================
+    % Stage 7：指标与出图（第6章）
+    % =====================================================================
+    t_stage = tic;
+    method_names = CT.method_names;
+
+    % 单站跟踪误差（复用既有评估模块）
     errorStats_R1 = evaluate_all_multi('tracking_errors', trackSnapshots_R1, detList_R1, ...
         truthTrajs, t1_grid, t1_grid, 'R1');
-    errorStats_R2 = evaluate_all_multi('tracking_errors', trackSnapshots_R2, detList_R2, ...
+    errorStats_R2 = evaluate_all_multi('tracking_errors', aligned_R2, detList_R2, ...
         truthTrajs, t2_grid, t2_grid, 'R2');
-    print_tracking_rmse(errorStats_R1);
-    print_tracking_rmse(errorStats_R2);
-    print_fusion_rmse(fusion_eval);
 
-    % ---- 组装返回结果 ----
+    % 融合误差：把逐帧系统航迹转成"配对 × 算法"的传统结构，复用既有评估口径
+    [fusion_eval, all_fused_snapshots] = evaluate_online_fusion(fused_snapshots, ...
+        ctSnap, method_names, truthTrajs, n_frames, params);
+
+    % 跨站配对结果（由配对事件汇总而来）
+    matched_pairs = pairs_from_log(pair_log);
+
+    % 航迹长度对比（系统航迹 vs 单站基线）
+    lengthTable = evaluate_online_track_length(ctSnap, trackSnapshots_R1, aligned_R2, n_frames, ...
+        scenario.labels);
+
+    % 六项论文指标（在线口径）
+    % 先把已算出的部分装配成 result，再交给指标模块，保证口径与最终输出完全一致
     result = struct();
-    result.params = params;                       % 全局仿真参数
-    result.scenario = scenario;                   % 场景元信息
-    result.truth_all = truth_all;                 % 真值航迹
-    result.truthTrajs = truthTrajs;               % 真值轨迹结构体数组
-    result.detList_R1 = detList_R1;               % R1 逐帧检测点迹
-    result.detList_R2 = detList_R2;               % R2 逐帧检测点迹
-    result.trackList_R1 = trackList_R1;           % R1 最终航迹列表
-    result.trackList_R2 = trackList_R2;           % R2 最终航迹列表
-    result.tempTrackList_R1 = tempTrackList_R1;   % R1 临时起始缓冲区
-    result.tempTrackList_R2 = tempTrackList_R2;   % R2 临时起始缓冲区
-    result.trackSnapshots_R1 = trackSnapshots_R1; % R1 逐帧航迹快照
-    result.trackSnapshots_R2 = trackSnapshots_R2; % R2 逐帧航迹快照
-    result.aligned_R2 = aligned_R2;               % 时间对齐后的 R2 快照
-    result.diag_R1 = diag_R1;                     % R1 诊断信息
-    result.diag_R2 = diag_R2;                     % R2 诊断信息
-    result.matched_pairs = matched_pairs_struct;  % 跨雷达匹配结果
-    % 【2026-10-26】配准诊断量：模式、估计值、CRLB、样本数
-    % 供论文表格与消融分析直接取用，避免只能靠控制台打印
+    result.params = params;
+    result.scenario = scenario;
+    result.truthTrajs = truthTrajs;
+    result.trackSnapshots_R1 = trackSnapshots_R1;
+    result.aligned_R2 = aligned_R2;
+    result.ctSnap = ctSnap;
+    result.fused_snapshots = fused_snapshots;
+    result.method_names = method_names;
+    result.matched_pairs = matched_pairs;
+    result.errorStats_R1 = errorStats_R1;
+    result.errorStats_R2 = errorStats_R2;
+    result.fusion_eval = fusion_eval;
+    result.lengthTable = lengthTable;
+    result.t1_grid = t1_grid;
+    result.t2_grid = t2_grid;
+    result.n_frames = n_frames;
+
+    metrics = evaluate_paper_metrics_online(result);
+    stage_log(end+1) = struct('stage', 'S7_metrics', 'elapsed_sec', toc(t_stage), ...
+        'note', 'paper metrics'); %#ok<AGROW>
+
+    % =====================================================================
+    % 组装输出（result 已在 Stage 7 前半段装配，这里只补齐剩余字段）
+    % =====================================================================
+    result.params = params;
+    result.scenario = scenario;
+    result.truth_all = truth_all;
+    result.truthTrajs = truthTrajs;
+    result.detList_R1 = detList_R1;
+    result.detList_R2 = detList_R2;
+    result.trackList_R1 = trackList1;
+    result.trackList_R2 = trackList2;
+    result.trackSnapshots_R1 = trackSnapshots_R1;
+    result.trackSnapshots_R2 = trackSnapshots_R2;
+    result.aligned_R2 = aligned_R2;
+    result.ctSnap = ctSnap;
+    result.fused_snapshots = fused_snapshots;
+    result.method_names = method_names;
+    result.all_fused_snapshots = all_fused_snapshots;
+    result.matched_pairs = matched_pairs;
+    result.pair_log = pair_log;
+    result.fusion_eval = fusion_eval;
+    result.errorStats_R1 = errorStats_R1;
+    result.errorStats_R2 = errorStats_R2;
+    result.lengthTable = lengthTable;
+    result.metrics = metrics;
     result.registration = struct( ...
         'mode', reg.mode, 'dr1_m', dr1_est, 'da1_deg', da1_est, ...
         'dr2_m', dr2_est, 'da2_deg', da2_est, ...
@@ -224,322 +274,33 @@ function result = run(scenario_name, params_override)
         'h_used2_km', iono_h(params,'assumed',2)/1000, ...
         'bias_true_R1', [params.radar1_range_bias_m, params.radar1_azimuth_bias_deg], ...
         'bias_true_R2', [params.radar2_range_bias_m, params.radar2_azimuth_bias_deg]);
-    result.method_names = method_names;           % 融合算法名称列表
-    result.all_fused_snapshots = all_fused_snapshots; % 融合后的航迹快照
-    result.fusion_eval = fusion_eval;             % 融合 RMSE 评估结果
-    result.errorStats_R1 = errorStats_R1;         % R1 单站 RMSE
-    result.errorStats_R2 = errorStats_R2;         % R2 单站 RMSE
+    result.frameLog = frameLog;
+    result.stage_log = stage_log;
+    result.n_frames = n_frames;
 
-    % ====== Phase 9: Figure 图窗可视化 ======
-    % NOTE: sweep mode patch - figures disabled during MC sweeps
-    try, plot_oracle_figures(result), catch, end
+    if get_opt(opts, 'save_results', false)
+        save_results_if_needed(result, params, scenario.name);
+    end
+    if get_opt(opts, 'plot', false)
+        try, plot_oracle_figures(result); catch ME, warning('run:plotFailed', '%s', ME.message); end
+    end
 
-    % ====== Phase 10: 数据保存 ======
-    % NOTE: sweep mode patch - save disabled during MC sweeps (already suppressed)
-    % save_results_if_needed(result, params, scenario.name);
-
-    fprintf('%sDone.%s', newline, newline);
+    fprintf('%s主链路完成：%d 帧%s', newline, n_frames, newline);
 end
 
-% ========== 以下是辅助打印函数 ==========
-
-function print_truth_summary(truthTrajs)
-    % 遍历每个目标的真值轨迹，打印标签、点数、飞行时长、起止经纬度
-    for a = 1:length(truthTrajs)
-        tt = truthTrajs{a};
-        fprintf('目标%s: 点数=%d, 时长=%.0fs, 起点=(%.2fE, %.2fN), 终点=(%.2fE, %.2fN)%s', ...
-            tt.label, length(tt.time_sec), tt.time_sec(end)-tt.time_sec(1), ...
-            tt.lon(1), tt.lat(1), tt.lon(end), tt.lat(end), newline);
-    end
-end
-
-function print_detection_summary(detList, label)
-    % 统计一个雷达的全部检测点迹：总数、真实目标数、杂波数、平均每帧点数
-    total = 0;
-    target = 0;
-    clutter = 0;
-    for k = 1:length(detList)
-        dets = detList{k};              % 第 k 帧的所有检测
-        total = total + length(dets);   % 累计总检测数
-        for i = 1:length(dets)
-            % is_clutter 字段标记是否为杂波检测
-            if isfield(dets(i), 'is_clutter') && dets(i).is_clutter
-                clutter = clutter + 1;
-            else
-                target = target + 1;
-            end
-        end
-    end
-    fprintf('%s 点迹: 总数=%d, 真实=%d, 虚警=%d, 平均每帧=%.2f%s', ...
-        label, total, target, clutter, total / max(length(detList), 1), newline);
-end
-
-function print_track_summary(trackList, label, params)
-    % 统计航迹列表中各类型航迹的数量：RELIABLE(可靠)、TEMPORARY(临时)、HISTORY(历史)
-    n_reliable = 0;
-    n_temporary = 0;
-    n_history = 0;
-    for i = 1:length(trackList)
-        type = trackList{i}.type;
-        if type == params.RELIABLE_TRACK
-            n_reliable = n_reliable + 1;
-        elseif type == params.TEMPORARY_TRACK
-            n_temporary = n_temporary + 1;
-        elseif type == params.HISTORY_TRACK
-            n_history = n_history + 1;
-        end
-    end
-    fprintf('%s 航迹: 总数=%d, 可靠=%d, 临时=%d, 历史=%d%s', ...
-        label, length(trackList), n_reliable, n_temporary, n_history, newline);
-end
-
-function print_match_summary(matched_pairs)
-    % 打印跨雷达航迹匹配的配对信息：每对匹配的 R1/R2 航迹 ID、共现帧数、平均距离
-    fprintf('匹配到 %d 对航迹%s', length(matched_pairs), newline);
-    for p = 1:length(matched_pairs)
-        mp = matched_pairs(p);
-        if isfield(mp, 'mean_dist_km')
-            fprintf('  Pair %d: R1#%d <-> R2#%d, 共现=%d帧, 平均距离=%.1fkm%s', ...
-                p, mp.R1_track_id, mp.R2_track_id, mp.coexist_count, mp.mean_dist_km, newline);
-        else
-            fprintf('  Pair %d: R1#%d <-> R2#%d%s', p, mp.R1_track_id, mp.R2_track_id, newline);
-        end
-    end
-end
-
-function print_tracking_rmse(errorStats)
-    % 打印单站跟踪 RMSE 统计：每个目标的 n/median/mean/RMSE/95th-percentile，以及总体统计
-    fprintf('%s 单站跟踪 RMSE:%s', errorStats.radar, newline);
-    for a = 1:length(errorStats.summary)
-        s = errorStats.summary(a).ukf;
-        fprintf('  目标%d: n=%d, median=%.1fkm, mean=%.1fkm, RMSE=%.1fkm, 95%%=%.1fkm%s', ...
-            a, s.n, s.median, s.mean, s.rms, s.pct95, newline);
-    end
-    s = errorStats.overall.ukf;
-    fprintf('  Overall: n=%d, median=%.1fkm, mean=%.1fkm, RMSE=%.1fkm, 95%%=%.1fkm%s', ...
-        s.n, s.median, s.mean, s.rms, s.pct95, newline);
-end
-
-function print_fusion_rmse(fusion_eval)
-    % 打印四种融合算法的 RMSE 对比表
-    fprintf('融合 RMSE 对比:%s', newline);
-    fprintf('  %-8s %8s %8s %8s %8s%s', '算法', 'n', 'median', 'mean', 'RMSE', newline);
-    for m = 1:length(fusion_eval.overall)
-        s = fusion_eval.overall(m).s;
-        fprintf('  %-8s %8d %8.1f %8.1f %8.1f%s', ...
-            fusion_eval.overall(m).method, s.n, s.median, s.mean, s.rms, newline);
-    end
-end
-
-function [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_bias(params)
-    % ===== 时空配准：三种模式 =====
-    %   'none' — 不做任何校正（下界基线）
-    %   'mean' — 两参数均值标定：ΔR/Δθ 取均值，电离层虚高固定为标称值（原实现）
-    %   'mle3' — 三参数联合最大似然 [h, ΔR, Δθ]，接入 dsv41 专利方法
-    %
-    % 【关键设计】标定侧的正演模型使用"标称虚高"，而量测生成使用"真实虚高"。
-    % 二者的失配使群距离偏差随目标距离变化（近距约 20 km、远距约 11 km），
-    % 均值标定只能扣掉常数部分，无法扣掉距离相关部分；三参数 MLE 通过
-    % 同时估计 h 来消除这一项。这正是本课题要验证的核心命题。
-    mode = 'mean';
-    if isfield(params, 'registration_mode') && ~isempty(params.registration_mode)
-        mode = lower(char(params.registration_mode));
-    end
-    reg = struct('mode', mode, 'h1_km', NaN, 'h2_km', NaN, ...
-                 'eta1', [], 'eta2', [], 'crlb1', [], 'crlb2', [], ...
-                 'n1', 0, 'n2', 0);
-    if strcmp(mode, 'none')
-        dr1_est = 0; da1_est = 0; dr2_est = 0; da2_est = 0;
-        fprintf('  配准模式: none（不做偏差校正）%s', newline);
-        return;
-    end
-
-    h_true_m    = iono_h(params, 'true');      % 真实虚高（量测生成用）
-    h_assumed_m = iono_h(params, 'assumed');   % 标称虚高（标定侧正演用）
-
-    rng(params.random_seed);                              % 重置随机种子以保证可复现
-    % 解析 CSV 路径：允许相对路径（相对仓库根目录），与调用方的当前目录无关
-    csv_path = params.adsb_csv_path;
-    if ~isfile(csv_path)
-        repo_root = fileparts(mfilename('fullpath'));
-        cand = fullfile(repo_root, csv_path);
-        if isfile(cand), csv_path = cand; end
-    end
-    if ~isfile(csv_path)
-        error('run:calibCsvMissing', '标校数据文件不存在: %s', params.adsb_csv_path);
-    end
-    T_adsb = readtable(csv_path, 'ReadVariableNames', false);  % 读取 ADS-B CSV
-    adsb_lat = T_adsb.Var2;                               % 第二列：纬度
-    adsb_lon = T_adsb.Var3;                               % 第三列：经度
-    if isfield(params, 'adsb_lon_offset_deg')
-        adsb_lon = adsb_lon + params.adsb_lon_offset_deg;
-    end
-    % 仅使用东南沿海探测区域内的 ADS-B 航迹（向量化预筛选，避免遍历全表）。
-    adsb_track_id = string(T_adsb.Var1);
-    lon_lim = [117.0, 124.0]; lat_lim = [24.0, 34.0];
-    if isfield(params, 'adsb_region_lon'), lon_lim = params.adsb_region_lon; end
-    if isfield(params, 'adsb_region_lat'), lat_lim = params.adsb_region_lat; end
-    region_mask = isfinite(adsb_lon) & isfinite(adsb_lat) & adsb_lon >= lon_lim(1) & adsb_lon <= lon_lim(2) & ...
-        adsb_lat >= lat_lim(1) & adsb_lat <= lat_lim(2) & strlength(adsb_track_id) > 0;
-    selected_ids = unique(adsb_track_id(region_mask));
-    if isempty(selected_ids)
-        error('run:adsbNoInCoverageTrack', 'ADS-B 数据中没有找到同时满足两部雷达覆盖和最小点数要求的航迹');
-    end
-
-    dr1_list = []; da1_list = [];                         % R1 的距离/方位偏差采样列表
-    dr2_list = []; da2_list = [];                         % R2 的距离/方位偏差采样列表
-    % mle3 模式额外收集：位置与原始量测（供三参数联合估计）
-    lon1 = []; lat1 = []; Rg1 = []; az1 = [];
-    lon2 = []; lat2 = []; Rg2 = []; az2 = [];
-
-    % 【2026-10-26】原先只抽 5000 点，导致 R2 仅约 1100 个有效样本。
-    % 而 R2 的量测噪声 sigma_R=20 km 与 h 失配引起的偏差变化（15.4 km）同量级，
-    % 样本不足时 (h, dR) 不可辨识（可分离性指标仅 0.77）。
-    % 现使用全部标校行，样本量提升约 4 倍，噪声等效降低 2 倍，恢复可辨识性。
-    n_check = height(T_adsb);
-    cal_step = max(1, floor(height(T_adsb) / n_check));
-    need_model = strcmp(mode, 'mean');   % 只有均值标定需要正演模型残差
-    for idx = 1:cal_step:height(T_adsb)
-        t_lon = adsb_lon(idx);                            % 当前采样点的经度
-        t_lat = adsb_lat(idx);                            % 当前采样点的纬度
-        if ~ismember(adsb_track_id(idx), selected_ids)
-            continue;
-        end
-        if isnan(t_lon) || isnan(t_lat)                   % 跳过无效数据
-            continue;
-        end
-        % --- R1 偏差采样 ---
-        [in1, ~, ~] = radar_coverage_check(params.radar1_lon, params.radar1_lat, ...
-            t_lon, t_lat, params.radar1_beam_center_deg, params);
-        if in1
-            Rg_phys = skywave_geometry('group_range', params.radar1_tx_lon, params.radar1_tx_lat, ...
-                params.radar1_lon, params.radar1_lat, t_lon, t_lat, h_true_m);
-            az_true = sphere_utils_azimuth(params.radar1_lon, params.radar1_lat, t_lon, t_lat);
-            Rg_meas = Rg_phys + params.radar1_range_bias_m + randn() * params.radar1_range_noise_std_m;
-            az_meas = az_true + params.radar1_azimuth_bias_deg + randn() * params.radar1_azimuth_noise_std_deg;
-            if need_model
-                Rg_model = skywave_geometry('group_range', params.radar1_tx_lon, params.radar1_tx_lat, ...
-                    params.radar1_lon, params.radar1_lat, t_lon, t_lat, h_assumed_m);
-                dr1_list(end+1) = Rg_meas - Rg_model;
-                da1_list(end+1) = wrap_angle_run(az_meas - az_true);
-            end
-            lon1(end+1) = t_lon; lat1(end+1) = t_lat;
-            Rg1(end+1)  = Rg_meas; az1(end+1) = az_meas;
-        end
-        % --- R2 偏差采样 ---
-        [in2, ~, ~] = radar_coverage_check(params.radar2_lon, params.radar2_lat, ...
-            t_lon, t_lat, params.radar2_beam_center_deg, params);
-        if in2
-            Rg_phys = skywave_geometry('group_range', params.radar2_tx_lon, params.radar2_tx_lat, ...
-                params.radar2_lon, params.radar2_lat, t_lon, t_lat, h_true_m);
-            az_true = sphere_utils_azimuth(params.radar2_lon, params.radar2_lat, t_lon, t_lat);
-            Rg_meas = Rg_phys + params.radar2_range_bias_m + randn() * params.radar2_range_noise_std_m;
-            az_meas = az_true + params.radar2_azimuth_bias_deg + randn() * params.radar2_azimuth_noise_std_deg;
-            if need_model
-                Rg_model = skywave_geometry('group_range', params.radar2_tx_lon, params.radar2_tx_lat, ...
-                    params.radar2_lon, params.radar2_lat, t_lon, t_lat, h_assumed_m);
-                dr2_list(end+1) = Rg_meas - Rg_model;
-                da2_list(end+1) = wrap_angle_run(az_meas - az_true);
-            end
-            lon2(end+1) = t_lon; lat2(end+1) = t_lat;
-            Rg2(end+1)  = Rg_meas; az2(end+1) = az_meas;
-        end
-    end
-    if need_model
-        if isempty(dr1_list) || isempty(da1_list)
-            error('run:calibrationNoSamples', 'R1 ADS-B 标定没有雷达覆盖内的有效样本');
-        end
-        if isempty(dr2_list) || isempty(da2_list)
-            error('run:calibrationNoSamples', 'R2 ADS-B 标定没有雷达覆盖内的有效样本');
-        end
-    else
-        if isempty(Rg1)
-            error('run:calibrationNoSamples', 'R1 ADS-B 标定没有雷达覆盖内的有效样本');
-        end
-        if isempty(Rg2)
-            error('run:calibrationNoSamples', 'R2 ADS-B 标定没有雷达覆盖内的有效样本');
-        end
-    end
-
-    if strcmp(mode, 'mle3')
-        % ---- 三参数联合最大似然：[h, ΔR, Δθ] ----
-        % 分别对两站估计（站点几何不同，误差源独立）
-        p1 = params;
-        p1.radar_index = 1;
-        p1.tx_lon = params.radar1_tx_lon; p1.tx_lat = params.radar1_tx_lat;
-        p1.rx_lon = params.radar1_lon;    p1.rx_lat = params.radar1_lat;
-        p1.sigma_R = params.radar1_range_noise_std_m;
-        p1.sigma_A = params.radar1_azimuth_noise_std_deg;
-        p1.eta0 = [h_assumed_m/1000, 0, 0];
-        % 【边界必须容纳真实偏差】原默认 dtheta ∈ [-3,3]，而本系统 R2 的真实
-        % 方位偏差为 +3.5°，会被上界截断，进而把 h 与 dR 一起拉偏（简并方向）。
-        p1.lb = [200, -100, -10];  p1.ub = [500, 100, 10];
-        p1.verbose = false;
-        calib1 = struct('lon', lon1, 'lat', lat1, 'Rg_meas', Rg1, 'az_meas', az1, ...
-                        'sigma_R', p1.sigma_R, 'sigma_A', p1.sigma_A);
-        est1 = estimate_system_bias(calib1, p1);
-
-        p2 = params;
-        p2.radar_index = 2;
-        p2.tx_lon = params.radar2_tx_lon; p2.tx_lat = params.radar2_tx_lat;
-        p2.rx_lon = params.radar2_lon;    p2.rx_lat = params.radar2_lat;
-        p2.sigma_R = params.radar2_range_noise_std_m;
-        p2.sigma_A = params.radar2_azimuth_noise_std_deg;
-        p2.eta0 = [h_assumed_m/1000, 0, 0];
-        p2.lb = [200, -100, -10];  p2.ub = [500, 100, 10];
-        p2.verbose = false;
-        calib2 = struct('lon', lon2, 'lat', lat2, 'Rg_meas', Rg2, 'az_meas', az2, ...
-                        'sigma_R', p2.sigma_R, 'sigma_A', p2.sigma_A);
-        est2 = estimate_system_bias(calib2, p2);
-
-        dr1_est = est1.eta_hat(2) * 1000;   % km → m
-        da1_est = est1.eta_hat(3);          % deg
-        dr2_est = est2.eta_hat(2) * 1000;
-        da2_est = est2.eta_hat(3);
-
-        reg.h1_km = est1.eta_hat(1);  reg.h2_km = est2.eta_hat(1);
-        reg.eta1  = est1.eta_hat;     reg.eta2  = est2.eta_hat;
-        reg.crlb1 = est1.crlb;        reg.crlb2 = est2.crlb;
-        reg.n1    = est1.n_obs;       reg.n2    = est2.n_obs;
-        reg.converged1 = est1.converged;  reg.converged2 = est2.converged;
-        reg.rho_h_dR_1 = est1.diag.rho_h_dR;
-        reg.rho_h_dR_2 = est2.diag.rho_h_dR;
-
-        fprintf('  配准[mle3] R1: h=%.1fkm dR=%.2fkm dth=%.3fdeg (真值 h=%.0fkm dR=%.1fkm dth=%.2fdeg)%s', ...
-            reg.h1_km, est1.eta_hat(2), est1.eta_hat(3), ...
-            h_true_m/1000, params.radar1_range_bias_m/1000, params.radar1_azimuth_bias_deg, newline);
-        fprintf('  配准[mle3] R2: h=%.1fkm dR=%.2fkm dth=%.3fdeg (真值 h=%.0fkm dR=%.1fkm dth=%.2fdeg)%s', ...
-            reg.h2_km, est2.eta_hat(2), est2.eta_hat(3), ...
-            h_true_m/1000, params.radar2_range_bias_m/1000, params.radar2_azimuth_bias_deg, newline);
-    else
-        % ---- 两参数均值标定（原实现）----
-        dr1_est = mean(dr1_list);
-        da1_est = mean(da1_list);
-        dr2_est = mean(dr2_list);
-        da2_est = mean(da2_list);
-        reg.n1 = numel(dr1_list);  reg.n2 = numel(dr2_list);
-    end
-
-    if any(~isfinite([dr1_est, da1_est, dr2_est, da2_est]))
-        error('run:calibrationInvalid', 'ADS-B 标定结果包含非有限值');
-    end
-end
-
-function detList = generate_radar_detections(radar_id, params, truth_all, t_grid, n_frames, dr_est, da_est)
-    % 为指定雷达站生成 n_frames 帧的检测点迹列表
-    % 每帧包含：目标检测（受 Pd 影响可能漏检）+ 杂波检测（服从 Pfa）
-    % dr_est/da_est 为系统偏差校正量，在校正后写入 dp.drange/dp.daz 等字段
-    detList = cell(n_frames, 1);                          % 预分配元胞数组存储逐帧检测
-    % 根据雷达编号设置对应的发射站/接收站坐标、偏差、噪声等参数
+% =====================================================================
+% 逐帧点迹生成（Stage 2）
+% =====================================================================
+function detList = generate_one_frame_detections(radar_id, params, truth_all, t_now, frame_id, dr_est, da_est)
+%GENERATE_ONE_FRAME_DETECTIONS 生成一帧的双基地量测点迹
+%   只用当前帧的真值状态与当前帧的随机数，不涉及任何未来信息。
     if radar_id == 1
-        rng(params.random_seed + 1e7);                    % 独立随机种子，与 R2 不相关
         rx_lon = params.radar1_lon; rx_lat = params.radar1_lat;
         tx_lon = params.radar1_tx_lon; tx_lat = params.radar1_tx_lat;
         range_bias = params.radar1_range_bias_m; az_bias = params.radar1_azimuth_bias_deg;
         beam_center = params.radar1_beam_center_deg;
         range_noise = params.radar1_range_noise_std_m; az_noise = params.radar1_azimuth_noise_std_deg;
     else
-        rng(params.random_seed + 2e7);
         rx_lon = params.radar2_lon; rx_lat = params.radar2_lat;
         tx_lon = params.radar2_tx_lon; tx_lat = params.radar2_tx_lat;
         range_bias = params.radar2_range_bias_m; az_bias = params.radar2_azimuth_bias_deg;
@@ -547,320 +308,72 @@ function detList = generate_radar_detections(radar_id, params, truth_all, t_grid
         range_noise = params.radar2_range_noise_std_m; az_noise = params.radar2_azimuth_noise_std_deg;
     end
 
-    for k = 1:n_frames                                   % 逐帧生成检测
-        % 获取当前帧所有目标的运动状态（经度、纬度、速度等）
-        tgt_states = build_target_states_at_time(truth_all, t_grid(k));
-        % 调用底层检测生成器：产生含杂波的原始检测列表 detRaw
-        detRaw = generate_frame_detections_multi(rx_lon, rx_lat, tx_lon, tx_lat, tgt_states, ...
-            k, t_grid(k), range_bias, az_bias, beam_center, params, range_noise, az_noise);
-        dets = cell(1, length(detRaw));                   % 存放校正后的检测
-        for d = 1:length(detRaw)
-            dp = detRaw(d);                               % 第 d 个原始检测
-            % 系统偏差校正：减去估计的偏差
-            Rgc = dp.prange - dr_est;                     % 校正后的群距离
-            azc = dp.paz - da_est;                        % 校正后的方位角
-            dp.drange = Rgc;                              % 写入校正后群距离
-            dp.daz = azc;                                 % 写入校正后方位角
-            dp.range_meas = Rgc;                          % 写入校正后距离量测
-            dp.azimuth_meas = azc;                        % 写入校正后方位量测
-            % 径向速度量测：若原始数据缺失则回退到 pvr
-            if ~isfield(dp, 'radial_vel_meas') || isnan(dp.radial_vel_meas)
-                dp.radial_vel_meas = dp.pvr;
-            end
-            % 地理坐标反解：若缺少 lat/lon，用校正后的量测反算
-            if ~isfield(dp, 'lat') || isnan(dp.lat) || ~isfield(dp, 'lon') || isnan(dp.lon)
-                [~, dp.lat, dp.lon] = bistatic_inverse_solver(Rgc, azc, tx_lon, tx_lat, rx_lon, rx_lat, ...
-                    iono_h(params, 'assumed', radar_id));
-            end
-            % 同时保存未校正的反解坐标，用于分析
-            [~, dp.raw_lat, dp.raw_lon] = bistatic_inverse_solver(dp.prange, dp.paz, tx_lon, tx_lat, rx_lon, rx_lat, ...
-                iono_h(params, 'assumed', radar_id));
-            dets{d} = dp;                                 % 存入校正后的检测结构体
-        end
-        % 空帧处理：若无检测则存为空数组，否则拼接为结构体数组
-        if isempty(dets)
-            detList{k} = [];
-        else
-            detList{k} = [dets{:}];
-        end
-    end
-end
+    tgt_states = build_target_states_at_time(truth_all, t_now);
 
-function [trackList, tempTrackList, trackSnapshots, diagList] = run_oracle_tracker(detList, ukf_tpl, params, truth_all, t_grid)
-    % Oracle 航迹维护入口：逐帧调用 TRACK_MAIN_ORACLE 完成检测关联、UKF 更新、航迹起始/终止
-    n_frames = length(detList);                           % 总帧数
-    trackSnapshots = cell(n_frames, 1);                   % 逐帧航迹快照（每帧包含当前所有活动航迹的状态）
-    diagList = cell(n_frames, 1);                         % 逐帧诊断信息
-    trackList = {};                                       % 累积的航迹列表
-    tempTrackList = struct([]);                           % 临时起始缓冲区
-    next_id = 1;                                          % 下一个可用的航迹 ID
-    for k = 1:n_frames
-        % 调用 Oracle 航迹维护主循环：关联检测、UKF 预测/更新、航迹管理
-        [trackList, tempTrackList, trackSnapshots{k}, next_id, diagList{k}] = TRACK_MAIN_ORACLE( ...
-            trackList, tempTrackList, detList{k}, ukf_tpl, params, k, next_id, truth_all, t_grid);
-        % 每隔 10 帧或在首尾帧打印进度
-        if k == 1 || mod(k, 10) == 0 || k == n_frames
-            fprintf('  frame %3d/%3d: active=%d, total=%d%s', k, n_frames, count_active_tracks(trackList), length(trackList), newline);
+    % 切到该站自己的随机流，出函数时自动切回全局流（见 simulation/detection_rng.m）
+    rs = detection_rng('get', params, radar_id);
+    prev_stream = RandStream.getGlobalStream();
+    RandStream.setGlobalStream(rs);
+    restore_stream = onCleanup(@() RandStream.setGlobalStream(prev_stream)); %#ok<NASGU>
+
+    detRaw = generate_frame_detections_multi(rx_lon, rx_lat, tx_lon, tx_lat, tgt_states, ...
+        frame_id, t_now, range_bias, az_bias, beam_center, params, range_noise, az_noise);
+
+    dets = cell(1, length(detRaw));
+    for d = 1:length(detRaw)
+        dp = detRaw(d);
+        Rgc = dp.prange - dr_est;               % 系统偏差校正：群距离
+        azc = dp.paz - da_est;                  % 系统偏差校正：方位角
+        dp.drange = Rgc;  dp.daz = azc;
+        dp.range_meas = Rgc;  dp.azimuth_meas = azc;
+        if ~isfield(dp, 'radial_vel_meas') || isnan(dp.radial_vel_meas)
+            dp.radial_vel_meas = dp.pvr;
         end
-    end
-    % 按 ID 排序航迹列表
-    trackList = sortTrackList_oracle(trackList);
-end
-
-function n = count_active_tracks(trackList)
-    % 统计 trackList 中非终止态(type≠7)的航迹数量
-    n = 0;
-    for i = 1:length(trackList)
-        if trackList{i}.type ~= 7                         % type==7 表示航迹已终止
-            n = n + 1;
+        if ~isfield(dp, 'lat') || isnan(dp.lat) || ~isfield(dp, 'lon') || isnan(dp.lon)
+            [~, dp.lat, dp.lon] = bistatic_inverse_solver(Rgc, azc, tx_lon, tx_lat, ...
+                rx_lon, rx_lat, iono_h(params, 'assumed', radar_id));
         end
+        [~, dp.raw_lat, dp.raw_lon] = bistatic_inverse_solver(dp.prange, dp.paz, ...
+            tx_lon, tx_lat, rx_lon, rx_lat, iono_h(params, 'assumed', radar_id));
+        dets{d} = dp;
     end
-end
-
-function matcher = build_matcher_context(matched_pairs, trackSnapshots_R1, aligned_R2, n_frames)
-    % 构建匹配上下文：收集所有帧中 R1/R2 的航迹 ID 和经纬度，
-    % 用于后续融合评估中快速定位 pair→aircraft 的映射关系
-    r1_ids = [];                                          % 累积的 [id, frame, lon, lat] 行
-    r2_ids = [];
-    for k = 1:n_frames
-        r1_ids = append_track_rows(r1_ids, trackSnapshots_R1{k}, k);  % 提取 R1 第 k 帧的航迹行
-        r2_ids = append_track_rows(r2_ids, aligned_R2{k}, k);        % 提取 R2 第 k 帧的航迹行
-    end
-    unique_r1_ids = unique_or_empty(r1_ids);              % R1 的唯一航迹 ID 列表
-    unique_r2_ids = unique_or_empty(r2_ids);              % R2 的唯一航迹 ID 列表
-    r1_pos = build_pos_cube(r1_ids, unique_r1_ids, n_frames); % 构建 ID×帧×{lon,lat} 位置立方体
-    r2_pos = build_pos_cube(r2_ids, unique_r2_ids, n_frames);
-    matcher = struct('matched_pairs', matched_pairs, 'aligned_R2', {aligned_R2}, ...
-        'r1_ids', r1_ids, 'r2_ids', r2_ids, 'unique_r1_ids', unique_r1_ids, ...
-        'unique_r2_ids', unique_r2_ids, 'r1_pos', r1_pos, 'r2_pos', r2_pos);
-end
-
-function rows = append_track_rows(rows, snap, k)
-    % 从单帧航迹快照中提取有效航迹的 [id, frame, lon, lat] 行
-    if isempty(snap) || ~isfield(snap, 'trackList')       % 空快照或无 trackList 字段则跳过
-        return;
-    end
-    for t = 1:length(snap.trackList)
-        trk = snap.trackList{t};
-        % 过滤：排除终止航迹(type==7)和经纬度无效的记录
-        if trk.type ~= 7 && ~isnan(trk.lat)
-            rows(end+1, :) = [trk.id, k, trk.lon, trk.lat];
-        end
-    end
-end
-
-function ids = unique_or_empty(rows)
-    % 从 [id, frame, lon, lat] 矩阵中提取唯一航迹 ID
-    if isempty(rows)
-        ids = [];
+    if isempty(dets)
+        detList = [];
     else
-        ids = unique(rows(:, 1));                         % 第一列为航迹 ID
+        detList = [dets{:}];
     end
 end
 
-function pos = build_pos_cube(rows, ids, n_frames)
-    % 构建位置立方体：pos(id_idx, frame, {lon, lat})
-    % 将散乱的航迹行映射到规则的三维数组中
-    pos = nan(length(ids), n_frames, 2);                  % 预分配 NaN 矩阵
-    for i = 1:length(ids)
-        rid = ids(i);                                     % 第 i 个唯一 ID
-        rid_rows = rows(rows(:, 1) == rid, :);            % 筛选该 ID 的所有行
-        for r = 1:size(rid_rows, 1)
-            fk = round(rid_rows(r, 2));                   % 帧号
-            if fk >= 1 && fk <= n_frames
-                pos(i, fk, 1) = rid_rows(r, 3);           % 经度
-                pos(i, fk, 2) = rid_rows(r, 4);           % 纬度
-            end
+% =====================================================================
+% 配对事件 → 传统 matched_pairs 结构
+% =====================================================================
+function pairs = pairs_from_log(pair_log)
+    pairs = struct('R1_track_id', {}, 'R2_track_id', {}, 'truth1', {}, 'truth2', {}, ...
+                    'ok', {}, 'first_frame', {}, 'n_frames', {});
+    if isempty(pair_log), return; end
+    seen = containers.Map('KeyType', 'char', 'ValueType', 'double');
+    for i = 1:numel(pair_log)
+        ev = pair_log(i);
+        key = sprintf('%.0f_%.0f', ev.src1_id, ev.src2_id);
+        if isKey(seen, key)
+            j = seen(key);
+            pairs(j).n_frames = pairs(j).n_frames + 1;
+        else
+            seen(key) = numel(pairs) + 1;
+            pairs(end+1) = struct('R1_track_id', ev.src1_id, 'R2_track_id', ev.src2_id, ...
+                'truth1', ev.truth1, 'truth2', ev.truth2, 'ok', ev.ok, ...
+                'first_frame', ev.frame, 'n_frames', 1); %#ok<AGROW>
         end
     end
 end
 
-function plot_oracle_figures(result)
-    % 绘制 Oracle 仿真的所有可视化图窗
-    if ~exist('results', 'dir')                           % 若 results 目录不存在则创建
-        mkdir('results');
-    end
-
-    % 提取真值轨迹用于 legacy 绘图接口
-    [true_track_A, true_track_B, true_track_C] = truth_tracks_for_legacy_plots(result.truth_all);
-    params = result.params;
-    warn_state = warning('off', 'all');                   % 关闭所有警告避免绘图时刷屏
-
-    % 场景总览图（地图视角）
-    plot_scene_overview_multi(true_track_A, true_track_B, true_track_C, params, 'results');
-
-    % R1/R2 点迹 3D 散点图
-    plot_point_cloud_3d(result.detList_R1, 'R1', 'results/fig2a_R1_point_cloud.png');
-    plot_point_cloud_3d(result.detList_R2, 'R2', 'results/fig2b_R2_point_cloud.png');
-
-    % 单站跟踪结果图（R1/R2 各自的结果对比）
-    plot_results_multi('single_track', true_track_A, true_track_B, true_track_C, ...
-        result.detList_R1, result.detList_R2, result.trackSnapshots_R1, result.trackSnapshots_R2, ...
-        params, 'results');
-
-    % 融合结果图：将匹配对转为 cell 数组以兼容 plot_results_multi 接口
-    matched_pairs_cell = cell(length(result.matched_pairs), 1);
-    for p = 1:length(result.matched_pairs)
-        matched_pairs_cell{p} = result.matched_pairs(p);
-    end
-    plot_results_multi('single_fusion', true_track_A, true_track_B, true_track_C, ...
-        result.trackSnapshots_R1, result.aligned_R2, result.all_fused_snapshots, ...
-        result.method_names, matched_pairs_cell, result.fusion_eval, result.truthTrajs, params, 'results');
-
-    warning(warn_state);                                  % 恢复之前的警告状态
-    close all;                                            % 绘图后释放图窗，避免 heap corruption
-end
-
-function [true_track_A, true_track_B, true_track_C] = truth_tracks_for_legacy_plots(truth_all)
-    % 将 truth_all 拆分为 A/B/C 三个变量（最多 3 个目标），用于 legacy 绘图接口
-    empty_track = nan(1, 5);                              % 空航迹占位符
-    true_track_A = empty_track;
-    true_track_B = empty_track;
-    true_track_C = empty_track;
-    if length(truth_all) >= 1 && ~isempty(truth_all{1})
-        true_track_A = truth_all{1};
-    end
-    if length(truth_all) >= 2 && ~isempty(truth_all{2})
-        true_track_B = truth_all{2};
-    end
-    if length(truth_all) >= 3 && ~isempty(truth_all{3})
-        true_track_C = truth_all{3};
-    end
-end
-
-function ax = make_geo_axes(fig)
-    % 创建地理坐标轴（geoaxes），优先使用 darkwater 底图
-    try
-        ax = geoaxes('Parent', fig, 'Basemap', 'darkwater');
-    catch
-        ax = geoaxes('Parent', fig);                      % 底图不可用时降级
-    end
-end
-
-function plot_detections_geo(ax, detList, color, label)
-    % 在地理坐标轴上绘制检测点迹的经纬度散点图
-    lat = [];                                             % 收集所有检测的纬度
-    lon = [];                                             % 收集所有检测的经度
-    for k = 1:length(detList)                             % 逐帧遍历
-        dets = detList{k};
-        for i = 1:length(dets)
-            % 仅绘制有有效经纬度的检测
-            if isfield(dets(i), 'lat') && isfield(dets(i), 'lon') && ~isnan(dets(i).lat) && ~isnan(dets(i).lon)
-                lat(end+1) = dets(i).lat;
-                lon(end+1) = dets(i).lon;
-            end
-        end
-    end
-    if ~isempty(lat)
-        geoplot(ax, lat, lon, '.', 'Color', color, 'MarkerSize', 5, 'DisplayName', label);
-    end
-end
-
-function plot_tracks_geo(ax, snapshots, color, label_prefix)
-    % 在地理坐标轴上绘制航迹线（按 ID 分组）
-    ids = collect_track_ids(snapshots);                   % 收集所有有效航迹 ID
-    for i = 1:length(ids)
-        [lat, lon] = collect_track_line(snapshots, ids(i)); % 提取单个航迹的经纬度序列
-        if length(lat) > 1                                % 至少 2 个点才能画线
-            geoplot(ax, lat, lon, '-o', 'Color', color, 'LineWidth', 1.5, 'MarkerSize', 3, ...
-                'DisplayName', sprintf('%s#%d', label_prefix, ids(i)));
-        end
-    end
-end
-
-function ids = collect_track_ids(snapshots)
-    % 从逐帧快照中收集所有非终止航迹的唯一 ID
-    ids = [];
-    for k = 1:length(snapshots)
-        if isempty(snapshots{k}) || ~isfield(snapshots{k}, 'trackList')
-            continue;
-        end
-        for i = 1:length(snapshots{k}.trackList)
-            trk = snapshots{k}.trackList{i};
-            if trk.type ~= 7 && ~isnan(trk.lat)          % 排除终止航迹和无效位置
-                ids(end+1) = trk.id;
-            end
-        end
-    end
-    ids = unique(ids);                                    % 去重
-end
-
-function [lat, lon] = collect_track_line(snapshots, id)
-    % 收集指定 ID 航迹在所有帧中的经纬度序列
-    lat = [];
-    lon = [];
-    for k = 1:length(snapshots)
-        if isempty(snapshots{k}) || ~isfield(snapshots{k}, 'trackList')
-            continue;
-        end
-        for i = 1:length(snapshots{k}.trackList)
-            trk = snapshots{k}.trackList{i};
-            % 匹配目标 ID，且为非终止、位置有效的航迹
-            if trk.id == id && trk.type ~= 7 && ~isnan(trk.lat)
-                lat(end+1) = trk.lat;
-                lon(end+1) = trk.lon;
-                break;                                      % 每帧只取第一个匹配项
-            end
-        end
-    end
-end
-
-function [best_idx, best_method, best_rmse] = best_fusion_method(fusion_eval, method_names)
-    % 从融合评估结果中找出 RMSE 最小的融合算法
-    best_idx = 1;
-    best_rmse = inf;
-    for i = 1:length(method_names)
-        % 遍历四种融合算法，找到 RMSE 最低的那个
-        if i <= length(fusion_eval.overall) && fusion_eval.overall(i).s.rms < best_rmse
-            best_rmse = fusion_eval.overall(i).s.rms;
-            best_idx = i;
-        end
-    end
-    best_method = method_names{best_idx};
-end
-
-function plot_fused_geo(ax, all_fused_snapshots, method_idx, color, method_name)
-    % 在地理坐标轴上绘制指定融合算法的融合航迹
-    for p = 1:size(all_fused_snapshots, 1)                 % 遍历每个匹配对
-        snaps = all_fused_snapshots{p, method_idx};        % 第 p 对、第 method_idx 种算法的快照
-        if isempty(snaps)
-            continue;
-        end
-        lat = []; lon = [];                                % 收集融合航迹的经纬度
-        for k = 1:length(snaps)
-            trks = snaps{k}.trackList;
-            for i = 1:length(trks)
-                trk = trks{i};
-                if isfield(trk, 'lat') && isfield(trk, 'lon') && ~isnan(trk.lat) && ~isnan(trk.lon)
-                    lat(end+1) = trk.lat;
-                    lon(end+1) = trk.lon;
-                end
-            end
-        end
-        if length(lat) > 1
-            geoplot(ax, lat, lon, '-d', 'Color', color, 'LineWidth', 2.2, 'MarkerSize', 4, ...
-                'DisplayName', sprintf('%s Pair#%d', method_name, p));
-        end
-    end
-end
-
-function save_results_if_needed(result, params, scenario_name)
-    % 将仿真结果保存为 .mat 文件
-    if ~exist('results', 'dir')
-        mkdir('results');
-    end
-    % 文件名包含场景名和时间戳
-    outf = fullfile('results', sprintf('simulation_oracle_%s_%s.mat', scenario_name, datestr(now, 'yyyymmdd_HHMMSS')));
-    save(outf, '-struct', 'result');                        % 以 struct 形式保存
-    fprintf('数据已保存: %s%s', outf, newline);
-end
-
-function a = wrap_angle_run(a)
-    % 角度归一化到 [-180, 180] 区间
-    while a > 180
-        a = a - 360;
-    end
-    while a < -180
-        a = a + 360;
+% =====================================================================
+% 指标模块用的临时结构
+% =====================================================================
+function v = get_opt(s, name, default)
+    if isstruct(s) && isfield(s, name) && ~isempty(s.(name))
+        v = s.(name);
+    else
+        v = default;
     end
 end

@@ -331,6 +331,17 @@ function params = simulation_params_oracle()
     % 匹配方法：dualgate（双门限匹配）
     % 先做空间距离粗筛，再做连续帧一致性校验，两步过滤降低误匹配率
     params.track_matcher_method      = 'dualgate';
+    % 【主链路在线参数】run.m 走的是逐帧在线流程，关联与融合参数用 online_* 前缀。
+    % 关联策略：dualgate / nn / sequential / mewf（见 docs/主链路在线化重构契约_20261028.md）
+    params.online_assoc_method       = 'dualgate';
+    % 参与融合评估的算法列表（一次跑齐四种，供第5章横向对比）
+    params.online_fusion_methods     = {'SCC', 'BC', 'CI', 'FCI'};
+    % 在线 M/N 确认与生命周期（默认与旧批处理参数对齐）
+    params.online_M                  = 8;
+    params.online_N                  = 10;
+    params.online_K_loss             = 8;
+    params.online_min_life           = 3;
+    params.online_merge_confirm      = 3;
     % 第一门限：空间距离粗筛（35 km 内才进入下一步）
     % 35km 考虑到 OTH-SWR 的测距精度（10-20km）和定位误差
     params.dualgate_T1_km            = 35;

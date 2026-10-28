@@ -7,6 +7,12 @@ function run_experiments(exp_id, seed_list, scene_filter)
 %     results/paper/<exp_id>/<scene>__<cfg>__s<seed>.mat
 %   若文件已存在则跳过，因此中断后重新运行会从断点继续。
 %
+%   【2026-10-28】主链路已改为全在线（run.m 九阶段逐帧推进），
+%   指标改用 evaluate_paper_metrics_online（在线口径）。
+%   注意：在线关联的判决与旧的整段批处理匹配不同，
+%   因此历史 results/paper/*.mat 的数值不能与重跑结果直接对比，
+%   重跑时建议换一个 exp_id 前缀（如 E9_baseline_online）。
+%
 %   实验清单：
 %     E1_density : 4 场景 × 默认配置（密度梯度）
 %     E2_assoc   : 2 场景 × 双门限/三判据
@@ -58,12 +64,12 @@ function run_experiments(exp_id, seed_list, scene_filter)
                 try
                     % 抑制 run 与 metrics 的大量打印
                     evalc('r = run(scenes{si}, p);');
-                    evalc('m = evaluate_paper_metrics(r);');
+                    evalc('m = evaluate_paper_metrics_online(r);');
                     el = toc(t0);
                     meta = struct('exp', exp_id, 'scene', scenes{si}, 'cfg', names{ci}, ...
                         'seed', sd, 'elapsed_sec', el, 'created_at', datestr(now,31), ...
                         'matlab_version', version, 'n_targets', r.scenario.n_targets, ...
-                        'n_frames', r.scenario.n_frames);
+                        'n_frames', r.n_frames);
                     save(f, 'meta', 'm', '-v7.3');
                     n_run = n_run + 1;
                     msg = sprintf('[%d/%d] %s %s s%02d  OK  %.0fs  R1=%.2f SCC=%.2f cov=%.1f%% match=%.1f%%', ...

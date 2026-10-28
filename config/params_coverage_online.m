@@ -49,6 +49,11 @@ function params = params_coverage_online()
     % 系统偏差置零（在线入口不调用 ADS-B 标定）
     params.radar1_range_bias_m = 0.0;  params.radar1_azimuth_bias_deg = 0.0;
     params.radar2_range_bias_m = 0.0;  params.radar2_azimuth_bias_deg = 0.0;
+    % 配准模式显式置 none：既与上面"在线入口不调用标定"的意图一致，
+    % 也避免 Stage 1 用 117–124°E 的旧标校集给 104–112°E 新走廊估出
+    % -313 m / +130 m 的假偏差再校正回去（2026-10-28 复核发现的现象）。
+    % 跨区独立标校集做出来后，再把这里改成 'mean' 或 'mle3'。
+    params.registration_mode = 'none';
 
     % ==================== 航迹生命周期 ====================
     % 关闭真值终止，只保留 K_loss 因果终止
@@ -76,6 +81,17 @@ function params = params_coverage_online()
     params.online_merge_confirm = 3;
     % 融合算法：SCC / CI / BC
     params.online_fusion_method = 'SCC';
+    % 主链路（run.m）用的在线参数名：关联策略 + 多算法融合
+    % 关联策略：dualgate / nn / sequential / mewf
+    params.online_assoc_method = 'dualgate';
+    % 参与融合评估的算法列表（主链路一次跑齐四种，便于第5章横向对比）
+    params.online_fusion_methods = {'SCC', 'BC', 'CI', 'FCI'};
+
+    % ==================== ADS-B 场景与标校 ====================
+    % 跨区走廊在 106-110°E，与默认标校集（117-120.5°E）不重叠，
+    % 标校集需另行指定，否则覆盖判定全否。
+    params.adsb_region_lon = [104.0, 112.0];
+    params.adsb_region_lat = [22.0, 36.0];
 
     % ==================== 复现 ====================
     params.random_seed = 42;
