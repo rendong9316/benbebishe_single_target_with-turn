@@ -10,6 +10,7 @@ function ok = run_online_manager_tests()
 %     T4 因果性：第 k 帧的判决只依赖第 k 帧及以前的信息
 %     T5 合并历史拼接：重复系统航迹合并后覆盖帧是两者的并集
 %     T6 长度不短于单站：系统航迹覆盖帧数 >= 单站覆盖帧数
+%     T7 合并方向翻转：R2 先建 CT、R1 后建（覆盖互补布设的常态）也要能合并
 %
 %   全部用例都是构造性的（合成快照），不依赖仿真场景，跑得很快。
 
@@ -24,6 +25,7 @@ function ok = run_online_manager_tests()
     ok = ok && t4_causality();
     ok = ok && t5_merge_history();
     ok = ok && t6_length_not_shorter();
+    ok = ok && t7_merge_reversed_orientation();
     if ok
         fprintf('在线融合管理器单元测试：全部通过%s', newline);
     else
@@ -201,4 +203,45 @@ end
 
 function s = ok_str(ok)
     if ok, s = '通过'; else, s = '失败'; end
+end
+
+% =====================================================================
+% T7 合并方向翻转：保留者只持 R2 源时也必须合并
+% =====================================================================
+function ok = t7_merge_reversed_orientation()
+%T7_MERGE_REVERSED_ORIENTATION 覆盖互补布设下的"R2 先建航迹"情形
+%
+%   目标从南侧进入走廊时 R2 先建系统航迹；等 R1 的局部航迹出现时，
+%   若门限/成熟度还没放行，会另建一条 R1 单源系统航迹。此时"出生早的保留者"
+%   是只持 R2 源的那条——原实现把查源方向写死成"保留者持 R1"，
+%   find_local(L1, 0) 恒为空，merge_cnt 永久清零，两条航迹永不合并。
+%   本用例是 #34 CSZ9278 的最小复现（单站 47/55 帧、并集 79 帧，系统只拿到 53 帧）。
+    p = test_params();
+    state = central_track_manager('init', p);
+    % 1-3 帧：只有 R2 航迹 → 建立 CT-B（它将成为"出生早"的保留者）
+    for k = 1:3
+        s1 = mk_snap(k, []);
+        s2 = mk_snap(k, mk_local(22, 107.0, 31.0, 10, 1));
+        [state, ~] = central_track_manager('step', state, s1, s2, k, p);
+    end
+    n_before = numel(state.CT);
+    % 4-5 帧：R1 航迹在门限外（约 96 km）→ 另建 CT-A，且晚于 CT-B
+    for k = 4:5
+        s1 = mk_snap(k, mk_local(11, 108.0, 31.0, 10, 1));
+        s2 = mk_snap(k, mk_local(22, 107.0, 31.0, 10, 1));
+        [state, ~] = central_track_manager('step', state, s1, s2, k, p);
+    end
+    n_two_ct = numel(state.CT);
+    % 6-8 帧：R1 航迹回到同一位置 → 必须合并（保留者只持 R2 源）
+    for k = 6:8
+        s1 = mk_snap(k, mk_local(11, 107.0, 31.0, 10, 1));
+        s2 = mk_snap(k, mk_local(22, 107.0, 31.0, 10, 1));
+        [state, ~] = central_track_manager('step', state, s1, s2, k, p);
+    end
+    n_cov = 0;
+    if numel(state.CT) == 1, n_cov = numel(state.CT(1).cov_frames); end
+    ok = (n_before == 1) && (n_two_ct == 2) && (numel(state.CT) == 1) && ...
+         (state.CT(1).n_src == 2) && (n_cov == 8);
+    fprintf('T7 合并方向翻转（R2 先建 CT）：%s（合并前 CT 数=%d，合并后=%d，覆盖帧=%d，应为 8）%s', ...
+        ok_str(ok), n_two_ct, numel(state.CT), n_cov, newline);
 end

@@ -563,9 +563,21 @@ function [CT, n_merge] = merge_duplicate_ct(CT, L1, L2, gate, merge_M, k)
                 [keep, drop, ok] = complementary_pair(CT, i, j);
                 if ~ok, continue; end
 
-                % 互补对的源：本帧必须都还在
-                if isempty(find_local(L1, CT(keep).src1_id)) || ...
-                        isempty(find_local(L2, CT(drop).src2_id))
+                % 互补对的源：本帧必须都还在。
+                % 注意 keep 是"出生早的那条"，它可能是只持 R1 的，也可能是只持 R2 的。
+                % 覆盖互补布设下目标多从南侧进入走廊，R2 往往先建航迹，于是 keep 常是 R2 侧。
+                % 原写法固定按"keep 持 R1、drop 持 R2"去查，keep 一旦是 R2 侧，
+                % find_local(L1, 0) 恒为空 → merge_cnt 永久清零 → 重复航迹永不合并。
+                % 2026-10-28 复核由 #34 CSZ9278 暴露：单站 47/55 帧、并集 79 帧，
+                % 系统航迹只拿到 53 帧（长度比 0.964）；当时马氏 d² 有 20 帧远低于门限。
+                if CT(keep).src1_id > 0
+                    keep_ok = ~isempty(find_local(L1, CT(keep).src1_id)) && ...
+                              ~isempty(find_local(L2, CT(drop).src2_id));
+                else
+                    keep_ok = ~isempty(find_local(L2, CT(keep).src2_id)) && ...
+                              ~isempty(find_local(L1, CT(drop).src1_id));
+                end
+                if ~keep_ok
                     CT(keep).merge_cnt = 0;
                     continue;
                 end
