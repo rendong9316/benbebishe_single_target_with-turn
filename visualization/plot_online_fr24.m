@@ -20,8 +20,9 @@ function figs = plot_online_fr24(result, outdir)
     M = result.metrics;
     n_frames = result.n_frames;
     ctSnap = result.ctSnap;
-    snap1s = result.snap1s;
-    snap2s = result.snap2s;
+    % run.m 九阶段重构后的字段名（旧版为 snap1s / snap2s，已不存在）
+    snap1s = result.trackSnapshots_R1;
+    snap2s = result.aligned_R2;
 
     % ---------------- 图 1：布设与覆盖 ----------------
     f1 = figure('Visible', 'off', 'Color', 'w', 'Position', [100 100 1100 800]);
@@ -49,9 +50,9 @@ function figs = plot_online_fr24(result, outdir)
     plot(p.radar2_tx_lon, p.radar2_tx_lat, '^', 'MarkerSize', 8, ...
         'MarkerFaceColor', [1.0 0.8 0.6], 'MarkerEdgeColor', 'k');
     % 选中目标的系统航迹
-    sel = pick_target(M);
+    sel = pick_target(result);
     if ~isempty(sel)
-        xs = system_track_xy(M, sel);
+        xs = system_track_xy(ctSnap, sel);
         if ~isempty(xs)
             plot(xs(:,1), xs(:,2), '-', 'Color', [0.15 0.60 0.35], 'LineWidth', 2.4);
         end
@@ -71,7 +72,7 @@ function figs = plot_online_fr24(result, outdir)
     if ~isempty(sel)
         f1_frames = frames_of_truth(snap1s, sel);
         f2_frames = frames_of_truth(snap2s, sel);
-        ct_frames = system_frames(M, sel);
+        ct_frames = system_frames(ctSnap, sel);
         both = intersect(f1_frames, f2_frames);
         only1 = setdiff(f1_frames, f2_frames);
         only2 = setdiff(f2_frames, f1_frames);
@@ -96,7 +97,7 @@ function figs = plot_online_fr24(result, outdir)
 
     % ---------------- 图 3：逐目标长度比 ----------------
     f3 = figure('Visible', 'off', 'Color', 'w', 'Position', [100 100 1100 620]);
-    T = M.per_truth;
+    T = result.lengthTable;
     if ~isempty(T)
         rt = [T.ratio];
         ct = [T.ct_len]; sg = [T.single];
@@ -118,7 +119,8 @@ function figs = plot_online_fr24(result, outdir)
 
     % ---------------- 图 4：融合精度 ----------------
     f4 = figure('Visible', 'off', 'Color', 'w', 'Position', [100 100 1000 620]);
-    v = [M.rmse_r1_dual, M.rmse_r2_dual, M.rmse_fused_dual];
+    cf = M.common_frame;
+    v = [cf.R1, cf.R2, cf.fused];
     names = {'R1 单站', 'R2 单站', '系统航迹(融合)'};
     bar(v, 0.5); set(gca, 'XTickLabel', names);
     for i = 1:3
@@ -126,8 +128,9 @@ function figs = plot_online_fr24(result, outdir)
             'VerticalAlignment', 'bottom', 'FontSize', 10);
     end
     ylabel('位置误差 RMSE (km)');
-    title(sprintf('双源帧上的位置误差：系统 %.2f km vs 最优单站 %.2f km（增益 %+.1f%%，n=%d 帧）', ...
-        M.rmse_fused_dual, min(M.rmse_r1_dual, M.rmse_r2_dual), M.gain_dual_pct, M.n_dual_frames));
+    gain = 100*(min(cf.R1, cf.R2)-cf.fused)/min(cf.R1, cf.R2);
+    title(sprintf('共同帧上的位置误差：系统 %.2f km vs 最优单站 %.2f km（增益 %+.1f%%，n=%d 帧）', ...
+        cf.fused, min(cf.R1, cf.R2), gain, cf.n));
     grid on; ylim([0, max(v)*1.25]);
     set(f4, 'Color', 'w');
     f = fullfile(outdir, 'fig4_fusion_accuracy.png');
@@ -158,8 +161,10 @@ function bar_spans(frames, y, h, col, name)
     end
 end
 
-function t = pick_target(M)
-    T = M.per_truth;
+function t = pick_target(result)
+%PICK_TARGET 选长度比最大的真值目标，用于图 1/图 2 的代表性展示
+%   （原来误用外层变量 r，子函数作用域里取不到，会报"未定义变量 r"）
+    T = result.lengthTable;
     t = [];
     if isempty(T), return; end
     rt = [T.ratio]; sg = [T.single];
@@ -170,19 +175,19 @@ function t = pick_target(M)
     t = T(idx(j)).truth;
 end
 
-function xy = system_track_xy(M, tid)
+function xy = system_track_xy(ctSnap, tid)
+% 从逐帧系统航迹里抽出某条真值的系统航迹轨迹
     xy = [];
-    ids = fieldnames(M.sys_x);
-    for i = 1:numel(ids)
-        cid = str2double(ids{i}(2:end));
-        if ~isfinite(M.sys_truth(cid)) || M.sys_truth(cid) ~= tid, continue; end
-        h = M.sys_x.(ids{i});
-        for j = 1:numel(h)
-            xy(end+1, :) = [h(j).lon, h(j).lat]; %#ok<AGROW>
+    for k = 1:numel(ctSnap)
+        CTk = ctSnap{k};
+        if isempty(CTk), continue; end
+        for i = 1:numel(CTk)
+            if ~isfinite(CTk(i).truth_idx) || CTk(i).truth_idx ~= tid, continue; end
+            if CTk(i).n_src == 0, continue; end
+            x = CTk(i).x;
+            if isempty(x), continue; end
+            xy(end+1, :) = [x(1), x(3)]; %#ok<AGROW>
         end
-    end
-    if ~isempty(xy)
-        xy = sortrows(xy, 1);
     end
 end
 
@@ -203,13 +208,16 @@ function fr = frames_of_truth(snaps, tid)
     fr = unique(fr);
 end
 
-function fr = system_frames(M, tid)
+function fr = system_frames(ctSnap, tid)
+% 某条真值的系统航迹"有源帧"列表
     fr = [];
-    ids = fieldnames(M.sys_frames);
-    for i = 1:numel(ids)
-        cid = str2double(ids{i}(2:end));
-        if ~isfinite(M.sys_truth(cid)) || M.sys_truth(cid) ~= tid, continue; end
-        fr = [fr, M.sys_frames.(ids{i})]; %#ok<AGROW>
+    for k = 1:numel(ctSnap)
+        CTk = ctSnap{k};
+        if isempty(CTk), continue; end
+        for i = 1:numel(CTk)
+            if ~isfinite(CTk(i).truth_idx) || CTk(i).truth_idx ~= tid, continue; end
+            if CTk(i).n_src > 0, fr(end+1) = k; end %#ok<AGROW>
+        end
     end
     fr = unique(fr);
 end
