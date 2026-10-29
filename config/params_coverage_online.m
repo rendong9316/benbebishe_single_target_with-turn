@@ -55,6 +55,15 @@ function params = params_coverage_online()
     % 跨区独立标校集做出来后，再把这里改成 'mean' 或 'mle3'。
     params.registration_mode = 'none';
 
+    % ==================== IMM 模型集 ====================
+    % 默认配置的 0.7/1.5 °/s 是给秒级采样调的：本链路帧间隔 30 s，
+    % 0.7 °/s 等于每帧转 21°、1.5 °/s 等于每帧转 45°，四个 CT 模型在
+    % 几乎不转弯的巡航航迹上持续注入机动，纯外推帧误差被抬到 21.9 km。
+    % 本场景实测转弯率中位 0.012 °/s、p90 0.23、p99 0.66，故取 0.05/0.2。
+    % 2026-10-29 决策：本场景默认用这一档（对比见 evaluation/diagnose_tracking_gap.m）。
+    params.imm_ct_omega_slow_deg = 0.05;
+    params.imm_ct_omega_fast_deg = 0.2;
+
     % ==================== 航迹生命周期 ====================
     % 关闭真值终止，只保留 K_loss 因果终止
     params.oracle_truth_terminate_enable = false;
