@@ -32,9 +32,13 @@ function scenario = load_adsb_scenario(scene_id, params)
     dt = params.dt_sec;
     root = fileparts(fileparts(mfilename('fullpath')));   % simulation/ -> 项目根
 
-    is_fr24 = strcmp(char(scene_id), 'adsb_ns_fr24');
+    % FR24 原始 19 列场景：场景名 -> 文件名
+    fr24_map = {'adsb_ns_fr24', 'scene_fr24.csv';    % 37 条走廊内航迹
+                'adsb_ns_all',  'scene_fr24_all.csv'}; % 57 条 = 走廊 37 + 远距 20
+    is_fr24 = any(strcmp(char(scene_id), fr24_map(:, 1)));
     if is_fr24
-        csv_path = fullfile(root, '..', 'data', 'adsb_ns', 'scene_fr24.csv');
+        fn = fr24_map{strcmp(char(scene_id), fr24_map(:, 1)), 2};
+        csv_path = fullfile(root, '..', 'data', 'adsb_ns', fn);
     else
         csv_path = fullfile(root, 'data', 'adsb', [char(scene_id) '.csv']);
     end

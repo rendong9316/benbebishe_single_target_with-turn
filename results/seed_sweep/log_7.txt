@@ -1,0 +1,63 @@
+[布设] R1(北) 92.50E 31.45N 波束中心 83.53 度
+[布设] R2(南) 92.50E 30.55N 波束中心 88.77 度
+[布设] 视场 15.0 度，偏转 4.60 度，门限 chi2=5.99，确认 6 帧
+
+########## seed 7 (1/1) ##########
+场景 adsb_ns_all：63 条航迹，2032 帧（dt=30s）
+  配准模式: none（不做偏差校正）
+R1 偏差估计: dr=0m, da=0.00deg (真实: 0m, 0.00deg)
+R2 偏差估计: dr=0m, da=0.00deg (真实: 0m, 0.00deg)
+
+========== PAPER METRICS (online): adsb_ns_all ==========
+targets=63  frames=2032
+
+[1] RMSE (km)
+  R1_only   n= 3129  rms= 14.174
+  R2_only   n= 3383  rms= 16.616
+  SCC       n= 1091  rms=  8.503
+  BC        n= 1091  rms=  8.697
+  CI        n= 1091  rms=  8.896
+  FCI       n= 1091  rms=  8.864
+
+[2] TRACK LENGTH (frames)
+  R1: total=60  real=60 (mean=53.4)  false=0
+  R2: total=58  real=58 (mean=59.0)  false=0
+  系统航迹: 目标 59，比值均值 1.296 中位 1.419，延长 48 缩短 3
+
+[3] MATCHING
+  pairs=55  correct=55  wrong=0  missed=8  precision=100.0%  recall=87.3%
+
+[4] FALSE TRACK RATE
+  R1=0.0%  R2=0.0%
+
+[5] FUSION COVERAGE
+  both=1110  R1_only=2453  R2_only=2122  coverage=19.5%
+
+[6] COMMON-FRAME RMSE (fair comparison)
+  n=1091  R1=13.262  R2=20.264  fused=8.503  gain_vs_best_single=35.9%
+
+[7] CONSISTENCY / LIMITS
+  NEES: R1=3.76  R2=1.23   [consistent ~2]
+  rho(R1,R2)=-0.002
+  theoretical: indep=11.097  optimal(rho)=11.085  actual=8.503
+====================================================
+
+主链路完成：2032 帧
+seed 7 完成 58 s | R1 14.17 R2 16.62 SCC 8.50 gain 35.9% | P 1% R 1% | 比 1.296
+
+========== adsb_ns_all  1 个种子汇总 ==========
+R1 RMSE      14.17 ± 0.00  [14.17, 14.17]
+R2 RMSE      16.62 ± 0.00  [16.62, 16.62]
+SCC RMSE     8.50 ± 0.00  [8.50, 8.50]
+BC  RMSE     8.70 ± 0.00  [8.70, 8.70]
+CI  RMSE     8.90 ± 0.00  [8.90, 8.90]
+FCI RMSE     8.86 ± 0.00  [8.86, 8.86]
+融合增益%    35.88 ± 0.00  [35.88, 35.88]
+精度%        1.00 ± 0.00  [1.00, 1.00]
+查全%        0.87 ± 0.00  [0.87, 0.87]
+覆盖率%      19.53 ± 0.00  [19.53, 19.53]
+长度比       1.30 ± 0.00  [1.30, 1.30]
+NEES R1/R2   3.76 ± 0.00  [3.76, 3.76] / 1.23 ± 0.00  [1.23, 1.23]
+rho          -0.00 ± 0.00  [-0.00, -0.00]
+
+结果表：D:\Desktop\毕设相关\AAA毕业论文撰写\文稿撰写\single_target_with-turn\results\seed_sweep\adsb_ns_all_seeds.csv

@@ -1,0 +1,4 @@
+[布设] R1(北) 92.50E 31.45N 波束中心 83.53 度
+[布设] R2(南) 92.50E 30.55N 波束中心 88.77 度
+[布设] 视场 15.0 度，偏转 4.60 度，门限 chi2=5.99，确认 6 帧
+ERROR: MATLAB error Exit Status: 0xc0000374, Heap corruption

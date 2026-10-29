@@ -106,9 +106,13 @@ end
 % =====================================================================
 function dn = scene_base_datenum(scenario_name)
     dn = datenum(2000, 1, 1);
-    if ~strcmp(char(scenario_name), 'adsb_ns_fr24'), return; end
+    fr24_map = {'adsb_ns_fr24', 'scene_fr24.csv';
+                'adsb_ns_all',  'scene_fr24_all.csv'};
+    is_fr24 = any(strcmp(char(scenario_name), fr24_map(:, 1)));
+    if ~is_fr24, return; end
     root = fileparts(fileparts(mfilename('fullpath')));
-    p = fullfile(root, '..', 'data', 'adsb_ns', 'scene_fr24.csv');
+    fn = fr24_map{strcmp(char(scenario_name), fr24_map(:, 1)), 2};
+    p = fullfile(root, '..', 'data', 'adsb_ns', fn);
     if ~isfile(p)
         warning('export:noScene', '场景文件不存在，时间基准退化为 %s', datestr(dn));
         return;
@@ -335,7 +339,12 @@ function cmp = compare_length(trk1, trk2, raw1, raw2, fus, outdir)
     % 压到跟踪帧数的六成，拿它当分母会把长度比虚高到 1.5 以上。
     % 系统航迹的批号是 CT 编号而非真值编号，按 truth 字段归并；
     % 同一目标若被拆成两条 CT，取较长的那条（与长度指标口径一致）。
-    n = max([trk1.batch, trk2.batch]);
+    % 数组长度要同时覆盖批号与真值编号：批号是 CT 编号（radar*100000+loc.id），
+    % 与真值编号不同源；一个目标被拆成多条 CT 时，最大批号会小于最大真值编号，
+    % 只按批号定长会越界。
+    ti = [trk1.truth, trk2.truth, raw1.truth, raw2.truth, fus.truth];
+    ti = ti(isfinite(ti));
+    n = max([trk1.batch, trk2.batch, ti(:)']);
     n1 = zeros(n, 1); n2 = zeros(n, 1); nf = zeros(n, 1);
     d1 = zeros(n, 1); d2 = zeros(n, 1);
     for i = 1:numel(trk1)
