@@ -169,10 +169,14 @@ function result = run(scenario_name, params_override, opts)
         frameLog{k} = log;
 
         % 配对事件汇总（跨帧）
+        % 只取本帧新产生的事件：CT(i).pair_log 是累积列表，每帧全量搬一遍
+        % 会变成 O(帧数^2) 的重复追加（1950 帧下内存膨胀到触发堆损坏）。
         for i = 1:numel(CT.CT)
             pl = CT.CT(i).pair_log;
             for p = 1:numel(pl)
-                pair_log(end+1) = pl{p}; %#ok<AGROW>
+                if pl{p}.frame == k
+                    pair_log(end+1) = pl{p}; %#ok<AGROW>
+                end
             end
         end
 
