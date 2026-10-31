@@ -27,6 +27,9 @@ function params = params_coverage_registered()
     % ==================== 标定（主流程 Stage 1，逐帧循环之前，离线）====================
     params.registration_mode    = 'mle3';
     params.registration_apply_h = true;   % 估计出的虚高反馈给反演/滤波
+    % 2026-10-31 决策 B：主流程必须接入配准。run.m 见此标志即强制检查，
+    % registration_mode='none' 会直接报错，防止误用零偏差配置出论文数字。
+    params.registration_required = true;
     params.adsb_csv_path        = 'data/adsb/calib_utc12_18.csv';
     % 区域窗放到标校集全域，由 radar_coverage_check 逐点筛"落入本站波束"的样本。
     % 既满足"只用探测范围内的数据"，又保留波束内的距离跨度——这是 h 与 dR 可分离的前提。

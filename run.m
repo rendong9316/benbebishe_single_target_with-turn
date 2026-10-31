@@ -57,6 +57,16 @@ function result = run(scenario_name, params_override, opts)
     % 点迹噪声用两站各自独立的随机流：与配准/跟踪的随机消耗解耦，两站量测相互独立
     detection_rng('init', params);
 
+    % 主流程配准强制检查（2026-10-31 决策 B）：主配置声明必须配准
+    if isfield(params, 'registration_required') && params.registration_required
+        if ~isfield(params, 'registration_mode') || strcmpi(params.registration_mode, 'none')
+            error('run:registrationRequired', ...
+                ['主流程要求接入配准：registration_mode 不得为 ''none''。' newline ...
+                 '  主配置请用 params_coverage_registered()；' newline ...
+                 '  消融对照请显式使用 params_coverage_online()（无 registration_required 标志）。']);
+        end
+    end
+
     stage_log = struct('stage', {}, 'elapsed_sec', {}, 'note', {});
 
     % =====================================================================
