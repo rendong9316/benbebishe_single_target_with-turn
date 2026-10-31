@@ -203,8 +203,10 @@ function result = run(scenario_name, params_override, opts)
     % 单站跟踪误差（复用既有评估模块）
     errorStats_R1 = evaluate_all_multi('tracking_errors', trackSnapshots_R1, detList_R1, ...
         truthTrajs, t1_grid, t1_grid, 'R1');
+    % aligned_R2 的状态已回退到 t1 时间基准，真值必须按 t1_grid 查；
+    % 点迹仍生成于 t2_grid，故 detection_times 保持 t2_grid。
     errorStats_R2 = evaluate_all_multi('tracking_errors', aligned_R2, detList_R2, ...
-        truthTrajs, t2_grid, t2_grid, 'R2');
+        truthTrajs, t1_grid, t2_grid, 'R2');
 
     % 融合误差：把逐帧系统航迹转成"配对 × 算法"的传统结构，复用既有评估口径
     [fusion_eval, all_fused_snapshots] = evaluate_online_fusion(fused_snapshots, ...

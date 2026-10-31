@@ -53,6 +53,8 @@ function params = params_coverage_online()
     % 也避免 Stage 1 用 117–124°E 的旧标校集给 104–112°E 新走廊估出
     % -313 m / +130 m 的假偏差再校正回去（2026-10-28 复核发现的现象）。
     % 跨区独立标校集做出来后，再把这里改成 'mean' 或 'mle3'。
+    % 2026-10-31：标校集已覆盖走廊，带偏差 + mle3 的版本见 params_coverage_registered.m，
+    % 本函数保持零偏差作为融合实验的干净基线，两者构成配准的 A/B 对照。
     params.registration_mode = 'none';
 
     % ==================== IMM 模型集 ====================

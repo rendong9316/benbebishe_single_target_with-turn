@@ -40,7 +40,7 @@ function params = simulation_params_oracle()
     % R1 从 t=0 开始采样
     params.time_offset_radar1_sec   = 0.0;
     % R2 比 R1 晚 13 秒开始，形成异步采样（增加融合难度，更贴近实际）
-    params.time_offset_radar2_sec   = 13.0;
+    params.time_offset_radar2_sec   = 0.0;   % 2026-10-31：两站 GPS 共时基，取消 13 s 采样相位差（见撰写总纲 §10）
 
     % ==================== 雷达站几何坐标（WGS84 经纬度）====================
     % R1 接收站位置（经度 113.0E, 纬度 33.5N，位于湖北境内）
