@@ -33,6 +33,20 @@ function params = params_coverage_registered()
     params.adsb_region_lon = [105.0, 125.0];
     params.adsb_region_lat = [20.0, 40.0];
 
+    % ==================== L2 模型失配（默认全关 = 干净标定）====================
+    % 用于检验"标定模型 = 生成模型"这一理想假设的影响。全为 0 时退化为原来的干净标定，
+    % 结果与 2026-10-31 的 A/B 完全一致。
+    params.iono_lon_tilt_km_per_deg = 0.0;    % 虚高经向梯度（空间失配，M2）
+    params.iono_lon_ref_deg         = 107.4;
+    params.iono_drift_amp_km        = 0.0;    % 虚高时间漂移幅度（时间失配，M1）
+    params.iono_drift_period_h      = 6.0;
+    params.iono_drift_phase_sec     = 0.0;
+    params.gen_range_noise_scale    = 1.0;    % 生成侧噪声放大（估计侧仍按标称，M3）
+    params.gen_az_noise_scale       = 1.0;
+    params.calib_outlier_frac       = 0.0;    % 标校集粗差比例（M4）
+    params.calib_outlier_std_m      = 30000.0;
+    params.calib_ref_pos_err_m      = 0.0;    % ADS-B 参考位置误差（M5）
+
     fprintf('[配准] 已注入偏差：R1 dR=%.0fkm dth=%.1fdeg，R2 dR=%.0fkm dth=%.1fdeg，h_true=%.0fkm / h_nominal=%.0fkm%s', ...
         params.radar1_range_bias_m/1000, params.radar1_azimuth_bias_deg, ...
         params.radar2_range_bias_m/1000, params.radar2_azimuth_bias_deg, ...

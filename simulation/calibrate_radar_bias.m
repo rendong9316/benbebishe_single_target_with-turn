@@ -31,6 +31,29 @@ function [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_radar_bias(params
         return;
     end
 
+    % ---- 标定缓存：离线标定天然可缓存，同一组参数只算一次 ----
+    repo_root = fileparts(fileparts(mfilename('fullpath')));
+    use_cache = getdef_(params, 'calib_cache_enable', 1) && ~getdef_(params, 'calib_cache_force', 0);
+    cache_key = calib_cache_key_(params, mode);
+    cache_file = '';
+    if use_cache
+        cache_dir = fullfile(repo_root, 'results', 'calib_cache');
+        if isfield(params, 'calib_cache_dir') && ~isempty(params.calib_cache_dir)
+            cache_dir = char(params.calib_cache_dir);
+        end
+        if ~isfolder(cache_dir), mkdir(cache_dir); end
+        cache_file = fullfile(cache_dir, sprintf('%s_%s.mat', mode, hash_str_(cache_key)));
+        if isfile(cache_file)
+            S = load(cache_file);
+            if isfield(S, 'cache_key') && strcmp(S.cache_key, cache_key)
+                dr1_est = S.dr1_est; da1_est = S.da1_est;
+                dr2_est = S.dr2_est; da2_est = S.da2_est; reg = S.reg;
+                fprintf('  配准[%s] 命中缓存 %s%s', mode, hash_str_(cache_key), newline);
+                return;
+            end
+        end
+    end
+
     h_true_m    = iono_h(params, 'true');      % 真实虚高（量测生成用）
     h_assumed_m = iono_h(params, 'assumed');   % 标称虚高（标定侧正演用）
 
@@ -60,6 +83,18 @@ function [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_radar_bias(params
     region_mask = isfinite(adsb_lon) & isfinite(adsb_lat) & adsb_lon >= lon_lim(1) & adsb_lon <= lon_lim(2) & ...
         adsb_lat >= lat_lim(1) & adsb_lat <= lat_lim(2) & strlength(adsb_track_id) > 0;
     selected_ids = unique(adsb_track_id(region_mask));
+    % 预先求出"区域窗内且属于选中航迹"的行号，循环只走这些行。
+    % 原实现对 61k 行逐行 ismember(string)，单次标定要 90 s，这里降到 ~15 s。
+    row_idx = find(region_mask & ismember(adsb_track_id, selected_ids));
+
+    % ---- L2 失配参数（默认全为 0/1，退化为原来的"干净"标定）----
+    sR1 = params.radar1_range_noise_std_m   * getdef_(params, 'gen_range_noise_scale', 1);
+    sA1 = params.radar1_azimuth_noise_std_deg * getdef_(params, 'gen_az_noise_scale', 1);
+    sR2 = params.radar2_range_noise_std_m   * getdef_(params, 'gen_range_noise_scale', 1);
+    sA2 = params.radar2_azimuth_noise_std_deg * getdef_(params, 'gen_az_noise_scale', 1);
+    out_frac = getdef_(params, 'calib_outlier_frac', 0);
+    out_std  = getdef_(params, 'calib_outlier_std_m', 0);
+    pos_err  = getdef_(params, 'calib_ref_pos_err_m', 0);
     if isempty(selected_ids)
         error('calibrate_radar_bias:adsbNoInCoverageTrack', ...
             'ADS-B 数据中没有找到同时满足两部雷达覆盖和最小点数要求的航迹');
@@ -73,31 +108,41 @@ function [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_radar_bias(params
 
     % 使用全部标校行：样本量决定 (h, dR) 的可分离性，抽稀会破坏可辨识性
     need_model = strcmp(mode, 'mean');   % 只有均值标定需要正演模型残差
-    for idx = 1:height(T_adsb)
+    for ii = 1:numel(row_idx)
+        idx = row_idx(ii);
         t_lon = adsb_lon(idx);                            % 当前采样点的经度
         t_lat = adsb_lat(idx);                            % 当前采样点的纬度
-        if ~ismember(adsb_track_id(idx), selected_ids)
-            continue;
-        end
         if isnan(t_lon) || isnan(t_lat)                   % 跳过无效数据
             continue;
         end
+        % ADS-B 参考位置误差：只污染"参考"，量测仍由真实位置生成
+        if pos_err > 0
+            ref_lon = t_lon + randn() * pos_err / (111320 * cosd(t_lat));
+            ref_lat = t_lat + randn() * pos_err / 110570;
+        else
+            ref_lon = t_lon;  ref_lat = t_lat;
+        end
+        % 标校窗内的真实虚高（时间项取 NaN = 窗内均值，空间项照常）
+        h_now = iono_h_field(params, t_lon, t_lat, NaN);
         % --- R1 偏差采样 ---
         [in1, ~, ~] = radar_coverage_check(params.radar1_lon, params.radar1_lat, ...
             t_lon, t_lat, params.radar1_beam_center_deg, params);
         if in1
             Rg_phys = skywave_geometry('group_range', params.radar1_tx_lon, params.radar1_tx_lat, ...
-                params.radar1_lon, params.radar1_lat, t_lon, t_lat, h_true_m);
+                params.radar1_lon, params.radar1_lat, t_lon, t_lat, h_now);
             az_true = sphere_utils_azimuth(params.radar1_lon, params.radar1_lat, t_lon, t_lat);
-            Rg_meas = Rg_phys + params.radar1_range_bias_m + randn() * params.radar1_range_noise_std_m;
-            az_meas = az_true + params.radar1_azimuth_bias_deg + randn() * params.radar1_azimuth_noise_std_deg;
+            Rg_meas = Rg_phys + params.radar1_range_bias_m + randn() * sR1;
+            az_meas = az_true + params.radar1_azimuth_bias_deg + randn() * sA1;
+            if out_frac > 0 && rand() < out_frac
+                Rg_meas = Rg_meas + sign(randn()) * abs(randn()) * out_std;
+            end
             if need_model
                 Rg_model = skywave_geometry('group_range', params.radar1_tx_lon, params.radar1_tx_lat, ...
                     params.radar1_lon, params.radar1_lat, t_lon, t_lat, h_assumed_m);
                 dr1_list(end+1) = Rg_meas - Rg_model;
                 da1_list(end+1) = wrap_angle_deg(az_meas - az_true);
             end
-            lon1(end+1) = t_lon; lat1(end+1) = t_lat;
+            lon1(end+1) = ref_lon; lat1(end+1) = ref_lat;
             Rg1(end+1)  = Rg_meas; az1(end+1) = az_meas;
         end
         % --- R2 偏差采样 ---
@@ -105,17 +150,20 @@ function [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_radar_bias(params
             t_lon, t_lat, params.radar2_beam_center_deg, params);
         if in2
             Rg_phys = skywave_geometry('group_range', params.radar2_tx_lon, params.radar2_tx_lat, ...
-                params.radar2_lon, params.radar2_lat, t_lon, t_lat, h_true_m);
+                params.radar2_lon, params.radar2_lat, t_lon, t_lat, h_now);
             az_true = sphere_utils_azimuth(params.radar2_lon, params.radar2_lat, t_lon, t_lat);
-            Rg_meas = Rg_phys + params.radar2_range_bias_m + randn() * params.radar2_range_noise_std_m;
-            az_meas = az_true + params.radar2_azimuth_bias_deg + randn() * params.radar2_azimuth_noise_std_deg;
+            Rg_meas = Rg_phys + params.radar2_range_bias_m + randn() * sR2;
+            az_meas = az_true + params.radar2_azimuth_bias_deg + randn() * sA2;
+            if out_frac > 0 && rand() < out_frac
+                Rg_meas = Rg_meas + sign(randn()) * abs(randn()) * out_std;
+            end
             if need_model
                 Rg_model = skywave_geometry('group_range', params.radar2_tx_lon, params.radar2_tx_lat, ...
                     params.radar2_lon, params.radar2_lat, t_lon, t_lat, h_assumed_m);
                 dr2_list(end+1) = Rg_meas - Rg_model;
                 da2_list(end+1) = wrap_angle_deg(az_meas - az_true);
             end
-            lon2(end+1) = t_lon; lat2(end+1) = t_lat;
+            lon2(end+1) = ref_lon; lat2(end+1) = ref_lat;
             Rg2(end+1)  = Rg_meas; az2(end+1) = az_meas;
         end
     end
@@ -196,9 +244,80 @@ function [dr1_est, da1_est, dr2_est, da2_est, reg] = calibrate_radar_bias(params
     if any(~isfinite([dr1_est, da1_est, dr2_est, da2_est]))
         error('calibrate_radar_bias:calibrationInvalid', 'ADS-B 标定结果包含非有限值');
     end
+
+    if ~isempty(cache_file)
+        save(cache_file, 'dr1_est', 'da1_est', 'dr2_est', 'da2_est', 'reg', 'cache_key');
+        fprintf('  配准[%s] 已写入缓存 %s%s', mode, hash_str_(cache_key), newline);
+    end
 end
 
 function a = wrap_angle_deg(a)
 % 角度归一化到 [-180, 180] 区间
     a = mod(a + 180, 360) - 180;
+end
+
+function v = getdef_(s, name, def)
+    if isfield(s, name) && ~isempty(s.(name)) && isfinite(double(s.(name)))
+        v = double(s.(name));
+    else
+        v = def;
+    end
+end
+
+function k = calib_cache_key_(params, mode)
+%CALIB_CACHE_KEY_ 由影响标定结果的全部参数生成确定性键
+%   只列真正进入标定的量：几何、偏差真值、虚高、噪声、失配项、标校集。
+    numf = {'random_seed','ionosphere_true_h_km','ionosphere_assumed_h_km', ...
+            'radar1_assumed_h_km','radar2_assumed_h_km', ...
+            'radar1_range_bias_m','radar1_azimuth_bias_deg', ...
+            'radar2_range_bias_m','radar2_azimuth_bias_deg', ...
+            'radar1_range_noise_std_m','radar1_azimuth_noise_std_deg', ...
+            'radar2_range_noise_std_m','radar2_azimuth_noise_std_deg', ...
+            'radar1_lon','radar1_lat','radar2_lon','radar2_lat', ...
+            'radar1_tx_lon','radar1_tx_lat','radar2_tx_lon','radar2_tx_lat', ...
+            'radar1_beam_center_deg','radar2_beam_center_deg','beam_width_deg', ...
+            'range_min_m','range_max_m'};
+    % 失配项即使缺省也要进键，保证"显式写 0"与"不写"命中同一条缓存
+    mis = {'iono_lon_tilt_km_per_deg','iono_lon_ref_deg', ...
+           'iono_drift_amp_km','iono_drift_period_h','iono_drift_phase_sec', ...
+           'gen_range_noise_scale','gen_az_noise_scale', ...
+           'calib_outlier_frac','calib_outlier_std_m','calib_ref_pos_err_m'};
+    mis_def = [0 107.4 0 6 0 1 1 0 0 0];
+
+    parts = {mode};
+    for i = 1:numel(numf)
+        if isfield(params, numf{i}) && ~isempty(params.(numf{i}))
+            parts{end+1} = sprintf('%s=%.8g', numf{i}, double(params.(numf{i}))); %#ok<AGROW>
+        end
+    end
+    for i = 1:numel(mis)
+        v = getdef_(params, mis{i}, mis_def(i));
+        parts{end+1} = sprintf('%s=%.8g', mis{i}, v); %#ok<AGROW>
+    end
+    if isfield(params,'adsb_region_lon') && numel(params.adsb_region_lon) >= 2
+        parts{end+1} = sprintf('reglon=%.6g,%.6g', params.adsb_region_lon(1), params.adsb_region_lon(2));
+    end
+    if isfield(params,'adsb_region_lat') && numel(params.adsb_region_lat) >= 2
+        parts{end+1} = sprintf('reglat=%.6g,%.6g', params.adsb_region_lat(1), params.adsb_region_lat(2));
+    end
+    if isfield(params,'adsb_csv_path') && ~isempty(params.adsb_csv_path)
+        p = char(params.adsb_csv_path);
+        parts{end+1} = ['csv=' p];
+        if isfile(p)
+            d = dir(p);
+            parts{end+1} = sprintf('csvsz=%d_%.0f', d.bytes, d.datenum);
+        end
+    end
+    k = strjoin(parts, '|');
+end
+
+function h = hash_str_(k)
+% FNV-1a 32 bit：确定性短哈希，用于缓存文件名
+    h = uint32(2166136261);
+    b = double(k);
+    for i = 1:numel(b)
+        h = bitxor(h, uint32(mod(b(i), 256)));
+        h = uint32(mod(double(h) * 16777619, 4294967296));
+    end
+    h = sprintf('%08x', h);
 end

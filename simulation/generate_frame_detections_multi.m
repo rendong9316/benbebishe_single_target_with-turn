@@ -53,6 +53,14 @@ function [detList, has_target_dets] = generate_frame_detections_multi(rx_lon, rx
     % 这样可以保证不同调用场景下的噪声水平一致
     if nargin < 15, range_noise = params.radar1_range_noise_std_m; end
     if nargin < 16, az_noise = params.radar1_azimuth_noise_std_deg; end
+    % 噪声强度失配（L2）：真实传感器比标定假设更差时，把生成侧噪声放大，
+    % 估计侧仍按标称 sigma 加权，用来检验加权失配的影响。默认 1（无失配）。
+    if isfield(params,'gen_range_noise_scale') && ~isempty(params.gen_range_noise_scale)
+        range_noise = range_noise * params.gen_range_noise_scale;
+    end
+    if isfield(params,'gen_az_noise_scale') && ~isempty(params.gen_az_noise_scale)
+        az_noise = az_noise * params.gen_az_noise_scale;
+    end
 
     % 初始化点迹列表为空结构体数组，后续逐个点迹追加
     detList = [];
@@ -107,8 +115,10 @@ function [detList, has_target_dets] = generate_frame_detections_multi(rx_lon, rx
             % 【2026-10-26】显式传入真实虚高 iono_h(params,'true')。
             % 这是本课题"时空配准"的误差源：真值 320 km 与系统标称 300 km 失配，
             % 使群距离偏差随距离变化，常数标定无法补偿。
+            % 虚高按目标位置与当前时刻取场值（默认退化为常数，见 iono_h_field）
             Rg_true = skywave_geometry('group_range', tx_lon, tx_lat, ...
-                rx_lon, rx_lat, tgt_lon, tgt_lat, iono_h(params, 'true'));
+                rx_lon, rx_lat, tgt_lon, tgt_lat, ...
+                iono_h_field(params, tgt_lon, tgt_lat, time_sec));
 
             % 方位角 az：从接收站指向目标的球面方位角
             az_true = skywave_geometry('azimuth', rx_lon, rx_lat, tgt_lon, tgt_lat);
@@ -192,7 +202,7 @@ function [detList, has_target_dets] = generate_frame_detections_multi(rx_lon, rx
         % ---- 计算杂波点的天波双基地群距离 ----
         % 杂波点复用与目标完全一致的天波几何模型（同样用真实虚高）
         fake_Rg = skywave_geometry('group_range', tx_lon, tx_lat, rx_lon, rx_lat, ...
-            clut_lon, clut_lat, iono_h(params, 'true'));
+            clut_lon, clut_lat, iono_h_field(params, clut_lon, clut_lat, time_sec));
 
         % ---- 杂波多普勒：在 [-200, +200] m/s 内均匀随机 ----
         % OTH-SWR 中电离层杂波的多普勒谱通常展宽在 ±200 m/s 范围内，
